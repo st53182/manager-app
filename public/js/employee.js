@@ -668,7 +668,7 @@ async function submitDiscTest() {
         }
         
         const endpoint = isEmployeeView ? 
-            `/api/employee/${employeeId}/disc-test?token=${token}` : 
+            `/employee/${employeeId}/disc-test?token=${token}` : 
             `/api/employee/${employeeId}/disc-test`;
         
         const response = await fetch(endpoint, {
