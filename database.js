@@ -83,12 +83,68 @@ async function initializeDatabase() {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
         manager_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        token VARCHAR(255) UNIQUE NOT NULL,
+        token TEXT UNIQUE NOT NULL,
         expires_at TIMESTAMP NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     console.log('Employee secure tokens table created successfully');
+
+    console.log('Running database migrations...');
+    try {
+      await client.query(`
+        ALTER TABLE employee_secure_tokens 
+        ALTER COLUMN token TYPE TEXT;
+      `);
+      console.log('Token column migration completed successfully');
+    } catch (error) {
+      if (error.code !== '42703') {
+        console.log('Token column migration skipped (already TEXT or table doesn\'t exist)');
+      }
+    }
+
+    try {
+      await client.query(`
+        ALTER TABLE employees 
+        ADD COLUMN IF NOT EXISTS roles TEXT;
+      `);
+      console.log('Roles column migration completed successfully');
+    } catch (error) {
+      console.log('Roles column migration skipped (already exists)');
+    }
+
+    const missingColumns = [
+      'home_base VARCHAR(255)',
+      'time_zone VARCHAR(100)',
+      'meeting_times TEXT',
+      'domains TEXT',
+      'expertise TEXT',
+      'motivators TEXT',
+      'demotivators TEXT',
+      'personal_interests TEXT',
+      'stakeholders TEXT',
+      'important_traits TEXT',
+      'comm_channels TEXT',
+      'comm_style TEXT',
+      'comm_notes TEXT',
+      'work_style TEXT',
+      'okr_goals JSONB DEFAULT \'[]\'',
+      'disc_type VARCHAR(10)',
+      'disc_data JSONB',
+      'development_plan JSONB DEFAULT \'[]\''
+    ];
+
+    for (const column of missingColumns) {
+      try {
+        await client.query(`
+          ALTER TABLE employees 
+          ADD COLUMN IF NOT EXISTS ${column};
+        `);
+        console.log(`Column migration completed: ${column.split(' ')[0]}`);
+      } catch (error) {
+        console.log(`Column migration skipped: ${column.split(' ')[0]} (already exists)`);
+      }
+    }
 
     console.log('Database initialization completed successfully');
   } catch (error) {
