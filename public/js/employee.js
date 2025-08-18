@@ -197,10 +197,16 @@ function displayDiscPersonality(discType, discData) {
     typeElement.textContent = discType.toUpperCase();
     
     const discDescriptions = {
-        'D': 'Доминирование - Прямой, решительный, ориентированный на результат',
-        'I': 'Влияние - Общительный, оптимистичный, вдохновляющий',
-        'S': 'Постоянство - Терпеливый, надежный, поддерживающий',
-        'C': 'Соответствие - Аналитический, точный, систематичный'
+        'D': 'Соратник - Прямой, решительный, ориентированный на результат',
+        'I': 'Энтузиаст - Общительный, оптимистичный, вдохновляющий',
+        'S': 'Миротворец - Терпеливый, надежный, поддерживающий',
+        'C': 'Аналитик - Аналитический, точный, систематичный',
+        'DI': 'Вдохновитель - Энергичный лидер, мотивирующий других',
+        'DS': 'Организатор - Решительный и стабильный исполнитель',
+        'DC': 'Организатор - Требовательный и систематичный лидер',
+        'IS': 'Связной - Дружелюбный и поддерживающий коммуникатор',
+        'IC': 'Связной - Влиятельный и детально-ориентированный',
+        'SC': 'Координатор - Терпеливый и методичный исполнитель'
     };
 
     descriptionElement.textContent = discDescriptions[discType.toUpperCase()] || 'Описание недоступно';
@@ -328,9 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast('Функция добавления OKR целей будет добавлена позже');
     });
     
-    document.getElementById('setDiscBtn').addEventListener('click', () => {
-        showToast('Функция установки DISC типа будет добавлена позже');
-    });
+    document.getElementById('setDiscBtn').addEventListener('click', openDiscModal);
     
     document.getElementById('addDevelopmentBtn').addEventListener('click', () => {
         showToast('Функция добавления плана развития будет добавлена позже');
@@ -353,7 +357,427 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     initializeTagInputs();
+    initializeDiscModal();
 });
+
+const DISC_QUESTIONS = [
+    {
+        "id": 1,
+        "question": "Как сотрудник, я предпочитаю принимать решения:",
+        "options": [
+            {"text": "Быстро и решительно, основываясь на своей интуиции", "type": "D", "score": 3},
+            {"text": "После обсуждения с коллегами и получения их мнений", "type": "I", "score": 3},
+            {"text": "Тщательно взвесив все за и против, не торопясь", "type": "S", "score": 3},
+            {"text": "На основе детального анализа данных и фактов", "type": "C", "score": 3}
+        ]
+    },
+    {
+        "id": 2,
+        "question": "В конфликтной ситуации в команде я:",
+        "options": [
+            {"text": "Беру инициативу и решаю проблему напрямую", "type": "D", "score": 3},
+            {"text": "Стараюсь найти компромисс, который устроит всех", "type": "I", "score": 3},
+            {"text": "Выслушиваю все стороны и ищу мирное решение", "type": "S", "score": 3},
+            {"text": "Анализирую факты и предлагаю логичное решение", "type": "C", "score": 3}
+        ]
+    },
+    {
+        "id": 3,
+        "question": "При работе над целями я:",
+        "options": [
+            {"text": "Ставлю амбициозные цели и стремлюсь к их достижению", "type": "D", "score": 3},
+            {"text": "Вдохновляюсь общими целями команды", "type": "I", "score": 3},
+            {"text": "Устанавливаю реалистичные цели с учетом своих возможностей", "type": "S", "score": 3},
+            {"text": "Определяю четкие, измеримые цели с конкретными критериями", "type": "C", "score": 3}
+        ]
+    },
+    {
+        "id": 4,
+        "question": "Мой стиль коммуникации с коллегами:",
+        "options": [
+            {"text": "Прямой и четкий, без лишних слов", "type": "D", "score": 3},
+            {"text": "Дружелюбный и открытый, поощряю диалог", "type": "I", "score": 3},
+            {"text": "Терпеливый и поддерживающий", "type": "S", "score": 3},
+            {"text": "Точный и основанный на фактах", "type": "C", "score": 3}
+        ]
+    },
+    {
+        "id": 5,
+        "question": "При планировании проектов я:",
+        "options": [
+            {"text": "Фокусируюсь на конечном результате и сроках", "type": "D", "score": 3},
+            {"text": "Учитываю мнения всех участников команды", "type": "I", "score": 3},
+            {"text": "Создаю стабильный план с минимальными рисками", "type": "S", "score": 3},
+            {"text": "Разрабатываю детальный план с четкими этапами", "type": "C", "score": 3}
+        ]
+    },
+    {
+        "id": 6,
+        "question": "Когда я делаю ошибку, я:",
+        "options": [
+            {"text": "Быстро признаю ошибку и исправляю ее", "type": "D", "score": 3},
+            {"text": "Обсуждаю ошибку с коллегами и ищу решение вместе", "type": "I", "score": 3},
+            {"text": "Анализирую причины ошибки, чтобы избежать ее в будущем", "type": "S", "score": 3},
+            {"text": "Создаю процедуры для предотвращения подобных ошибок", "type": "C", "score": 3}
+        ]
+    },
+    {
+        "id": 7,
+        "question": "В стрессовых ситуациях я:",
+        "options": [
+            {"text": "Беру контроль и быстро принимаю решения", "type": "D", "score": 3},
+            {"text": "Поддерживаю команду и ищу творческие решения", "type": "I", "score": 3},
+            {"text": "Остаюсь спокойным и стабилизирую ситуацию", "type": "S", "score": 3},
+            {"text": "Систематически анализирую проблему и ищу оптимальное решение", "type": "C", "score": 3}
+        ]
+    },
+    {
+        "id": 8,
+        "question": "Моя мотивация в работе:",
+        "options": [
+            {"text": "Вызовы и возможность конкурировать", "type": "D", "score": 3},
+            {"text": "Позитивная атмосфера и признание достижений", "type": "I", "score": 3},
+            {"text": "Стабильность и поддержка коллег", "type": "S", "score": 3},
+            {"text": "Четкие критерии оценки и справедливое вознаграждение", "type": "C", "score": 3}
+        ]
+    },
+    {
+        "id": 9,
+        "question": "При получении задач я:",
+        "options": [
+            {"text": "Сразу приступаю к выполнению и жду результатов", "type": "D", "score": 3},
+            {"text": "Понимаю важность задачи и вдохновляюсь на выполнение", "type": "I", "score": 3},
+            {"text": "Убеждаюсь, что готов и прошу поддержки при необходимости", "type": "S", "score": 3},
+            {"text": "Изучаю детальные инструкции и критерии качества", "type": "C", "score": 3}
+        ]
+    },
+    {
+        "id": 10,
+        "question": "На совещаниях я:",
+        "options": [
+            {"text": "Эффективно участвую, фокусируюсь на результатах", "type": "D", "score": 3},
+            {"text": "Активно участвую и поощряю других к обсуждению", "type": "I", "score": 3},
+            {"text": "Внимательно слушаю и даю всем высказаться", "type": "S", "score": 3},
+            {"text": "Готовлюсь заранее и основываюсь на данных", "type": "C", "score": 3}
+        ]
+    },
+    {
+        "id": 11,
+        "question": "При внедрении изменений в работе я:",
+        "options": [
+            {"text": "Быстро адаптируюсь к необходимым изменениям", "type": "D", "score": 3},
+            {"text": "Активно участвую в процессе изменений", "type": "I", "score": 3},
+            {"text": "Постепенно привыкаю к изменениям, минимизируя стресс", "type": "S", "score": 3},
+            {"text": "Изучаю изменения поэтапно с четкими критериями", "type": "C", "score": 3}
+        ]
+    },
+    {
+        "id": 12,
+        "question": "Мой подход к развитию навыков:",
+        "options": [
+            {"text": "Ставлю сложные задачи для быстрого роста", "type": "D", "score": 3},
+            {"text": "Учусь через взаимодействие и обмен опытом", "type": "I", "score": 3},
+            {"text": "Развиваюсь постепенно в комфортном темпе", "type": "S", "score": 3},
+            {"text": "Следую структурированным программам развития", "type": "C", "score": 3}
+        ]
+    },
+    {
+        "id": 13,
+        "question": "При работе в команде я предпочитаю:",
+        "options": [
+            {"text": "Брать на себя лидерство и направлять команду", "type": "D", "score": 3},
+            {"text": "Поддерживать позитивную атмосферу и мотивировать коллег", "type": "I", "score": 3},
+            {"text": "Быть надежным исполнителем и поддерживать других", "type": "S", "score": 3},
+            {"text": "Обеспечивать качество и точность выполнения задач", "type": "C", "score": 3}
+        ]
+    },
+    {
+        "id": 14,
+        "question": "Мой подход к рабочим процессам:",
+        "options": [
+            {"text": "Оптимизирую процессы для достижения максимальных результатов", "type": "D", "score": 3},
+            {"text": "Делаю процессы более интерактивными и вовлекающими", "type": "I", "score": 3},
+            {"text": "Поддерживаю стабильные и проверенные процессы", "type": "S", "score": 3},
+            {"text": "Создаю детальные и структурированные процессы", "type": "C", "score": 3}
+        ]
+    },
+    {
+        "id": 15,
+        "question": "При оценке своей работы я:",
+        "options": [
+            {"text": "Фокусируюсь на достигнутых результатах и целях", "type": "D", "score": 3},
+            {"text": "Учитываю влияние на команду и общую атмосферу", "type": "I", "score": 3},
+            {"text": "Оцениваю стабильность и надежность выполнения", "type": "S", "score": 3},
+            {"text": "Анализирую качество и соответствие стандартам", "type": "C", "score": 3}
+        ]
+    }
+];
+
+let currentDiscQuestion = 0;
+let discAnswers = {};
+let selectedDiscAnswer = null;
+
+function initializeDiscModal() {
+    document.getElementById('closeDiscModal').addEventListener('click', closeDiscModal);
+    document.getElementById('startDiscTest').addEventListener('click', startDiscTest);
+    document.getElementById('prevQuestion').addEventListener('click', previousDiscQuestion);
+    document.getElementById('nextQuestion').addEventListener('click', nextDiscQuestion);
+    document.getElementById('retakeDiscTest').addEventListener('click', retakeDiscTest);
+    document.getElementById('closeDiscResults').addEventListener('click', closeDiscModal);
+    
+    document.getElementById('discModal').addEventListener('click', (e) => {
+        if (e.target.id === 'discModal') {
+            closeDiscModal();
+        }
+    });
+}
+
+function openDiscModal() {
+    document.getElementById('discModal').classList.remove('hidden');
+    resetDiscTest();
+}
+
+function closeDiscModal() {
+    document.getElementById('discModal').classList.add('hidden');
+}
+
+function resetDiscTest() {
+    currentDiscQuestion = 0;
+    discAnswers = {};
+    selectedDiscAnswer = null;
+    
+    document.getElementById('discIntro').classList.remove('hidden');
+    document.getElementById('discQuestion').classList.add('hidden');
+    document.getElementById('discResults').classList.add('hidden');
+    document.getElementById('discLoading').classList.add('hidden');
+}
+
+function startDiscTest() {
+    document.getElementById('discIntro').classList.add('hidden');
+    document.getElementById('discQuestion').classList.remove('hidden');
+    
+    currentDiscQuestion = 0;
+    discAnswers = {};
+    selectedDiscAnswer = null;
+    
+    showDiscQuestion();
+}
+
+function showDiscQuestion() {
+    const question = DISC_QUESTIONS[currentDiscQuestion];
+    const totalQuestions = DISC_QUESTIONS.length;
+    const progress = ((currentDiscQuestion + 1) / totalQuestions) * 100;
+    
+    document.getElementById('currentQuestionNum').textContent = currentDiscQuestion + 1;
+    document.getElementById('totalQuestions').textContent = totalQuestions;
+    document.getElementById('progressPercent').textContent = Math.round(progress) + '%';
+    document.getElementById('progressBar').style.width = progress + '%';
+    
+    document.getElementById('questionText').textContent = question.question;
+    
+    const optionsContainer = document.getElementById('questionOptions');
+    optionsContainer.innerHTML = '';
+    
+    question.options.forEach((option, index) => {
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'option-item border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-300 transition-colors';
+        optionDiv.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <div class="radio w-5 h-5 border-2 border-gray-300 rounded-full flex items-center justify-center">
+                    <div class="radio-selected w-2.5 h-2.5 bg-blue-600 rounded-full hidden"></div>
+                </div>
+                <span class="text-gray-700">${option.text}</span>
+            </div>
+        `;
+        
+        optionDiv.addEventListener('click', () => selectDiscAnswer(option.text, optionDiv));
+        optionsContainer.appendChild(optionDiv);
+    });
+    
+    selectedDiscAnswer = discAnswers[question.id] || null;
+    if (selectedDiscAnswer) {
+        const selectedOption = Array.from(optionsContainer.children).find(opt => 
+            opt.querySelector('span').textContent === selectedDiscAnswer
+        );
+        if (selectedOption) {
+            selectDiscAnswer(selectedDiscAnswer, selectedOption);
+        }
+    }
+    
+    updateDiscNavigation();
+}
+
+function selectDiscAnswer(answerText, optionElement) {
+    document.querySelectorAll('.option-item').forEach(opt => {
+        opt.classList.remove('border-blue-500', 'bg-blue-50');
+        opt.classList.add('border-gray-200');
+        opt.querySelector('.radio-selected').classList.add('hidden');
+    });
+    
+    optionElement.classList.remove('border-gray-200');
+    optionElement.classList.add('border-blue-500', 'bg-blue-50');
+    optionElement.querySelector('.radio-selected').classList.remove('hidden');
+    
+    selectedDiscAnswer = answerText;
+    updateDiscNavigation();
+}
+
+function updateDiscNavigation() {
+    const prevBtn = document.getElementById('prevQuestion');
+    const nextBtn = document.getElementById('nextQuestion');
+    
+    prevBtn.style.visibility = currentDiscQuestion === 0 ? 'hidden' : 'visible';
+    nextBtn.disabled = !selectedDiscAnswer;
+    nextBtn.textContent = currentDiscQuestion === DISC_QUESTIONS.length - 1 ? 'Завершить' : 'Далее';
+}
+
+function previousDiscQuestion() {
+    if (currentDiscQuestion > 0) {
+        currentDiscQuestion--;
+        showDiscQuestion();
+    }
+}
+
+function nextDiscQuestion() {
+    if (!selectedDiscAnswer) return;
+    
+    discAnswers[DISC_QUESTIONS[currentDiscQuestion].id] = selectedDiscAnswer;
+    
+    if (currentDiscQuestion === DISC_QUESTIONS.length - 1) {
+        submitDiscTest();
+    } else {
+        currentDiscQuestion++;
+        selectedDiscAnswer = null;
+        showDiscQuestion();
+    }
+}
+
+async function submitDiscTest() {
+    document.getElementById('discQuestion').classList.add('hidden');
+    document.getElementById('discLoading').classList.remove('hidden');
+    
+    try {
+        const token = checkAuth();
+        const headers = isEmployeeView ? {} : {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+        
+        if (isEmployeeView) {
+            headers['Content-Type'] = 'application/json';
+        }
+        
+        const endpoint = isEmployeeView ? 
+            `/api/employee/${employeeId}/disc-test?token=${token}` : 
+            `/api/employee/${employeeId}/disc-test`;
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({ answers: discAnswers })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Не удалось сохранить результаты теста');
+        }
+        
+        const result = await response.json();
+        showDiscResults(result);
+        
+        if (currentEmployee) {
+            currentEmployee.disc_type = result.personalityType;
+            currentEmployee.disc_data = result.discData;
+            displayEmployeeProfile(currentEmployee);
+        }
+        
+        showToast('DISC тест успешно завершен!');
+        
+    } catch (error) {
+        console.error('Error submitting DISC test:', error);
+        showToast('Ошибка при сохранении результатов теста', 'error');
+        document.getElementById('discLoading').classList.add('hidden');
+        document.getElementById('discQuestion').classList.remove('hidden');
+    }
+}
+
+function showDiscResults(result) {
+    document.getElementById('discLoading').classList.add('hidden');
+    document.getElementById('discResults').classList.remove('hidden');
+    
+    document.getElementById('resultPersonalityType').textContent = result.personalityType;
+    
+    const maxScore = 45;
+    const scores = result.scores;
+    
+    document.getElementById('scoreD').style.width = (scores.D / maxScore * 100) + '%';
+    document.getElementById('scoreI').style.width = (scores.I / maxScore * 100) + '%';
+    document.getElementById('scoreS').style.width = (scores.S / maxScore * 100) + '%';
+    document.getElementById('scoreC').style.width = (scores.C / maxScore * 100) + '%';
+    
+    document.getElementById('scoreDText').textContent = `${scores.D}/${maxScore}`;
+    document.getElementById('scoreIText').textContent = `${scores.I}/${maxScore}`;
+    document.getElementById('scoreSText').textContent = `${scores.S}/${maxScore}`;
+    document.getElementById('scoreCText').textContent = `${scores.C}/${maxScore}`;
+}
+
+function calculateDiscScores(answers) {
+    const scores = { D: 0, I: 0, S: 0, C: 0 };
+    
+    for (const [questionId, selectedAnswer] of Object.entries(answers)) {
+        const question = DISC_QUESTIONS.find(q => q.id === parseInt(questionId));
+        if (question) {
+            const option = question.options.find(opt => opt.text === selectedAnswer);
+            if (option) {
+                scores[option.type] += option.score;
+            }
+        }
+    }
+    
+    return scores;
+}
+
+function determinePersonalityType(scores) {
+    const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    const topScore = sortedScores[0][1];
+    const secondScore = sortedScores[1][1];
+    
+    const topTypes = sortedScores.filter(([type, score]) => score === topScore).map(([type]) => type);
+    
+    if (topTypes.length === 1) {
+        const scoreDifference = topScore - secondScore;
+        if (scoreDifference <= 3) {
+            const combinedTypes = {
+                'DI': 'Вдохновитель',
+                'DS': 'Организатор',
+                'DC': 'Организатор', 
+                'IS': 'Связной',
+                'IC': 'Связной',
+                'SC': 'Координатор'
+            };
+            
+            const sortedTopTwo = [topTypes[0], sortedScores[1][0]].sort().join('');
+            return combinedTypes[sortedTopTwo] || topTypes[0];
+        }
+        return topTypes[0];
+    } else {
+        const combinedTypes = {
+            'DI': 'Вдохновитель',
+            'DS': 'Организатор',
+            'DC': 'Организатор',
+            'IS': 'Связной', 
+            'IC': 'Связной',
+            'SC': 'Координатор'
+        };
+        
+        const sortedTypes = topTypes.sort().join('');
+        return combinedTypes[sortedTypes] || topTypes[0];
+    }
+}
+
+function retakeDiscTest() {
+    resetDiscTest();
+    startDiscTest();
+}
 
 function showEditModal() {
     if (!currentEmployee) return;
