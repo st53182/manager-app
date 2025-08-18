@@ -36,7 +36,7 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -62,8 +62,7 @@ const authLimiter = rateLimit({
   max: 20, // limit each IP to 20 requests per windowMs
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
-  legacyHeaders: false,
-  trustProxy: true
+  legacyHeaders: false
 });
 
 function authenticateToken(req, res, next) {
