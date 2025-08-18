@@ -134,9 +134,11 @@ async function deleteTeam(teamId) {
 async function createEmployee(name, email, position, teamId, managerId, phone, hireDate) {
   const client = await pool.connect();
   try {
+    const emailValue = email && email.trim() !== '' ? email : null;
+    
     const result = await client.query(
       'INSERT INTO employees (name, email, position, team_id, manager_id, phone, hire_date) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [name, email, position, teamId, managerId, phone, hireDate]
+      [name, emailValue, position, teamId, managerId, phone, hireDate]
     );
     return result.rows[0];
   } finally {
@@ -189,9 +191,11 @@ async function getEmployeeById(employeeId) {
 async function updateEmployee(employeeId, name, email, position, teamId, phone, hireDate) {
   const client = await pool.connect();
   try {
+    const emailValue = email && email.trim() !== '' ? email : null;
+    
     const result = await client.query(
       'UPDATE employees SET name = $1, email = $2, position = $3, team_id = $4, phone = $5, hire_date = $6, updated_at = CURRENT_TIMESTAMP WHERE id = $7 RETURNING *',
-      [name, email, position, teamId, phone, hireDate, employeeId]
+      [name, emailValue, position, teamId, phone, hireDate, employeeId]
     );
     return result.rows[0];
   } finally {
