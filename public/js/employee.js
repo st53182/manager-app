@@ -138,7 +138,6 @@ function displayEmployeeProfile(employee) {
     document.getElementById('demotivators').textContent = employee.demotivators || '-';
 
     if (isEmployeeView) {
-        document.getElementById('editProfileBtn').style.display = 'none';
         document.getElementById('shareProfileBtn').style.display = 'none';
     }
 }
