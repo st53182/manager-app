@@ -30,6 +30,11 @@ const {
 const app = express();
 const server = http.createServer(app);
 
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+app.set('trust proxy', true);
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -62,7 +67,7 @@ function authenticateToken(req, res, next) {
     return res.status(401).json({ error: 'Access token required' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
@@ -93,8 +98,8 @@ app.post('/api/register', authLimiter, async (req, res) => {
     
     const token = jwt.sign(
       { userId: user.id, email: user.email, name: user.name },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      JWT_SECRET,
+      { expiresIn: '7d' }
     );
 
     res.json({
@@ -130,8 +135,8 @@ app.post('/api/login', authLimiter, async (req, res) => {
 
     const token = jwt.sign(
       { userId: user.id, email: user.email, name: user.name },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      JWT_SECRET,
+      { expiresIn: '7d' }
     );
 
     res.json({
@@ -332,7 +337,6 @@ app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
-const PORT = process.env.PORT || 3000;
 
 async function startServer() {
   try {
