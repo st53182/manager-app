@@ -309,6 +309,7 @@ function logout() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    employeeId = getEmployeeIdFromUrl();
     loadEmployeeProfile();
 
     document.getElementById('langRu').addEventListener('click', () => window.translationManager.setLanguage('ru'));
