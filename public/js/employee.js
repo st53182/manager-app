@@ -120,6 +120,15 @@ function displayEmployeeProfile(employee) {
 
     displayDevelopmentPlan(employee.development_plan || []);
 
+    document.getElementById('roles').textContent = employee.roles || '-';
+    document.getElementById('homeBase').textContent = employee.home_base || '-';
+    document.getElementById('timeZone').textContent = employee.time_zone || '-';
+    document.getElementById('domains').textContent = employee.domains || '-';
+    document.getElementById('expertise').textContent = employee.expertise || '-';
+    document.getElementById('personalInterests').textContent = employee.personal_interests || '-';
+    document.getElementById('stakeholders').textContent = employee.stakeholders || '-';
+    document.getElementById('importantTraits').textContent = employee.important_traits || '-';
+
     document.getElementById('commChannels').textContent = employee.comm_channels || '-';
     document.getElementById('meetingTimes').textContent = employee.meeting_times || '-';
     document.getElementById('commStyle').textContent = employee.comm_style || '-';
