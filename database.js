@@ -113,6 +113,39 @@ async function initializeDatabase() {
       console.log('Roles column migration skipped (already exists)');
     }
 
+    const missingColumns = [
+      'home_base VARCHAR(255)',
+      'time_zone VARCHAR(100)',
+      'meeting_times TEXT',
+      'domains TEXT',
+      'expertise TEXT',
+      'motivators TEXT',
+      'demotivators TEXT',
+      'personal_interests TEXT',
+      'stakeholders TEXT',
+      'important_traits TEXT',
+      'comm_channels TEXT',
+      'comm_style TEXT',
+      'comm_notes TEXT',
+      'work_style TEXT',
+      'okr_goals JSONB DEFAULT \'[]\'',
+      'disc_type VARCHAR(10)',
+      'disc_data JSONB',
+      'development_plan JSONB DEFAULT \'[]\''
+    ];
+
+    for (const column of missingColumns) {
+      try {
+        await client.query(`
+          ALTER TABLE employees 
+          ADD COLUMN IF NOT EXISTS ${column};
+        `);
+        console.log(`Column migration completed: ${column.split(' ')[0]}`);
+      } catch (error) {
+        console.log(`Column migration skipped: ${column.split(' ')[0]} (already exists)`);
+      }
+    }
+
     console.log('Database initialization completed successfully');
   } catch (error) {
     console.error('Database initialization error:', error);
