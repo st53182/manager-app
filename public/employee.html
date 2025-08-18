@@ -380,6 +380,317 @@
         </div>
     </div>
 
+    <!-- Edit Profile Modal -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900" data-translate="employee.edit_profile">
+                            Редактировать профиль
+                        </h3>
+                        <button id="closeEditModal" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <form id="editProfileForm" class="p-6 space-y-8">
+                    <!-- Basic Information -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.basic_info">
+                            Основная информация
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.full_name">
+                                    Полное имя
+                                </label>
+                                <input type="text" id="editName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.email">
+                                    Email
+                                </label>
+                                <input type="email" id="editEmail" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.position">
+                                    Должность
+                                </label>
+                                <input type="text" id="editPosition" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.phone">
+                                    Телефон
+                                </label>
+                                <input type="text" id="editPhone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Roles -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.roles">
+                            Роли
+                        </h4>
+                        <div class="tag-input-container" data-field="roles">
+                            <div class="tag-input-wrapper">
+                                <div class="tag-display" id="rolesDisplay"></div>
+                                <input type="text" class="tag-input" placeholder="Добавить роль...">
+                                <div class="tag-suggestions hidden">
+                                    <div class="tag-option" data-value="Manager">Менеджер</div>
+                                    <div class="tag-option" data-value="Developer">Разработчик</div>
+                                    <div class="tag-option" data-value="Designer">Дизайнер</div>
+                                    <div class="tag-option" data-value="Analyst">Аналитик</div>
+                                    <div class="tag-option" data-value="QA Engineer">QA Инженер</div>
+                                    <div class="tag-option" data-value="DevOps">DevOps</div>
+                                    <div class="tag-option" data-value="Product Owner">Product Owner</div>
+                                    <div class="tag-option" data-value="Scrum Master">Scrum Master</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Domains -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.domains">
+                            Области компетенции
+                        </h4>
+                        <div class="tag-input-container" data-field="domains">
+                            <div class="tag-input-wrapper">
+                                <div class="tag-display" id="domainsDisplay"></div>
+                                <input type="text" class="tag-input" placeholder="Добавить область...">
+                                <div class="tag-suggestions hidden">
+                                    <div class="tag-option" data-value="Frontend">Frontend</div>
+                                    <div class="tag-option" data-value="Backend">Backend</div>
+                                    <div class="tag-option" data-value="Mobile">Mobile</div>
+                                    <div class="tag-option" data-value="DevOps">DevOps</div>
+                                    <div class="tag-option" data-value="UI/UX">UI/UX</div>
+                                    <div class="tag-option" data-value="Marketing">Маркетинг</div>
+                                    <div class="tag-option" data-value="Sales">Продажи</div>
+                                    <div class="tag-option" data-value="Analytics">Аналитика</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Expertise -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.expertise">
+                            Экспертиза
+                        </h4>
+                        <div class="tag-input-container" data-field="expertise">
+                            <div class="tag-input-wrapper">
+                                <div class="tag-display" id="expertiseDisplay"></div>
+                                <input type="text" class="tag-input" placeholder="Добавить экспертизу...">
+                                <div class="tag-suggestions hidden">
+                                    <div class="tag-option" data-value="JavaScript">JavaScript</div>
+                                    <div class="tag-option" data-value="Python">Python</div>
+                                    <div class="tag-option" data-value="React">React</div>
+                                    <div class="tag-option" data-value="Node.js">Node.js</div>
+                                    <div class="tag-option" data-value="Design Systems">Design Systems</div>
+                                    <div class="tag-option" data-value="Data Analysis">Анализ данных</div>
+                                    <div class="tag-option" data-value="Project Management">Управление проектами</div>
+                                    <div class="tag-option" data-value="Team Leadership">Руководство командой</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Personal Interests -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.personal_interests">
+                            Личные интересы
+                        </h4>
+                        <div class="tag-input-container" data-field="personal_interests">
+                            <div class="tag-input-wrapper">
+                                <div class="tag-display" id="personalInterestsDisplay"></div>
+                                <input type="text" class="tag-input" placeholder="Добавить интерес...">
+                                <div class="tag-suggestions hidden">
+                                    <div class="tag-option" data-value="Sports">Спорт</div>
+                                    <div class="tag-option" data-value="Music">Музыка</div>
+                                    <div class="tag-option" data-value="Travel">Путешествия</div>
+                                    <div class="tag-option" data-value="Reading">Чтение</div>
+                                    <div class="tag-option" data-value="Photography">Фотография</div>
+                                    <div class="tag-option" data-value="Cooking">Кулинария</div>
+                                    <div class="tag-option" data-value="Gaming">Игры</div>
+                                    <div class="tag-option" data-value="Art">Искусство</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Communication Preferences -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.communication_prefs">
+                            Предпочтения в общении
+                        </h4>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.preferred_channels">
+                                    Предпочитаемые каналы
+                                </label>
+                                <div class="tag-input-container" data-field="comm_channels">
+                                    <div class="tag-input-wrapper">
+                                        <div class="tag-display" id="commChannelsDisplay"></div>
+                                        <input type="text" class="tag-input" placeholder="Добавить канал...">
+                                        <div class="tag-suggestions hidden">
+                                            <div class="tag-option" data-value="Slack">Slack</div>
+                                            <div class="tag-option" data-value="Email">Email</div>
+                                            <div class="tag-option" data-value="Teams">Teams</div>
+                                            <div class="tag-option" data-value="Phone">Телефон</div>
+                                            <div class="tag-option" data-value="Video Call">Видеозвонок</div>
+                                            <div class="tag-option" data-value="In Person">Лично</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.meeting_times_pref">
+                                    Удобное время для встреч
+                                </label>
+                                <input type="text" id="editMeetingTimes" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Например: 9:00-17:00 UTC+3">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.communication_style">
+                                    Стиль общения
+                                </label>
+                                <input type="text" id="editCommStyle" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Например: Прямой, дружелюбный">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Work Preferences -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.work_prefs">
+                            Рабочие предпочтения
+                        </h4>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.work_style">
+                                    Стиль работы
+                                </label>
+                                <input type="text" id="editWorkStyle" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Например: Самостоятельный, командный">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.motivators">
+                                    Мотиваторы
+                                </label>
+                                <textarea id="editMotivators" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Что вас мотивирует в работе?"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.demotivators">
+                                    Демотиваторы
+                                </label>
+                                <textarea id="editDemotivators" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Что демотивирует вас в работе?"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                        <button type="button" id="cancelEditBtn" class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50" data-translate="common.cancel">
+                            Отмена
+                        </button>
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" data-translate="common.save">
+                            Сохранить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .tag-input-container {
+            width: 100%;
+        }
+        
+        .tag-input-wrapper {
+            position: relative;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            background-color: white;
+            min-height: 2.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            align-items: center;
+        }
+        
+        .tag-input-wrapper:focus-within {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+        
+        .tag-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            flex: 1;
+        }
+        
+        .tag-item {
+            display: inline-flex;
+            align-items: center;
+            background-color: #eff6ff;
+            color: #1e40af;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            gap: 0.25rem;
+        }
+        
+        .tag-remove {
+            cursor: pointer;
+            color: #6b7280;
+            font-weight: bold;
+        }
+        
+        .tag-remove:hover {
+            color: #ef4444;
+        }
+        
+        .tag-input {
+            border: none;
+            outline: none;
+            flex: 1;
+            min-width: 120px;
+            padding: 0.25rem;
+        }
+        
+        .tag-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .tag-option {
+            padding: 0.5rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .tag-option:hover {
+            background-color: #f3f4f6;
+        }
+        
+        .tag-option:last-child {
+            border-bottom: none;
+        }
+    </style>
+    
     <script src="/js/employee.js"></script>
     <script src="/js/translations.js"></script>
 </body>

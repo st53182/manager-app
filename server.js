@@ -375,10 +375,41 @@ app.get('/api/employee/:id/profile', async (req, res) => {
   }
 });
 
-app.put('/api/employee/:id/profile', authenticateToken, async (req, res) => {
+app.put('/api/employee/:id/profile', async (req, res) => {
   try {
-    const employee = await getEmployeeById(req.params.id);
-    if (!employee || employee.manager_id !== req.user.userId) {
+    const token = req.query.token;
+    const authHeader = req.headers['authorization'];
+    
+    let employee;
+    let isEmployeeAccess = false;
+    
+    if (token) {
+      const tokenData = await validateEmployeeSecureToken(token);
+      if (!tokenData || tokenData.employee_id !== req.params.id) {
+        return res.status(403).json({ error: 'Invalid or expired token' });
+      }
+      employee = await getEmployeeById(req.params.id);
+      isEmployeeAccess = true;
+    } else if (authHeader) {
+      const jwtToken = authHeader.split(' ')[1];
+      if (!jwtToken) {
+        return res.status(401).json({ error: 'Access token required' });
+      }
+      
+      try {
+        const user = jwt.verify(jwtToken, JWT_SECRET);
+        employee = await getEmployeeById(req.params.id);
+        if (!employee || employee.manager_id !== user.userId) {
+          return res.status(404).json({ error: 'Employee not found' });
+        }
+      } catch (err) {
+        return res.status(403).json({ error: 'Invalid or expired token' });
+      }
+    } else {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (!employee) {
       return res.status(404).json({ error: 'Employee not found' });
     }
 

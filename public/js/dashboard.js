@@ -193,9 +193,11 @@ function displayEmployees(employees) {
         employeesList.appendChild(employeeCard);
     });
     
-    if (window.translationManager) {
-        window.translationManager.updatePageContent();
-    }
+    setTimeout(() => {
+        if (window.translationManager) {
+            window.translationManager.updatePageContent();
+        }
+    }, 100);
 }
 
 function showTeamModal(isEdit = false) {

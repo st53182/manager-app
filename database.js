@@ -286,29 +286,58 @@ async function updateEmployeeProfile(employeeId, profileData) {
   const client = await pool.connect();
   try {
     const {
-      roles, homeBase, timeZone, meetingTimes, domains, expertise,
-      motivators, demotivators, personalInterests, stakeholders,
-      importantTraits, commChannels, commStyle, commNotes, workStyle,
-      okrGoals, discType, discData, developmentPlan
+      name, email, position, phone, roles, homeBase, timeZone, meetingTimes, 
+      domains, expertise, motivators, demotivators, personalInterests, 
+      stakeholders, importantTraits, commChannels, commStyle, commNotes, 
+      workStyle, okrGoals, discType, discData, developmentPlan, comm_channels
     } = profileData;
+
+    const emailValue = email && email.trim() !== '' ? email : null;
 
     const result = await client.query(`
       UPDATE employees SET 
-        roles = $1, home_base = $2, time_zone = $3, meeting_times = $4,
-        domains = $5, expertise = $6, motivators = $7, demotivators = $8,
-        personal_interests = $9, stakeholders = $10, important_traits = $11,
-        comm_channels = $12, comm_style = $13, comm_notes = $14, work_style = $15,
-        okr_goals = $16, disc_type = $17, disc_data = $18, development_plan = $19,
+        name = COALESCE($1, name),
+        email = COALESCE($2, email),
+        position = COALESCE($3, position),
+        phone = COALESCE($4, phone),
+        roles = COALESCE($5, roles), 
+        home_base = COALESCE($6, home_base), 
+        time_zone = COALESCE($7, time_zone), 
+        meeting_times = COALESCE($8, meeting_times),
+        domains = COALESCE($9, domains), 
+        expertise = COALESCE($10, expertise), 
+        motivators = COALESCE($11, motivators), 
+        demotivators = COALESCE($12, demotivators),
+        personal_interests = COALESCE($13, personal_interests), 
+        stakeholders = COALESCE($14, stakeholders), 
+        important_traits = COALESCE($15, important_traits),
+        comm_channels = COALESCE($16, comm_channels), 
+        comm_style = COALESCE($17, comm_style), 
+        comm_notes = COALESCE($18, comm_notes), 
+        work_style = COALESCE($19, work_style),
+        okr_goals = COALESCE($20, okr_goals), 
+        disc_type = COALESCE($21, disc_type), 
+        disc_data = COALESCE($22, disc_data), 
+        development_plan = COALESCE($23, development_plan),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $20 RETURNING *
+      WHERE id = $24 RETURNING *
     `, [
-      roles, homeBase, timeZone, meetingTimes, domains, expertise,
-      motivators, demotivators, personalInterests, stakeholders,
-      importantTraits, commChannels, commStyle, commNotes, workStyle,
-      JSON.stringify(okrGoals || []), discType, JSON.stringify(discData || {}),
-      JSON.stringify(developmentPlan || []), employeeId
+      name, emailValue, position, phone, roles, homeBase, timeZone, meetingTimes, 
+      domains, expertise, motivators, demotivators, personalInterests, 
+      stakeholders, importantTraits, comm_channels || commChannels, commStyle, 
+      commNotes, workStyle, JSON.stringify(okrGoals || []), discType, 
+      JSON.stringify(discData || {}), JSON.stringify(developmentPlan || []), 
+      employeeId
     ]);
-    return result.rows[0];
+    
+    const updatedEmployee = await client.query(`
+      SELECT e.*, t.name as team_name 
+      FROM employees e 
+      LEFT JOIN teams t ON e.team_id = t.id 
+      WHERE e.id = $1
+    `, [employeeId]);
+    
+    return updatedEmployee.rows[0];
   } finally {
     client.release();
   }

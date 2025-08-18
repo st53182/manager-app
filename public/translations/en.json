@@ -158,7 +158,11 @@
     "share_profile_title": "Share Profile",
     "secure_link": "Secure Link for Employee",
     "copy": "Copy",
-    "share_note": "This link will allow the employee to view and edit their profile"
+    "share_note": "This link will allow the employee to view and edit their profile",
+    "edit_modal_title": "Edit Profile",
+    "save_changes": "Save Changes",
+    "profile_updated": "Profile updated successfully",
+    "profile_update_error": "Error updating profile"
   },
   "common": {
     "save": "Save",

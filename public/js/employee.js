@@ -311,8 +311,8 @@ function logout() {
 document.addEventListener('DOMContentLoaded', function() {
     loadEmployeeProfile();
 
-    document.getElementById('langRu').addEventListener('click', () => switchLanguage('ru'));
-    document.getElementById('langEn').addEventListener('click', () => switchLanguage('en'));
+    document.getElementById('langRu').addEventListener('click', () => window.translationManager.setLanguage('ru'));
+    document.getElementById('langEn').addEventListener('click', () => window.translationManager.setLanguage('en'));
 
     document.getElementById('shareProfileBtn').addEventListener('click', generateSecureLink);
     document.getElementById('closeShareModal').addEventListener('click', () => {
@@ -320,9 +320,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.getElementById('copyLinkBtn').addEventListener('click', copyToClipboard);
 
-    document.getElementById('editProfileBtn').addEventListener('click', () => {
-        showToast('Функция редактирования будет добавлена позже');
-    });
+    document.getElementById('editProfileBtn').addEventListener('click', showEditModal);
 
     document.getElementById('addOkrBtn').addEventListener('click', () => {
         showToast('Функция добавления OKR целей будет добавлена позже');
@@ -341,4 +339,173 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('shareModal').classList.add('hidden');
         }
     });
+
+    document.getElementById('closeEditModal').addEventListener('click', hideEditModal);
+    document.getElementById('cancelEditBtn').addEventListener('click', hideEditModal);
+    document.getElementById('editProfileForm').addEventListener('submit', saveProfileChanges);
+    
+    document.getElementById('editModal').addEventListener('click', (e) => {
+        if (e.target.id === 'editModal') {
+            hideEditModal();
+        }
+    });
+
+    initializeTagInputs();
 });
+
+function showEditModal() {
+    if (!currentEmployee) return;
+    
+    document.getElementById('editName').value = currentEmployee.name || '';
+    document.getElementById('editEmail').value = currentEmployee.email || '';
+    document.getElementById('editPosition').value = currentEmployee.position || '';
+    document.getElementById('editPhone').value = currentEmployee.phone || '';
+    document.getElementById('editMeetingTimes').value = currentEmployee.meeting_times || '';
+    document.getElementById('editCommStyle').value = currentEmployee.comm_style || '';
+    document.getElementById('editWorkStyle').value = currentEmployee.work_style || '';
+    document.getElementById('editMotivators').value = currentEmployee.motivators || '';
+    document.getElementById('editDemotivators').value = currentEmployee.demotivators || '';
+    
+    populateTagField('roles', currentEmployee.roles);
+    populateTagField('domains', currentEmployee.domains);
+    populateTagField('expertise', currentEmployee.expertise);
+    populateTagField('personal_interests', currentEmployee.personal_interests);
+    populateTagField('comm_channels', currentEmployee.comm_channels);
+    
+    document.getElementById('editModal').classList.remove('hidden');
+}
+
+function hideEditModal() {
+    document.getElementById('editModal').classList.add('hidden');
+}
+
+function populateTagField(fieldName, value) {
+    const container = document.querySelector(`[data-field="${fieldName}"]`);
+    const display = container.querySelector('.tag-display');
+    
+    display.innerHTML = '';
+    
+    if (value) {
+        const tags = value.split(',').map(tag => tag.trim()).filter(tag => tag);
+        tags.forEach(tag => {
+            addTagToDisplay(display, tag);
+        });
+    }
+}
+
+function addTagToDisplay(display, tagText) {
+    const tagElement = document.createElement('div');
+    tagElement.className = 'tag-item';
+    tagElement.innerHTML = `
+        <span>${tagText}</span>
+        <span class="tag-remove" onclick="removeTag(this)">×</span>
+    `;
+    display.appendChild(tagElement);
+}
+
+function removeTag(element) {
+    element.parentElement.remove();
+}
+
+function initializeTagInputs() {
+    document.querySelectorAll('.tag-input-container').forEach(container => {
+        const input = container.querySelector('.tag-input');
+        const suggestions = container.querySelector('.tag-suggestions');
+        const display = container.querySelector('.tag-display');
+        
+        input.addEventListener('focus', () => {
+            suggestions.classList.remove('hidden');
+        });
+        
+        input.addEventListener('blur', (e) => {
+            setTimeout(() => {
+                suggestions.classList.add('hidden');
+            }, 200);
+        });
+        
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                const value = input.value.trim();
+                if (value) {
+                    addTagToDisplay(display, value);
+                    input.value = '';
+                }
+            }
+        });
+        
+        suggestions.addEventListener('click', (e) => {
+            if (e.target.classList.contains('tag-option')) {
+                const value = e.target.dataset.value;
+                addTagToDisplay(display, value);
+                input.value = '';
+                suggestions.classList.add('hidden');
+            }
+        });
+    });
+}
+
+function getTagValues(fieldName) {
+    const container = document.querySelector(`[data-field="${fieldName}"]`);
+    const tags = container.querySelectorAll('.tag-item span:first-child');
+    return Array.from(tags).map(tag => tag.textContent).join(', ');
+}
+
+async function saveProfileChanges(e) {
+    e.preventDefault();
+    
+    const token = checkAuth();
+    if (!token || !employeeId) return;
+    
+    const profileData = {
+        name: document.getElementById('editName').value,
+        email: document.getElementById('editEmail').value,
+        position: document.getElementById('editPosition').value,
+        phone: document.getElementById('editPhone').value,
+        roles: getTagValues('roles'),
+        domains: getTagValues('domains'),
+        expertise: getTagValues('expertise'),
+        personal_interests: getTagValues('personal_interests'),
+        comm_channels: getTagValues('comm_channels'),
+        meeting_times: document.getElementById('editMeetingTimes').value,
+        comm_style: document.getElementById('editCommStyle').value,
+        work_style: document.getElementById('editWorkStyle').value,
+        motivators: document.getElementById('editMotivators').value,
+        demotivators: document.getElementById('editDemotivators').value
+    };
+    
+    try {
+        const headers = isEmployeeView ? {} : {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+        
+        if (isEmployeeView) {
+            headers['Content-Type'] = 'application/json';
+        }
+        
+        const endpoint = isEmployeeView ? 
+            `/api/employee/${employeeId}/profile?token=${token}` : 
+            `/api/employee/${employeeId}/profile`;
+        
+        const response = await fetch(endpoint, {
+            method: 'PUT',
+            headers: headers,
+            body: JSON.stringify(profileData)
+        });
+        
+        if (!response.ok) {
+            throw new Error('Не удалось сохранить изменения');
+        }
+        
+        const updatedEmployee = await response.json();
+        currentEmployee = updatedEmployee;
+        displayEmployeeProfile(updatedEmployee);
+        hideEditModal();
+        showToast('Профиль успешно обновлен');
+        
+    } catch (error) {
+        console.error('Error saving profile:', error);
+        showToast('Ошибка сохранения профиля', 'error');
+    }
+}
