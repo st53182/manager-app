@@ -21,6 +21,9 @@ const {
   getEmployeeById,
   updateEmployee,
   deleteEmployee,
+  updateEmployeeProfile,
+  createEmployeeSecureToken,
+  validateEmployeeSecureToken,
   createUser,
   getUserByEmail,
   getUserById,
@@ -334,6 +337,72 @@ app.get('/register', (req, res) => {
 
 app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+app.get('/employee/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'employee.html'));
+});
+
+app.get('/api/employee/:id', authenticateToken, async (req, res) => {
+  try {
+    const employee = await getEmployeeById(req.params.id);
+    if (!employee || employee.manager_id !== req.user.userId) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+    res.json(employee);
+  } catch (error) {
+    console.error('Get employee profile error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/employee/:id/profile', async (req, res) => {
+  try {
+    const token = req.query.token;
+    if (!token) {
+      return res.status(401).json({ error: 'Secure token required' });
+    }
+
+    const tokenData = await validateEmployeeSecureToken(token);
+    if (!tokenData || tokenData.employee_id !== req.params.id) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+
+    res.json(tokenData);
+  } catch (error) {
+    console.error('Get employee profile via token error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/employee/:id/profile', authenticateToken, async (req, res) => {
+  try {
+    const employee = await getEmployeeById(req.params.id);
+    if (!employee || employee.manager_id !== req.user.userId) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    const updatedEmployee = await updateEmployeeProfile(req.params.id, req.body);
+    res.json(updatedEmployee);
+  } catch (error) {
+    console.error('Update employee profile error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/employee/:id/secure-link', authenticateToken, async (req, res) => {
+  try {
+    const employee = await getEmployeeById(req.params.id);
+    if (!employee || employee.manager_id !== req.user.userId) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    const tokenData = await createEmployeeSecureToken(req.params.id, req.user.userId);
+    res.json({ token: tokenData.token, expires_at: tokenData.expires_at });
+  } catch (error) {
+    console.error('Generate secure link error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 

@@ -52,6 +52,25 @@ async function initializeDatabase() {
         manager_id UUID REFERENCES users(id) ON DELETE SET NULL,
         phone VARCHAR(50),
         hire_date DATE,
+        roles TEXT,
+        home_base VARCHAR(255),
+        time_zone VARCHAR(100),
+        meeting_times TEXT,
+        domains TEXT,
+        expertise TEXT,
+        motivators TEXT,
+        demotivators TEXT,
+        personal_interests TEXT,
+        stakeholders TEXT,
+        important_traits TEXT,
+        comm_channels TEXT,
+        comm_style TEXT,
+        comm_notes TEXT,
+        work_style TEXT,
+        okr_goals JSONB DEFAULT '[]',
+        disc_type VARCHAR(10),
+        disc_data JSONB,
+        development_plan JSONB DEFAULT '[]',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -178,10 +197,12 @@ async function getEmployeesByTeam(teamId) {
 async function getEmployeeById(employeeId) {
   const client = await pool.connect();
   try {
-    const result = await client.query(
-      'SELECT * FROM employees WHERE id = $1',
-      [employeeId]
-    );
+    const result = await client.query(`
+      SELECT e.*, t.name as team_name 
+      FROM employees e 
+      LEFT JOIN teams t ON e.team_id = t.id 
+      WHERE e.id = $1
+    `, [employeeId]);
     return result.rows[0];
   } finally {
     client.release();
@@ -261,6 +282,90 @@ async function updateUserLastLogin(userId) {
   }
 }
 
+async function updateEmployeeProfile(employeeId, profileData) {
+  const client = await pool.connect();
+  try {
+    const {
+      roles, homeBase, timeZone, meetingTimes, domains, expertise,
+      motivators, demotivators, personalInterests, stakeholders,
+      importantTraits, commChannels, commStyle, commNotes, workStyle,
+      okrGoals, discType, discData, developmentPlan
+    } = profileData;
+
+    const result = await client.query(`
+      UPDATE employees SET 
+        roles = $1, home_base = $2, time_zone = $3, meeting_times = $4,
+        domains = $5, expertise = $6, motivators = $7, demotivators = $8,
+        personal_interests = $9, stakeholders = $10, important_traits = $11,
+        comm_channels = $12, comm_style = $13, comm_notes = $14, work_style = $15,
+        okr_goals = $16, disc_type = $17, disc_data = $18, development_plan = $19,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $20 RETURNING *
+    `, [
+      roles, homeBase, timeZone, meetingTimes, domains, expertise,
+      motivators, demotivators, personalInterests, stakeholders,
+      importantTraits, commChannels, commStyle, commNotes, workStyle,
+      JSON.stringify(okrGoals || []), discType, JSON.stringify(discData || {}),
+      JSON.stringify(developmentPlan || []), employeeId
+    ]);
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function createEmployeeSecureToken(employeeId, managerId) {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS employee_secure_tokens (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
+        manager_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        token VARCHAR(255) UNIQUE NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    
+    const token = jwt.sign(
+      { employeeId, managerId, type: 'employee_access' },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    const result = await client.query(`
+      INSERT INTO employee_secure_tokens (employee_id, manager_id, token, expires_at)
+      VALUES ($1, $2, $3, $4) RETURNING *
+    `, [employeeId, managerId, token, expiresAt]);
+
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function validateEmployeeSecureToken(token) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`
+      SELECT est.*, e.*, t.name as team_name
+      FROM employee_secure_tokens est
+      JOIN employees e ON est.employee_id = e.id
+      LEFT JOIN teams t ON e.team_id = t.id
+      WHERE est.token = $1 AND est.expires_at > NOW()
+    `, [token]);
+
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   initializeDatabase,
   createTeam,
@@ -274,6 +379,9 @@ module.exports = {
   getEmployeeById,
   updateEmployee,
   deleteEmployee,
+  updateEmployeeProfile,
+  createEmployeeSecureToken,
+  validateEmployeeSecureToken,
   createUser,
   getUserByEmail,
   getUserById,
