@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: manager-app
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: postgresql://scrum_db_user:uX72DYTJ1HcKOWgqRnzTNMcXUvsYq8n0@dpg-cvl4rlggjchc73fqa0lg-a.frankfurt-postgres.render.com/scrum_db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 10000
