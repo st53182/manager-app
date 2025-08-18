@@ -184,20 +184,18 @@ function displayEmployees(employees) {
                 <p><span class="font-medium">Дата найма:</span> ${hireDate}</p>
             </div>
             <div class="mt-4 pt-3 border-t border-gray-200">
-                <p class="text-xs text-gray-500" data-translate="employee.click_to_view_profile">
+                <button onclick="window.location.href='/employee/${employee.id}'" class="text-xs text-blue-600 hover:text-blue-800 underline" data-translate="employee.click_to_view_profile">
                     Нажмите для просмотра полного профиля
-                </p>
+                </button>
             </div>
         `;
         
         employeesList.appendChild(employeeCard);
     });
     
-    setTimeout(() => {
-        if (window.translationManager) {
-            window.translationManager.updatePageContent();
-        }
-    }, 100);
+    if (window.translationManager) {
+        window.translationManager.updatePageContent();
+    }
 }
 
 function showTeamModal(isEdit = false) {
