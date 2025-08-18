@@ -76,7 +76,20 @@ async function initializeDatabase() {
       );
     `);
     console.log('Employees table created successfully');
-    
+
+    console.log('Creating employee_secure_tokens table...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS employee_secure_tokens (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
+        manager_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        token VARCHAR(255) UNIQUE NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('Employee secure tokens table created successfully');
+
     console.log('Database initialization completed successfully');
   } catch (error) {
     console.error('Database initialization error:', error);
@@ -346,17 +359,6 @@ async function updateEmployeeProfile(employeeId, profileData) {
 async function createEmployeeSecureToken(employeeId, managerId) {
   const client = await pool.connect();
   try {
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS employee_secure_tokens (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
-        manager_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        token VARCHAR(255) UNIQUE NOT NULL,
-        expires_at TIMESTAMP NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
     const jwt = require('jsonwebtoken');
     const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);

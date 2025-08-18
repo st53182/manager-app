@@ -273,6 +273,8 @@ async function generateSecureLink() {
         });
 
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Secure link generation failed:', response.status, errorText);
             throw new Error('Не удалось создать защищенную ссылку');
         }
 
@@ -496,6 +498,8 @@ async function saveProfileChanges(e) {
         });
         
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Profile save failed:', response.status, errorText);
             throw new Error('Не удалось сохранить изменения');
         }
         
