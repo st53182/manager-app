@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="dashboard.title">Панель управления - Менеджер Команд</title>
+    <meta name="title-key" content="dashboard.title">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <nav class="bg-white shadow-sm border-b">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <a href="/" class="text-xl font-bold text-blue-600" data-translate="nav.title">Менеджер Команд</a>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <div id="languageSwitcher"></div>
+                    <div class="flex items-center space-x-4">
+                        <span id="userName" class="text-gray-700"></span>
+                        <button id="logoutBtn" class="text-gray-600 hover:text-red-600 transition-colors" data-translate="nav.logout">Выйти</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2" data-translate="dashboard.heading">Панель управления</h1>
+                <p class="text-gray-600">
+                    <span data-translate="dashboard.welcome">Добро пожаловать</span>, 
+                    <span id="welcomeUserName" class="font-semibold"></span>!
+                </p>
+            </div>
+
+            <!-- Teams Section -->
+            <div class="mb-12">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-900" data-translate="dashboard.teams_section">Мои команды</h2>
+                    <button id="createTeamBtn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors" data-translate="dashboard.create_team">
+                        Создать команду
+                    </button>
+                </div>
+
+                <div id="teamsLoading" class="text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <p class="mt-2 text-gray-600" data-translate="dashboard.loading">Загрузка...</p>
+                </div>
+
+                <div id="teamsContainer" class="hidden">
+                    <div id="teamsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    </div>
+                    
+                    <div id="noTeams" class="hidden text-center py-12">
+                        <div class="text-gray-400 mb-4">
+                            <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.196-2.121l-.004-.003A3 3 0 0117 20zM9 12a4 4 0 100-8 4 4 0 000 8zm8 0a4 4 0 100-8 4 4 0 000 8z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2" data-translate="dashboard.no_teams">У вас пока нет команд</h3>
+                        <p class="text-gray-600 mb-4" data-translate="dashboard.create_first_team">Создайте свою первую команду</p>
+                        <button id="createFirstTeamBtn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors" data-translate="dashboard.create_team">
+                            Создать команду
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employees Section -->
+            <div class="mb-12">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-900" data-translate="dashboard.employees_section">Мои сотрудники</h2>
+                    <button id="createEmployeeBtn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors" data-translate="dashboard.create_employee">
+                        Добавить сотрудника
+                    </button>
+                </div>
+
+                <div id="employeesLoading" class="text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                    <p class="mt-2 text-gray-600" data-translate="dashboard.loading">Загрузка...</p>
+                </div>
+
+                <div id="employeesContainer" class="hidden">
+                    <div id="employeesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    </div>
+                    
+                    <div id="noEmployees" class="hidden text-center py-12">
+                        <div class="text-gray-400 mb-4">
+                            <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2" data-translate="dashboard.no_employees">У вас пока нет сотрудников</h3>
+                        <p class="text-gray-600 mb-4" data-translate="dashboard.add_first_employee">Добавьте первого сотрудника</p>
+                        <button id="createFirstEmployeeBtn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors" data-translate="dashboard.create_employee">
+                            Добавить сотрудника
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                <p class="text-red-800" id="errorMessage"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Modal -->
+    <div id="teamModal" class="modal">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="teamModalTitle" class="text-lg font-semibold text-gray-900" data-translate="teams.create_team">Создать команду</h3>
+                <button id="closeTeamModal" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="teamForm" class="space-y-4">
+                <div>
+                    <label for="teamName" class="block text-sm font-medium text-gray-700 mb-2" data-translate="teams.team_name">
+                        Название команды
+                    </label>
+                    <input 
+                        type="text" 
+                        id="teamName" 
+                        name="name" 
+                        required
+                        placeholder="Введите название команды"
+                        data-translate="teams.team_name_placeholder"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
+                <div>
+                    <label for="teamDescription" class="block text-sm font-medium text-gray-700 mb-2" data-translate="teams.team_description">
+                        Описание команды
+                    </label>
+                    <textarea 
+                        id="teamDescription" 
+                        name="description" 
+                        rows="3"
+                        placeholder="Введите описание команды (необязательно)"
+                        data-translate="teams.team_description_placeholder"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    ></textarea>
+                </div>
+
+                <div class="flex space-x-3">
+                    <button 
+                        type="submit" 
+                        class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                        data-translate="teams.save_team"
+                    >
+                        Сохранить команду
+                    </button>
+                    <button 
+                        type="button" 
+                        id="cancelTeamBtn"
+                        class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+                        data-translate="teams.cancel"
+                    >
+                        Отмена
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Employee Modal -->
+    <div id="employeeModal" class="modal">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="employeeModalTitle" class="text-lg font-semibold text-gray-900" data-translate="employees.create_employee">Добавить сотрудника</h3>
+                <button id="closeEmployeeModal" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="employeeForm" class="space-y-4">
+                <div>
+                    <label for="employeeName" class="block text-sm font-medium text-gray-700 mb-2" data-translate="employees.employee_name">
+                        Имя сотрудника
+                    </label>
+                    <input 
+                        type="text" 
+                        id="employeeName" 
+                        name="name" 
+                        required
+                        placeholder="Введите имя сотрудника"
+                        data-translate="employees.employee_name_placeholder"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
+                <div>
+                    <label for="employeeEmail" class="block text-sm font-medium text-gray-700 mb-2" data-translate="employees.employee_email">
+                        Email сотрудника
+                    </label>
+                    <input 
+                        type="email" 
+                        id="employeeEmail" 
+                        name="email" 
+                        placeholder="Введите email сотрудника (необязательно)"
+                        data-translate="employees.employee_email_placeholder"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
+                <div>
+                    <label for="employeePosition" class="block text-sm font-medium text-gray-700 mb-2" data-translate="employees.employee_position">
+                        Должность
+                    </label>
+                    <input 
+                        type="text" 
+                        id="employeePosition" 
+                        name="position" 
+                        placeholder="Введите должность (необязательно)"
+                        data-translate="employees.employee_position_placeholder"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
+                <div>
+                    <label for="employeeTeam" class="block text-sm font-medium text-gray-700 mb-2" data-translate="employees.employee_team">
+                        Команда
+                    </label>
+                    <select 
+                        id="employeeTeam" 
+                        name="teamId"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="" data-translate="employees.no_team">Без команды</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="employeePhone" class="block text-sm font-medium text-gray-700 mb-2" data-translate="employees.employee_phone">
+                        Телефон
+                    </label>
+                    <input 
+                        type="tel" 
+                        id="employeePhone" 
+                        name="phone" 
+                        placeholder="Введите телефон (необязательно)"
+                        data-translate="employees.employee_phone_placeholder"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
+                <div>
+                    <label for="employeeHireDate" class="block text-sm font-medium text-gray-700 mb-2" data-translate="employees.hire_date">
+                        Дата найма
+                    </label>
+                    <input 
+                        type="date" 
+                        id="employeeHireDate" 
+                        name="hireDate"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
+                <div class="flex space-x-3">
+                    <button 
+                        type="submit" 
+                        class="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+                        data-translate="employees.save_employee"
+                    >
+                        Сохранить сотрудника
+                    </button>
+                    <button 
+                        type="button" 
+                        id="cancelEmployeeBtn"
+                        class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+                        data-translate="employees.cancel"
+                    >
+                        Отмена
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+    <script src="/js/translations.js"></script>
+</body>
+</html>
