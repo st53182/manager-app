@@ -380,6 +380,149 @@
         </div>
     </div>
 
+    <!-- DISC Test Modal -->
+    <div id="discModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-lg">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        DISC Тест личности
+                    </h3>
+                    <button id="closeDiscModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-6">
+                <!-- Introduction Screen -->
+                <div id="discIntro" class="text-center">
+                    <div class="mb-6">
+                        <h2 class="text-xl font-semibold text-gray-900 mb-4">О тестировании</h2>
+                        <p class="text-gray-600 mb-4">Этот опросник поможет вам:</p>
+                        <ul class="text-left max-w-md mx-auto text-gray-600 space-y-2">
+                            <li>• Определить ваш тип личности по системе DISC</li>
+                            <li>• Понять ваши сильные стороны как сотрудника</li>
+                            <li>• Получить рекомендации по развитию</li>
+                            <li>• Улучшить коммуникацию с коллегами</li>
+                        </ul>
+                        <div class="mt-4 text-sm text-gray-500">
+                            <p><strong>Время прохождения:</strong> 7-10 минут</p>
+                            <p><strong>Количество вопросов:</strong> 15</p>
+                        </div>
+                    </div>
+                    <button id="startDiscTest" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                        Начать тестирование
+                    </button>
+                </div>
+
+                <!-- Question Screen -->
+                <div id="discQuestion" class="hidden">
+                    <!-- Progress Bar -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                            <span>Вопрос <span id="currentQuestionNum">1</span> из <span id="totalQuestions">15</span></span>
+                            <span id="progressPercent">7%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 7%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Question Content -->
+                    <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                        <h3 id="questionText" class="text-lg font-medium text-gray-900 mb-4"></h3>
+                        <div id="questionOptions" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="flex justify-between">
+                        <button id="prevQuestion" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
+                            Назад
+                        </button>
+                        <button id="nextQuestion" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            Далее
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Results Screen -->
+                <div id="discResults" class="hidden">
+                    <div class="text-center mb-6">
+                        <h2 class="text-xl font-semibold text-gray-900 mb-2">Результаты тестирования</h2>
+                        <div class="bg-blue-50 rounded-lg p-4 mb-4">
+                            <p class="text-sm text-gray-600 mb-2">Ваш тип личности:</p>
+                            <div class="text-2xl font-bold text-blue-600" id="resultPersonalityType"></div>
+                        </div>
+                    </div>
+
+                    <!-- Scores -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Баллы по категориям</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center">
+                                <div class="w-32 text-sm font-medium text-gray-700">Доминирование (D)</div>
+                                <div class="flex-1 mx-3">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div id="scoreD" class="bg-red-500 h-2 rounded-full transition-all duration-500"></div>
+                                    </div>
+                                </div>
+                                <div class="w-12 text-sm text-gray-600" id="scoreDText">0/45</div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-32 text-sm font-medium text-gray-700">Влияние (I)</div>
+                                <div class="flex-1 mx-3">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div id="scoreI" class="bg-yellow-500 h-2 rounded-full transition-all duration-500"></div>
+                                    </div>
+                                </div>
+                                <div class="w-12 text-sm text-gray-600" id="scoreIText">0/45</div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-32 text-sm font-medium text-gray-700">Стабильность (S)</div>
+                                <div class="flex-1 mx-3">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div id="scoreS" class="bg-green-500 h-2 rounded-full transition-all duration-500"></div>
+                                    </div>
+                                </div>
+                                <div class="w-12 text-sm text-gray-600" id="scoreSText">0/45</div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-32 text-sm font-medium text-gray-700">Добросовестность (C)</div>
+                                <div class="flex-1 mx-3">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div id="scoreC" class="bg-blue-500 h-2 rounded-full transition-all duration-500"></div>
+                                    </div>
+                                </div>
+                                <div class="w-12 text-sm text-gray-600" id="scoreCText">0/45</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex justify-center space-x-4">
+                        <button id="retakeDiscTest" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
+                            Пройти заново
+                        </button>
+                        <button id="closeDiscResults" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            Закрыть
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="discLoading" class="hidden text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                    <p class="text-gray-600">Обработка результатов...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Edit Profile Modal -->
     <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
         <div class="flex items-center justify-center min-h-screen p-4">

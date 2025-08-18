@@ -435,6 +435,323 @@ app.post('/api/employee/:id/secure-link', authenticateToken, async (req, res) =>
   }
 });
 
+app.post('/api/employee/:id/disc-test', authenticateToken, async (req, res) => {
+  try {
+    const employeeId = req.params.id;
+    const { answers } = req.body;
+    
+    if (!answers || Object.keys(answers).length === 0) {
+      return res.status(400).json({ error: 'Ответы не предоставлены' });
+    }
+    
+    const scores = calculateDiscScores(answers);
+    const personalityType = determinePersonalityType(scores);
+    const discData = generateDiscData(personalityType, scores);
+    
+    const updatedEmployee = await updateEmployeeProfile(employeeId, {
+      discType: personalityType,
+      discData: discData
+    });
+    
+    if (!updatedEmployee) {
+      return res.status(404).json({ error: 'Сотрудник не найден' });
+    }
+    
+    res.json({
+      personalityType,
+      scores,
+      discData,
+      employee: updatedEmployee
+    });
+  } catch (error) {
+    console.error('Error submitting DISC test:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+app.post('/employee/:id/disc-test', async (req, res) => {
+  try {
+    const employeeId = req.params.id;
+    const token = req.query.token;
+    const { answers } = req.body;
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Токен не предоставлен' });
+    }
+    
+    const tokenData = await validateEmployeeSecureToken(token);
+    if (!tokenData || tokenData.employee_id !== employeeId) {
+      return res.status(401).json({ error: 'Недействительный токен' });
+    }
+    
+    if (!answers || Object.keys(answers).length === 0) {
+      return res.status(400).json({ error: 'Ответы не предоставлены' });
+    }
+    
+    const scores = calculateDiscScores(answers);
+    const personalityType = determinePersonalityType(scores);
+    const discData = generateDiscData(personalityType, scores);
+    
+    const updatedEmployee = await updateEmployeeProfile(employeeId, {
+      discType: personalityType,
+      discData: discData
+    });
+    
+    if (!updatedEmployee) {
+      return res.status(404).json({ error: 'Сотрудник не найден' });
+    }
+    
+    res.json({
+      personalityType,
+      scores,
+      discData,
+      employee: updatedEmployee
+    });
+  } catch (error) {
+    console.error('Error submitting DISC test via secure token:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+
+function calculateDiscScores(answers) {
+  const scores = { D: 0, I: 0, S: 0, C: 0 };
+  
+  const DISC_QUESTIONS = [
+    {
+      "id": 1,
+      "options": [
+        {"text": "Быстро и решительно, основываясь на своей интуиции", "type": "D", "score": 3},
+        {"text": "После обсуждения с коллегами и получения их мнений", "type": "I", "score": 3},
+        {"text": "Тщательно взвесив все за и против, не торопясь", "type": "S", "score": 3},
+        {"text": "На основе детального анализа данных и фактов", "type": "C", "score": 3}
+      ]
+    },
+    {
+      "id": 2,
+      "options": [
+        {"text": "Беру инициативу и решаю проблему напрямую", "type": "D", "score": 3},
+        {"text": "Стараюсь найти компромисс, который устроит всех", "type": "I", "score": 3},
+        {"text": "Выслушиваю все стороны и ищу мирное решение", "type": "S", "score": 3},
+        {"text": "Анализирую факты и предлагаю логичное решение", "type": "C", "score": 3}
+      ]
+    },
+    {
+      "id": 3,
+      "options": [
+        {"text": "Ставлю амбициозные цели и стремлюсь к их достижению", "type": "D", "score": 3},
+        {"text": "Вдохновляюсь общими целями команды", "type": "I", "score": 3},
+        {"text": "Устанавливаю реалистичные цели с учетом своих возможностей", "type": "S", "score": 3},
+        {"text": "Определяю четкие, измеримые цели с конкретными критериями", "type": "C", "score": 3}
+      ]
+    },
+    {
+      "id": 4,
+      "options": [
+        {"text": "Прямой и четкий, без лишних слов", "type": "D", "score": 3},
+        {"text": "Дружелюбный и открытый, поощряю диалог", "type": "I", "score": 3},
+        {"text": "Терпеливый и поддерживающий", "type": "S", "score": 3},
+        {"text": "Точный и основанный на фактах", "type": "C", "score": 3}
+      ]
+    },
+    {
+      "id": 5,
+      "options": [
+        {"text": "Фокусируюсь на конечном результате и сроках", "type": "D", "score": 3},
+        {"text": "Учитываю мнения всех участников команды", "type": "I", "score": 3},
+        {"text": "Создаю стабильный план с минимальными рисками", "type": "S", "score": 3},
+        {"text": "Разрабатываю детальный план с четкими этапами", "type": "C", "score": 3}
+      ]
+    },
+    {
+      "id": 6,
+      "options": [
+        {"text": "Быстро признаю ошибку и исправляю ее", "type": "D", "score": 3},
+        {"text": "Обсуждаю ошибку с коллегами и ищу решение вместе", "type": "I", "score": 3},
+        {"text": "Анализирую причины ошибки, чтобы избежать ее в будущем", "type": "S", "score": 3},
+        {"text": "Создаю процедуры для предотвращения подобных ошибок", "type": "C", "score": 3}
+      ]
+    },
+    {
+      "id": 7,
+      "options": [
+        {"text": "Беру контроль и быстро принимаю решения", "type": "D", "score": 3},
+        {"text": "Поддерживаю команду и ищу творческие решения", "type": "I", "score": 3},
+        {"text": "Остаюсь спокойным и стабилизирую ситуацию", "type": "S", "score": 3},
+        {"text": "Систематически анализирую проблему и ищу оптимальное решение", "type": "C", "score": 3}
+      ]
+    },
+    {
+      "id": 8,
+      "options": [
+        {"text": "Вызовы и возможность конкурировать", "type": "D", "score": 3},
+        {"text": "Позитивная атмосфера и признание достижений", "type": "I", "score": 3},
+        {"text": "Стабильность и поддержка коллег", "type": "S", "score": 3},
+        {"text": "Четкие критерии оценки и справедливое вознаграждение", "type": "C", "score": 3}
+      ]
+    },
+    {
+      "id": 9,
+      "options": [
+        {"text": "Сразу приступаю к выполнению и жду результатов", "type": "D", "score": 3},
+        {"text": "Понимаю важность задачи и вдохновляюсь на выполнение", "type": "I", "score": 3},
+        {"text": "Убеждаюсь, что готов и прошу поддержки при необходимости", "type": "S", "score": 3},
+        {"text": "Изучаю детальные инструкции и критерии качества", "type": "C", "score": 3}
+      ]
+    },
+    {
+      "id": 10,
+      "options": [
+        {"text": "Эффективно участвую, фокусируюсь на результатах", "type": "D", "score": 3},
+        {"text": "Активно участвую и поощряю других к обсуждению", "type": "I", "score": 3},
+        {"text": "Внимательно слушаю и даю всем высказаться", "type": "S", "score": 3},
+        {"text": "Готовлюсь заранее и основываюсь на данных", "type": "C", "score": 3}
+      ]
+    },
+    {
+      "id": 11,
+      "options": [
+        {"text": "Быстро адаптируюсь к необходимым изменениям", "type": "D", "score": 3},
+        {"text": "Активно участвую в процессе изменений", "type": "I", "score": 3},
+        {"text": "Постепенно привыкаю к изменениям, минимизируя стресс", "type": "S", "score": 3},
+        {"text": "Изучаю изменения поэтапно с четкими критериями", "type": "C", "score": 3}
+      ]
+    },
+    {
+      "id": 12,
+      "options": [
+        {"text": "Ставлю сложные задачи для быстрого роста", "type": "D", "score": 3},
+        {"text": "Учусь через взаимодействие и обмен опытом", "type": "I", "score": 3},
+        {"text": "Развиваюсь постепенно в комфортном темпе", "type": "S", "score": 3},
+        {"text": "Следую структурированным программам развития", "type": "C", "score": 3}
+      ]
+    },
+    {
+      "id": 13,
+      "options": [
+        {"text": "Брать на себя лидерство и направлять команду", "type": "D", "score": 3},
+        {"text": "Поддерживать позитивную атмосферу и мотивировать коллег", "type": "I", "score": 3},
+        {"text": "Быть надежным исполнителем и поддерживать других", "type": "S", "score": 3},
+        {"text": "Обеспечивать качество и точность выполнения задач", "type": "C", "score": 3}
+      ]
+    },
+    {
+      "id": 14,
+      "options": [
+        {"text": "Оптимизирую процессы для достижения максимальных результатов", "type": "D", "score": 3},
+        {"text": "Делаю процессы более интерактивными и вовлекающими", "type": "I", "score": 3},
+        {"text": "Поддерживаю стабильные и проверенные процессы", "type": "S", "score": 3},
+        {"text": "Создаю детальные и структурированные процессы", "type": "C", "score": 3}
+      ]
+    },
+    {
+      "id": 15,
+      "options": [
+        {"text": "Фокусируюсь на достигнутых результатах и целях", "type": "D", "score": 3},
+        {"text": "Учитываю влияние на команду и общую атмосферу", "type": "I", "score": 3},
+        {"text": "Оцениваю стабильность и надежность выполнения", "type": "S", "score": 3},
+        {"text": "Анализирую качество и соответствие стандартам", "type": "C", "score": 3}
+      ]
+    }
+  ];
+  
+  for (const [questionId, selectedAnswer] of Object.entries(answers)) {
+    const question = DISC_QUESTIONS.find(q => q.id === parseInt(questionId));
+    if (question) {
+      const option = question.options.find(opt => opt.text === selectedAnswer);
+      if (option) {
+        scores[option.type] += option.score;
+      }
+    }
+  }
+  
+  return scores;
+}
+
+function determinePersonalityType(scores) {
+  const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  const topScore = sortedScores[0][1];
+  const secondScore = sortedScores[1][1];
+  
+  const topTypes = sortedScores.filter(([type, score]) => score === topScore).map(([type]) => type);
+  
+  if (topTypes.length === 1) {
+    const scoreDifference = topScore - secondScore;
+    if (scoreDifference <= 3) {
+      const combinedTypes = {
+        'DI': 'Вдохновитель',
+        'DS': 'Организатор',
+        'DC': 'Организатор', 
+        'IS': 'Связной',
+        'IC': 'Связной',
+        'SC': 'Координатор'
+      };
+      
+      const sortedTopTwo = [topTypes[0], sortedScores[1][0]].sort().join('');
+      return combinedTypes[sortedTopTwo] || topTypes[0];
+    }
+    return topTypes[0];
+  } else {
+    const combinedTypes = {
+      'DI': 'Вдохновитель',
+      'DS': 'Организатор',
+      'DC': 'Организатор',
+      'IS': 'Связной', 
+      'IC': 'Связной',
+      'SC': 'Координатор'
+    };
+    
+    const sortedTypes = topTypes.sort().join('');
+    return combinedTypes[sortedTypes] || topTypes[0];
+  }
+}
+
+function generateDiscData(personalityType, scores) {
+  const discProfiles = {
+    'D': {
+      strengths: 'Решительность, лидерство, ориентация на результат, быстрое принятие решений',
+      challenges: 'Может быть слишком прямолинейным, нетерпеливым к деталям',
+      communication: 'Предпочитает краткое, прямое общение, фокус на результатах'
+    },
+    'I': {
+      strengths: 'Коммуникабельность, оптимизм, вдохновение других, творческий подход',
+      challenges: 'Может отвлекаться на детали, избегать конфликтов',
+      communication: 'Открытое, дружелюбное общение, любит обсуждения'
+    },
+    'S': {
+      strengths: 'Надежность, терпение, поддержка команды, стабильность',
+      challenges: 'Может сопротивляться изменениям, избегать рисков',
+      communication: 'Спокойное, поддерживающее общение, хороший слушатель'
+    },
+    'C': {
+      strengths: 'Аналитические способности, точность, систематичность, качество',
+      challenges: 'Может быть слишком критичным, медленным в принятии решений',
+      communication: 'Основанное на фактах, детальное общение'
+    },
+    'Вдохновитель': {
+      strengths: 'Энергичное лидерство, мотивация других, быстрые решения с учетом людей',
+      challenges: 'Может быть импульсивным, недооценивать детали',
+      communication: 'Динамичное, вдохновляющее общение'
+    },
+    'Организатор': {
+      strengths: 'Эффективное планирование, контроль качества, достижение целей',
+      challenges: 'Может быть слишком требовательным, негибким',
+      communication: 'Структурированное, целенаправленное общение'
+    },
+    'Связной': {
+      strengths: 'Отличная коммуникация, поддержка команды, адаптивность',
+      challenges: 'Может избегать сложных решений, быть слишком дипломатичным',
+      communication: 'Гармоничное, поддерживающее общение'
+    },
+    'Координатор': {
+      strengths: 'Методичность, надежность, качественное выполнение задач',
+      challenges: 'Может быть медлительным, сопротивляться изменениям',
+      communication: 'Осторожное, продуманное общение'
+    }
+  };
+  
+  return discProfiles[personalityType] || discProfiles['D'];
+}
 
 async function startServer() {
   try {
