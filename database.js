@@ -7,6 +7,8 @@ const pool = new Pool({
 
 async function initializeDatabase() {
   console.log('Starting database initialization...');
+  console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set (length: ' + process.env.DATABASE_URL.length + ')' : 'NOT SET');
+  console.log('NODE_ENV:', process.env.NODE_ENV);
   
   let client;
   try {
