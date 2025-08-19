@@ -60,6 +60,7 @@ async function initializeDatabase() {
         expertise TEXT,
         motivators TEXT,
         demotivators TEXT,
+        motivational_triggers JSONB DEFAULT '[]'::jsonb,
         personal_interests TEXT,
         stakeholders TEXT,
         important_traits TEXT,
@@ -121,6 +122,7 @@ async function initializeDatabase() {
       'expertise TEXT',
       'motivators TEXT',
       'demotivators TEXT',
+      'motivational_triggers JSONB DEFAULT \'[]\'::jsonb',
       'personal_interests TEXT',
       'stakeholders TEXT',
       'important_traits TEXT',
@@ -358,7 +360,7 @@ async function updateEmployeeProfile(employeeId, profileData) {
       name, email, position, phone, roles, homeBase, timeZone, meetingTimes,
       domains, expertise, motivators, demotivators, personalInterests,
       stakeholders, importantTraits, commChannels, commStyle, commNotes,
-      workStyle, okrGoals, discType, discData, developmentPlan, comm_channels
+      workStyle, okrGoals, discType, discData, developmentPlan, comm_channels, motivationalTriggers
     } = profileData;
 
     const emailValue = email && email.trim() !== '' ? email : null;
@@ -367,6 +369,7 @@ async function updateEmployeeProfile(employeeId, profileData) {
     const okrGoalsJson        = (typeof okrGoals        === 'undefined') ? null : JSON.stringify(okrGoals);
     const discDataJson        = (typeof discData        === 'undefined') ? null : JSON.stringify(discData);
     const developmentPlanJson = (typeof developmentPlan === 'undefined') ? null : JSON.stringify(developmentPlan);
+    const motivationalTriggersJson = (typeof motivationalTriggers === 'undefined') ? null : JSON.stringify(motivationalTriggers);
 
     const result = await client.query(`
       UPDATE employees SET 
@@ -393,14 +396,15 @@ async function updateEmployeeProfile(employeeId, profileData) {
         disc_type = COALESCE($21, disc_type),
         disc_data = COALESCE($22, disc_data),
         development_plan = COALESCE($23, development_plan),
+        motivational_triggers = COALESCE($24, motivational_triggers),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $24 RETURNING *
+      WHERE id = $25 RETURNING *
     `, [
       name, emailValue, position, phone, roles, homeBase, timeZone, meetingTimes,
       domains, expertise, motivators, demotivators, personalInterests,
       stakeholders, importantTraits, (comm_channels || commChannels), commStyle,
       commNotes, workStyle, okrGoalsJson, discType, discDataJson, developmentPlanJson,
-      employeeId
+      motivationalTriggersJson, employeeId
     ]);
 
     const updatedEmployee = await client.query(`

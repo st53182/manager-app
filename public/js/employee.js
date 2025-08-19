@@ -138,6 +138,9 @@ function displayEmployeeProfile(employee) {
     document.getElementById('motivators').textContent = employee.motivators || '-';
     document.getElementById('demotivators').textContent = employee.demotivators || '-';
 
+    initializeMotivationalTriggers();
+    setupWorkspaceDropZone();
+
     if (isEmployeeView) {
         document.getElementById('shareProfileBtn').style.display = 'none';
     }
@@ -1621,6 +1624,9 @@ function showEditModal() {
     document.getElementById('editMotivators').value = currentEmployee.motivators || '';
     document.getElementById('editDemotivators').value = currentEmployee.demotivators || '';
     
+    initializeEditMotivationalTriggers();
+    setupEditWorkspaceDropZone();
+    
     populateTagField('roles', currentEmployee.roles);
     populateTagField('domains', currentEmployee.domains);
     populateTagField('expertise', currentEmployee.expertise);
@@ -1737,7 +1743,8 @@ async function saveProfileChanges(e) {
         commStyle: document.getElementById('editCommStyle').value,       // было comm_style
         workStyle: document.getElementById('editWorkStyle').value,       // было work_style
         motivators: document.getElementById('editMotivators').value,
-        demotivators: document.getElementById('editDemotivators').value
+        demotivators: document.getElementById('editDemotivators').value,
+        motivationalTriggers: currentEmployee.motivational_triggers || []
     };
 
     // опционально — часовой пояс, если поле есть в модалке
@@ -1776,5 +1783,190 @@ async function saveProfileChanges(e) {
         console.error('Error saving profile:', error);
         showToast('Ошибка сохранения профиля', 'error');
     }
+}
+
+const MOTIVATIONAL_TRIGGERS = [
+    { id: 'curiosity', color: '#3b82f6', icon: '🔍' },
+    { id: 'honor', color: '#10b981', icon: '🏆' },
+    { id: 'acceptance', color: '#f59e0b', icon: '👥' },
+    { id: 'mastery', color: '#8b5cf6', icon: '⚡' },
+    { id: 'power', color: '#ef4444', icon: '💪' },
+    { id: 'freedom', color: '#06b6d4', icon: '🕊️' },
+    { id: 'relatedness', color: '#ec4899', icon: '❤️' },
+    { id: 'order', color: '#84cc16', icon: '📋' },
+    { id: 'goal', color: '#f97316', icon: '🎯' },
+    { id: 'status', color: '#6366f1', icon: '👑' }
+];
+
+function initializeMotivationalTriggers() {
+    const palette = document.getElementById('triggersPalette');
+    const workspace = document.getElementById('triggersWorkspace');
+    
+    if (!palette || !workspace) return;
+    
+    palette.innerHTML = '';
+    
+    MOTIVATIONAL_TRIGGERS.forEach(trigger => {
+        const card = createTriggerCard(trigger, false);
+        palette.appendChild(card);
+    });
+    
+    if (currentEmployee && currentEmployee.motivational_triggers) {
+        loadTriggerPositions(currentEmployee.motivational_triggers, false);
+    }
+}
+
+function initializeEditMotivationalTriggers() {
+    const palette = document.getElementById('editTriggersPalette');
+    const workspace = document.getElementById('editTriggersWorkspace');
+    
+    if (!palette || !workspace) return;
+    
+    palette.innerHTML = '';
+    
+    MOTIVATIONAL_TRIGGERS.forEach(trigger => {
+        const card = createTriggerCard(trigger, true);
+        palette.appendChild(card);
+    });
+    
+    if (currentEmployee && currentEmployee.motivational_triggers) {
+        loadTriggerPositions(currentEmployee.motivational_triggers, true);
+    }
+}
+
+function createTriggerCard(trigger, isEdit) {
+    const card = document.createElement('div');
+    card.className = 'trigger-card';
+    card.draggable = true;
+    card.dataset.triggerId = trigger.id;
+    card.dataset.isEdit = isEdit;
+    card.style.backgroundColor = trigger.color;
+    card.style.color = 'white';
+    
+    const translationKey = `motivational_triggers.cards.${trigger.id}`;
+    const translatedName = window.translationManager ? window.translationManager.t(translationKey) : trigger.id;
+    
+    card.innerHTML = `
+        <div style="font-size: 20px; margin-bottom: 4px;">${trigger.icon}</div>
+        <div style="font-weight: 600; font-size: 9px; line-height: 1.1;">${translatedName}</div>
+    `;
+    
+    card.addEventListener('dragstart', handleDragStart);
+    card.addEventListener('dragend', handleDragEnd);
+    
+    return card;
+}
+
+function handleDragStart(e) {
+    e.dataTransfer.setData('text/plain', e.target.dataset.triggerId);
+    e.dataTransfer.setData('application/x-is-edit', e.target.dataset.isEdit);
+    e.target.classList.add('dragging');
+}
+
+function handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+}
+
+function setupWorkspaceDropZone() {
+    const workspace = document.getElementById('triggersWorkspace');
+    if (!workspace) return;
+    
+    workspace.addEventListener('dragover', (e) => {
+        e.preventDefault();
+    });
+    
+    workspace.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const triggerId = e.dataTransfer.getData('text/plain');
+        const isEdit = e.dataTransfer.getData('application/x-is-edit') === 'true';
+        
+        if (isEdit) return;
+        
+        const rect = workspace.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        const scale = Math.max(1, Math.min(10, Math.round((x / rect.width) * 10)));
+        const isAboveLine = y < rect.height / 2;
+        
+        positionTriggerCard(triggerId, scale, isAboveLine, x, y, false);
+    });
+}
+
+function setupEditWorkspaceDropZone() {
+    const workspace = document.getElementById('editTriggersWorkspace');
+    if (!workspace) return;
+    
+    workspace.addEventListener('dragover', (e) => {
+        e.preventDefault();
+    });
+    
+    workspace.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const triggerId = e.dataTransfer.getData('text/plain');
+        const isEdit = e.dataTransfer.getData('application/x-is-edit') === 'true';
+        
+        if (!isEdit) return;
+        
+        const rect = workspace.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        const scale = Math.max(1, Math.min(10, Math.round((x / rect.width) * 10)));
+        const isAboveLine = y < rect.height / 2;
+        
+        positionTriggerCard(triggerId, scale, isAboveLine, x, y, true);
+    });
+}
+
+function positionTriggerCard(triggerId, scale, isAboveLine, x, y, isEdit) {
+    const cardSelector = `[data-trigger-id="${triggerId}"][data-is-edit="${isEdit}"]`;
+    const card = document.querySelector(cardSelector);
+    const workspaceId = isEdit ? 'editTriggersWorkspace' : 'triggersWorkspace';
+    const workspace = document.getElementById(workspaceId);
+    
+    if (!card || !workspace) return;
+    
+    card.classList.add('positioned', 'in-workspace');
+    card.style.position = 'absolute';
+    card.style.left = `${Math.max(0, Math.min(x - 40, workspace.clientWidth - 80))}px`;
+    card.style.top = `${Math.max(0, Math.min(y - 40, workspace.clientHeight - 80))}px`;
+    card.style.zIndex = '10';
+    
+    workspace.appendChild(card);
+    
+    saveTriggerPosition(triggerId, scale, isAboveLine, x, y);
+}
+
+function saveTriggerPosition(triggerId, scale, isAboveLine, x, y) {
+    if (!currentEmployee.motivational_triggers) {
+        currentEmployee.motivational_triggers = [];
+    }
+    
+    currentEmployee.motivational_triggers = currentEmployee.motivational_triggers.filter(
+        t => t.id !== triggerId
+    );
+    
+    currentEmployee.motivational_triggers.push({
+        id: triggerId,
+        scale: scale,
+        isAboveLine: isAboveLine,
+        x: x,
+        y: y
+    });
+}
+
+function loadTriggerPositions(positions, isEdit) {
+    const workspaceId = isEdit ? 'editTriggersWorkspace' : 'triggersWorkspace';
+    const workspace = document.getElementById(workspaceId);
+    if (!workspace || !positions) return;
+    
+    positions.forEach(pos => {
+        const cardSelector = `[data-trigger-id="${pos.id}"][data-is-edit="${isEdit}"]`;
+        const card = document.querySelector(cardSelector);
+        if (card) {
+            positionTriggerCard(pos.id, pos.scale, pos.isAboveLine, pos.x, pos.y, isEdit);
+        }
+    });
 }
 

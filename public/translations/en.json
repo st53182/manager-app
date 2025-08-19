@@ -188,6 +188,22 @@
     "profile_updated": "Profile updated successfully",
     "profile_update_error": "Error updating profile"
   },
+  "motivational_triggers": {
+    "title": "Motivational Triggers",
+    "description": "Drag cards to position by importance (1-10) and performance (above/below line)",
+    "cards": {
+      "curiosity": "Curiosity",
+      "honor": "Honor", 
+      "acceptance": "Acceptance",
+      "mastery": "Mastery",
+      "power": "Power",
+      "freedom": "Freedom",
+      "relatedness": "Relationships",
+      "order": "Order",
+      "goal": "Goal",
+      "status": "Status"
+    }
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
