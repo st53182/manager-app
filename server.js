@@ -585,6 +585,46 @@ Make objectives SMART (Specific, Measurable, Achievable, Relevant, Time-bound). 
   }
 });
 
+app.post('/api/employee/:id/okr-improve-single', authenticateToken, async (req, res) => {
+  try {
+    const { text, type, context } = req.body;
+    
+    if (!openai) {
+      return res.status(500).json({ error: 'OpenAI API key not configured' });
+    }
+
+    const employee = await getEmployeeById(req.params.id);
+    if (!employee || employee.manager_id !== req.user.userId) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    const typeText = type === 'objective' ? 'цель' : 'ключевой результат';
+    const prompt = `Улучши следующий ${typeText} для сотрудника на позиции "${context}":
+
+Текущий ${typeText}: "${text}"
+
+Сделай его более конкретным, измеримым и достижимым. Верни только улучшенный текст без дополнительных объяснений.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      max_tokens: 200
+    });
+
+    const improvedText = response.choices[0].message.content.trim();
+    
+    res.json({ success: true, improvedText });
+  } catch (error) {
+    console.error('Error in okr-improve-single:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/employee/:id/okr-improve', authenticateToken, async (req, res) => {
   try {
     const { okrs, feedback } = req.body;
@@ -639,6 +679,81 @@ Return improved OKRs in the same JSON format, maintaining the same structure but
     res.status(500).json({ error: error.message });
   }
 });
+app.put('/employee/:id/profile', async (req, res) => {
+  try {
+    const { token } = req.query;
+    const { okr_goals, ...profileData } = req.body;
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Token required' });
+    }
+    
+    const employee = await validateEmployeeSecureToken(req.params.id, token);
+    if (!employee) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    
+    const updatedEmployee = await updateEmployeeProfile(req.params.id, {
+      ...profileData,
+      okr_goals: okr_goals || employee.okr_goals
+    });
+    
+    res.json({ 
+      success: true, 
+      employee: updatedEmployee 
+    });
+  } catch (error) {
+    console.error('Error updating employee profile:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/employee/:id/okr-improve-single', async (req, res) => {
+  try {
+    const { token } = req.query;
+    const { text, type, context } = req.body;
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Token required' });
+    }
+    
+    const employee = await validateEmployeeSecureToken(req.params.id, token);
+    if (!employee) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    
+    if (!openai) {
+      return res.status(500).json({ error: 'OpenAI API key not configured' });
+    }
+
+    const typeText = type === 'objective' ? 'цель' : 'ключевой результат';
+    const prompt = `Улучши следующий ${typeText} для сотрудника на позиции "${context}":
+
+Текущий ${typeText}: "${text}"
+
+Сделай его более конкретным, измеримым и достижимым. Верни только улучшенный текст без дополнительных объяснений.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      max_tokens: 200
+    });
+
+    const improvedText = response.choices[0].message.content.trim();
+    
+    res.json({ success: true, improvedText });
+  } catch (error) {
+    console.error('Error in employee okr-improve-single:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 
 
 function calculateDiscScores(answers) {
