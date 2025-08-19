@@ -1221,6 +1221,7 @@ async function saveOkrs(event) {
         saveBtn.textContent = 'Сохранение...';
         saveBtn.disabled = true;
 
+        // 1) Собираем OKR из формы
         const okrs = collectOkrsFromForm();
         if (!okrs || okrs.length === 0) {
             showToast('Добавьте хотя бы одну цель');
@@ -1230,7 +1231,7 @@ async function saveOkrs(event) {
         const token = checkAuth();
         if (!token) return;
 
-        // Заголовки для обоих режимов
+        // 2) Заголовки для обоих режимов
         const headers = isEmployeeView
             ? { 'Content-Type': 'application/json' }
             : { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -1239,16 +1240,15 @@ async function saveOkrs(event) {
 
         if (!isEmployeeView) {
             // ---------- АВТОРИЗОВАННЫЙ РЕЖИМ ----------
-            // Пытаемся сохранить OKR в специализированный эндпоинт
+            // Пишем OKR через специальный эндпоинт
             response = await fetch(`/api/employee/${employeeId}/okrs`, {
                 method: 'POST',
                 headers,
-                body: JSON.stringify({ okr_goals: okrs })
+                body: JSON.stringify({ okr_goals: okrs }) // snake_case на фронте, camel на бэке
             });
 
-            // Если такого маршрута нет, делаем безопасный merge через PUT /profile
+            // Fallback: если вдруг маршрута нет — merge через PUT профиля
             if (response.status === 404) {
-                // подтягиваем профиль
                 const getResp = await fetch(`/api/employee/${employeeId}/profile`, { headers });
                 if (!getResp.ok) {
                     throw new Error('Не удалось загрузить профиль для сохранения OKR');
@@ -1280,7 +1280,7 @@ async function saveOkrs(event) {
             throw new Error(data?.error || 'Ошибка сохранения OKR');
         }
 
-        // Обновляем локально и UI
+        // 3) Обновляем локально и UI
         if (currentEmployee) {
             currentEmployee.okr_goals = okrs;
         }
@@ -1295,6 +1295,7 @@ async function saveOkrs(event) {
         saveBtn.disabled = false;
     }
 }
+
 
 
 async function toggleOkrCompletion(goalIndex, type, keyResultIndex = null) {

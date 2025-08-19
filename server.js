@@ -126,14 +126,30 @@ app.post('/api/register', authLimiter, async (req, res) => {
 });
 
 app.post('/api/employee/:id/okrs', authenticateToken, async (req, res) => {
-    const { okr_goals } = req.body;
-    try {
-        await db.query('UPDATE employees SET okr_goals = ? WHERE id = ?', [JSON.stringify(okr_goals), req.params.id]);
-        res.json({ success: true });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Ошибка сохранения OKR' });
+  try {
+    const employeeId = req.params.id;
+    const { okr_goals } = req.body; // приходит с фронта в snake_case
+
+    if (!Array.isArray(okr_goals)) {
+      return res.status(400).json({ error: 'okr_goals must be an array' });
     }
+
+    // Проверяем, что сотрудник существует и принадлежит менеджеру
+    const employee = await getEmployeeById(employeeId);
+    if (!employee || employee.manager_id !== req.user.userId) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    // Обновляем профиль через общий апдейтер (ожидает okrGoals в camelCase)
+    const updated = await updateEmployeeProfile(employeeId, {
+      okrGoals: okr_goals
+    });
+
+    return res.json({ success: true, employee: updated });
+  } catch (e) {
+    console.error('Save OKRs error:', e);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.post('/api/login', authLimiter, async (req, res) => {
@@ -694,31 +710,30 @@ Return improved OKRs in the same JSON format, maintaining the same structure but
 app.put('/employee/:id/profile', async (req, res) => {
   try {
     const { token } = req.query;
-    const { okr_goals, ...profileData } = req.body;
-    
+    const { okr_goals, ...profileData } = req.body; // корректный rest
+
     if (!token) {
       return res.status(401).json({ error: 'Token required' });
     }
-    
+
     const employee = await validateEmployeeSecureToken(token);
     if (!employee || employee.id !== req.params.id) {
       return res.status(401).json({ error: 'Invalid token' });
     }
-    
+
+    // Для общего апдейтера переводим snake_case → camelCase
     const updatedEmployee = await updateEmployeeProfile(req.params.id, {
       ...profileData,
-      okr_goals: okr_goals || employee.okr_goals
+      okrGoals: okr_goals ?? employee.okr_goals
     });
-    
-    res.json({ 
-      success: true, 
-      employee: updatedEmployee 
-    });
+
+    res.json({ success: true, employee: updatedEmployee });
   } catch (error) {
     console.error('Error updating employee profile:', error);
     res.status(500).json({ error: error.message });
   }
 });
+
 
 app.post('/employee/:id/okr-improve-single', async (req, res) => {
   try {
