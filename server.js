@@ -585,9 +585,9 @@ Make objectives SMART (Specific, Measurable, Achievable, Relevant, Time-bound). 
   }
 });
 
-app.post('/api/employee/:id/okr-improve', authenticateToken, async (req, res) => {
+app.post('/api/employee/:id/okr-improve-single', authenticateToken, async (req, res) => {
   try {
-    const { okrs, feedback } = req.body;
+    const { text, type, context } = req.body;
     
     if (!openai) {
       return res.status(500).json({ error: 'OpenAI API key not configured' });
@@ -598,14 +598,12 @@ app.post('/api/employee/:id/okr-improve', authenticateToken, async (req, res) =>
       return res.status(404).json({ error: 'Employee not found' });
     }
 
-    const prompt = `Improve the following OKRs based on the feedback provided:
+    const typeText = type === 'objective' ? 'цель' : 'ключевой результат';
+    const prompt = `Улучши следующий ${typeText} для сотрудника на позиции "${context}":
 
-Current OKRs:
-${JSON.stringify(okrs, null, 2)}
+Текущий ${typeText}: "${text}"
 
-Feedback: ${feedback || 'Make them more specific and measurable'}
-
-Return improved OKRs in the same JSON format, maintaining the same structure but with enhanced objectives and key results. Make sure objectives are SMART and key results are specific and measurable. Return only valid JSON without markdown formatting.`;
+Сделай его более конкретным, измеримым и достижимым. Верни только улучшенный текст без дополнительных объяснений.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
@@ -615,27 +613,14 @@ Return improved OKRs in the same JSON format, maintaining the same structure but
           content: prompt
         }
       ],
-      max_tokens: 1000
+      max_tokens: 200
     });
 
-    let improvedOkrs;
-    try {
-      const content = response.choices[0].message.content.trim();
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
-      const jsonString = jsonMatch ? jsonMatch[0] : content;
-      improvedOkrs = JSON.parse(jsonString);
-    } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', response.choices[0].message.content);
-      return res.status(500).json({ error: 'Failed to parse AI response' });
-    }
-
-    if (!Array.isArray(improvedOkrs)) {
-      return res.status(500).json({ error: 'AI response is not an array' });
-    }
-
-    res.json({ success: true, okrs: improvedOkrs });
+    const improvedText = response.choices[0].message.content.trim();
+    
+    res.json({ success: true, improvedText });
   } catch (error) {
-    console.error('Error in okr-improve:', error);
+    console.error('Error in okr-improve-single:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -917,9 +917,18 @@ function addObjective() {
             </div>
             
             <div class="space-y-3">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.okr_objective">Цель</label>
-                    <textarea name="objective-${objectiveIndex}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" required></textarea>
+                <div class="flex space-x-2">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.okr_objective">Цель</label>
+                        <textarea name="objective-${objectiveIndex}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" required></textarea>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="button" onclick="improveObjectiveWithAI(${objectiveIndex})" class="px-3 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 text-sm" title="Улучшить с ИИ">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 
                 <div>
@@ -932,6 +941,11 @@ function addObjective() {
                     <div class="key-results-container space-y-2" data-objective="${objectiveIndex}">
                         <div class="key-result-item flex space-x-2">
                             <input type="text" name="key-result-${objectiveIndex}-0" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ключевой результат 1" required>
+                            <button type="button" onclick="improveKeyResultWithAI(${objectiveIndex}, 0)" class="px-3 py-2 bg-green-100 text-green-600 rounded-md hover:bg-green-200 text-sm" title="Улучшить с ИИ">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </button>
                             <button type="button" onclick="removeKeyResult(this)" class="text-red-600 hover:text-red-800">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -970,6 +984,11 @@ function addKeyResult(objectiveIndex) {
     const keyResultHtml = `
         <div class="key-result-item flex space-x-2">
             <input type="text" name="key-result-${objectiveIndex}-${keyResultIndex}" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ключевой результат ${keyResultIndex + 1}" required>
+            <button type="button" onclick="improveKeyResultWithAI(${objectiveIndex}, ${keyResultIndex})" class="px-3 py-2 bg-green-100 text-green-600 rounded-md hover:bg-green-200 text-sm" title="Улучшить с ИИ">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+            </button>
             <button type="button" onclick="removeKeyResult(this)" class="text-red-600 hover:text-red-800">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -1050,7 +1069,7 @@ async function generateOkrWithAI() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
                 context,
@@ -1094,7 +1113,7 @@ async function improveOkrWithAI() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
                 okrs: currentFormOkrs.length > 0 ? currentFormOkrs : currentOkrs,
@@ -1117,6 +1136,104 @@ async function improveOkrWithAI() {
     } finally {
         improveBtn.textContent = originalText;
         improveBtn.disabled = false;
+    }
+}
+
+async function improveObjectiveWithAI(objectiveIndex) {
+    const objectiveTextarea = document.querySelector(`textarea[name="objective-${objectiveIndex}"]`);
+    const currentText = objectiveTextarea.value.trim();
+    
+    if (!currentText) {
+        showToast('Введите текст цели для улучшения');
+        return;
+    }
+    
+    const button = document.querySelector(`button[onclick="improveObjectiveWithAI(${objectiveIndex})"]`);
+    const originalHtml = button.innerHTML;
+    
+    try {
+        button.innerHTML = '<div class="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>';
+        button.disabled = true;
+        
+        const token = checkAuth();
+        if (!token) return;
+        
+        const response = await fetch(`/api/employee/${employeeId}/okr-improve-single`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                text: currentText,
+                type: 'objective',
+                context: window.currentEmployee?.position || 'Сотрудник'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.improvedText) {
+            objectiveTextarea.value = data.improvedText;
+            showToast('Цель улучшена с помощью ИИ');
+        } else {
+            throw new Error(data.error || 'Ошибка улучшения цели');
+        }
+    } catch (error) {
+        console.error('Error improving objective:', error);
+        showToast('Ошибка при улучшении цели: ' + error.message);
+    } finally {
+        button.innerHTML = originalHtml;
+        button.disabled = false;
+    }
+}
+
+async function improveKeyResultWithAI(objectiveIndex, keyResultIndex) {
+    const keyResultInput = document.querySelector(`input[name="key-result-${objectiveIndex}-${keyResultIndex}"]`);
+    const currentText = keyResultInput.value.trim();
+    
+    if (!currentText) {
+        showToast('Введите текст ключевого результата для улучшения');
+        return;
+    }
+    
+    const button = document.querySelector(`button[onclick="improveKeyResultWithAI(${objectiveIndex}, ${keyResultIndex})"]`);
+    const originalHtml = button.innerHTML;
+    
+    try {
+        button.innerHTML = '<div class="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>';
+        button.disabled = true;
+        
+        const token = checkAuth();
+        if (!token) return;
+        
+        const response = await fetch(`/api/employee/${employeeId}/okr-improve-single`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                text: currentText,
+                type: 'key_result',
+                context: window.currentEmployee?.position || 'Сотрудник'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.improvedText) {
+            keyResultInput.value = data.improvedText;
+            showToast('Ключевой результат улучшен с помощью ИИ');
+        } else {
+            throw new Error(data.error || 'Ошибка улучшения ключевого результата');
+        }
+    } catch (error) {
+        console.error('Error improving key result:', error);
+        showToast('Ошибка при улучшении ключевого результата: ' + error.message);
+    } finally {
+        button.innerHTML = originalHtml;
+        button.disabled = false;
     }
 }
 
@@ -1170,7 +1287,7 @@ async function saveOkrs(event) {
             return;
         }
         
-        const token = localStorage.getItem('token');
+        const token = checkAuth();
         const urlParams = new URLSearchParams(window.location.search);
         const secureToken = urlParams.get('token');
         
@@ -1275,7 +1392,7 @@ async function toggleOkrCompletion(goalIndex, type, keyResultIndex = null) {
         
         okrs[goalIndex].progress = calculateOkrProgress(okrs[goalIndex]);
         
-        const token = localStorage.getItem('token');
+        const token = checkAuth();
         const urlParams = new URLSearchParams(window.location.search);
         const secureToken = urlParams.get('token');
         
@@ -1332,7 +1449,7 @@ async function deleteOkr(index) {
         
         okrs.splice(index, 1);
         
-        const token = localStorage.getItem('token');
+        const token = checkAuth();
         const urlParams = new URLSearchParams(window.location.search);
         const secureToken = urlParams.get('token');
         
