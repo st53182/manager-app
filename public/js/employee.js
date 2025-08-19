@@ -138,8 +138,16 @@ function displayEmployeeProfile(employee) {
     document.getElementById('motivators').textContent = employee.motivators || '-';
     document.getElementById('demotivators').textContent = employee.demotivators || '-';
 
-    initializeMotivationalTriggers();
-    setupWorkspaceDropZone();
+    if (window.translationManager && window.translationManager.translations && 
+        (window.translationManager.translations.ru || window.translationManager.translations.en)) {
+        initializeMotivationalTriggers();
+        setupWorkspaceDropZone();
+    } else {
+        setTimeout(() => {
+            initializeMotivationalTriggers();
+            setupWorkspaceDropZone();
+        }, 500);
+    }
 
     if (isEmployeeView) {
         document.getElementById('shareProfileBtn').style.display = 'none';
@@ -1889,6 +1897,11 @@ function setupWorkspaceDropZone() {
         const scale = Math.max(1, Math.min(10, Math.round((x / rect.width) * 10)));
         const isAboveLine = y < rect.height / 2;
         
+        const existingCardInSection = currentEmployee.motivational_triggers?.find(t => t.scale === scale);
+        if (existingCardInSection && existingCardInSection.id !== triggerId) {
+            returnCardToPalette(existingCardInSection.id, false);
+        }
+        
         positionTriggerCard(triggerId, scale, isAboveLine, x, y, false);
     });
 }
@@ -1914,6 +1927,11 @@ function setupEditWorkspaceDropZone() {
         
         const scale = Math.max(1, Math.min(10, Math.round((x / rect.width) * 10)));
         const isAboveLine = y < rect.height / 2;
+        
+        const existingCardInSection = currentEmployee.motivational_triggers?.find(t => t.scale === scale);
+        if (existingCardInSection && existingCardInSection.id !== triggerId) {
+            returnCardToPalette(existingCardInSection.id, true);
+        }
         
         positionTriggerCard(triggerId, scale, isAboveLine, x, y, true);
     });
@@ -1968,5 +1986,28 @@ function loadTriggerPositions(positions, isEdit) {
             positionTriggerCard(pos.id, pos.scale, pos.isAboveLine, pos.x, pos.y, isEdit);
         }
     });
+}
+
+function returnCardToPalette(triggerId, isEdit) {
+    const cardSelector = `[data-trigger-id="${triggerId}"][data-is-edit="${isEdit}"]`;
+    const card = document.querySelector(cardSelector);
+    const paletteId = isEdit ? 'editTriggersPalette' : 'triggersPalette';
+    const palette = document.getElementById(paletteId);
+    
+    if (card && palette) {
+        card.classList.remove('positioned', 'in-workspace');
+        card.style.position = '';
+        card.style.left = '';
+        card.style.top = '';
+        card.style.zIndex = '';
+        
+        palette.appendChild(card);
+        
+        if (currentEmployee.motivational_triggers) {
+            currentEmployee.motivational_triggers = currentEmployee.motivational_triggers.filter(
+                t => t.id !== triggerId
+            );
+        }
+    }
 }
 
