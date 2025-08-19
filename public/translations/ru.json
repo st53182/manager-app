@@ -191,6 +191,13 @@
   "motivational_triggers": {
     "title": "Мотивационные триггеры",
     "description": "Перетащите карточки для позиционирования по важности (1-10) и производительности (выше/ниже линии)",
+    "palette_title": "Карточки триггеров",
+    "instructions": {
+      "less_important": "Менее важные",
+      "more_important": "Более важные",
+      "works_well": "Работает хорошо",
+      "needs_improvement": "Требует улучшения"
+    },
     "cards": {
       "curiosity": "Любопытство",
       "honor": "Честь", 

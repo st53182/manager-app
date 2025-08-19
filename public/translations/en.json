@@ -191,6 +191,13 @@
   "motivational_triggers": {
     "title": "Motivational Triggers",
     "description": "Drag cards to position by importance (1-10) and performance (above/below line)",
+    "palette_title": "Trigger Cards",
+    "instructions": {
+      "less_important": "Less Important",
+      "more_important": "More Important",
+      "works_well": "Works Well",
+      "needs_improvement": "Needs Improvement"
+    },
     "cards": {
       "curiosity": "Curiosity",
       "honor": "Honor", 
