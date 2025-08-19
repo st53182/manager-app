@@ -362,7 +362,9 @@ async function updateEmployeeProfile(employeeId, profileData) {
     } = profileData;
 
     const emailValue = email && email.trim() !== '' ? email : null;
-
+const okrGoalsJson = (typeof okrGoals === 'undefined') ? null : JSON.stringify(okrGoals);
+const discDataJson = (typeof discData === 'undefined') ? null : JSON.stringify(discData);
+const developmentPlanJson = (typeof developmentPlan === 'undefined') ? null : JSON.stringify(developmentPlan);
     const result = await client.query(`
       UPDATE employees SET 
         name = COALESCE($1, name),
@@ -391,13 +393,12 @@ async function updateEmployeeProfile(employeeId, profileData) {
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $24 RETURNING *
     `, [
-      name, emailValue, position, phone, roles, homeBase, timeZone, meetingTimes, 
-      domains, expertise, motivators, demotivators, personalInterests, 
-      stakeholders, importantTraits, comm_channels || commChannels, commStyle, 
-      commNotes, workStyle, JSON.stringify(okrGoals || []), discType, 
-      JSON.stringify(discData || {}), JSON.stringify(developmentPlan || []), 
-      employeeId
-    ]);
+  name, emailValue, position, phone, roles, homeBase, timeZone, meetingTimes,
+  domains, expertise, motivators, demotivators, personalInterests,
+  stakeholders, importantTraits, comm_channels || commChannels, commStyle,
+  commNotes, workStyle, okrGoalsJson, discType, discDataJson, developmentPlanJson,
+  employeeId
+]);
     
     const updatedEmployee = await client.query(`
       SELECT e.*, t.name as team_name 
