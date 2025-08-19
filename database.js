@@ -355,63 +355,67 @@ async function updateEmployeeProfile(employeeId, profileData) {
   const client = await pool.connect();
   try {
     const {
-      name, email, position, phone, roles, homeBase, timeZone, meetingTimes, 
-      domains, expertise, motivators, demotivators, personalInterests, 
-      stakeholders, importantTraits, commChannels, commStyle, commNotes, 
+      name, email, position, phone, roles, homeBase, timeZone, meetingTimes,
+      domains, expertise, motivators, demotivators, personalInterests,
+      stakeholders, importantTraits, commChannels, commStyle, commNotes,
       workStyle, okrGoals, discType, discData, developmentPlan, comm_channels
     } = profileData;
 
     const emailValue = email && email.trim() !== '' ? email : null;
-const okrGoalsJson = (typeof okrGoals === 'undefined') ? null : JSON.stringify(okrGoals);
-const discDataJson = (typeof discData === 'undefined') ? null : JSON.stringify(discData);
-const developmentPlanJson = (typeof developmentPlan === 'undefined') ? null : JSON.stringify(developmentPlan);
+
+    // главное: если поле не прислали (undefined), шлём NULL → COALESCE оставит старое значение
+    const okrGoalsJson        = (typeof okrGoals        === 'undefined') ? null : JSON.stringify(okrGoals);
+    const discDataJson        = (typeof discData        === 'undefined') ? null : JSON.stringify(discData);
+    const developmentPlanJson = (typeof developmentPlan === 'undefined') ? null : JSON.stringify(developmentPlan);
+
     const result = await client.query(`
       UPDATE employees SET 
         name = COALESCE($1, name),
         email = COALESCE($2, email),
         position = COALESCE($3, position),
         phone = COALESCE($4, phone),
-        roles = COALESCE($5, roles), 
-        home_base = COALESCE($6, home_base), 
-        time_zone = COALESCE($7, time_zone), 
+        roles = COALESCE($5, roles),
+        home_base = COALESCE($6, home_base),
+        time_zone = COALESCE($7, time_zone),
         meeting_times = COALESCE($8, meeting_times),
-        domains = COALESCE($9, domains), 
-        expertise = COALESCE($10, expertise), 
-        motivators = COALESCE($11, motivators), 
+        domains = COALESCE($9, domains),
+        expertise = COALESCE($10, expertise),
+        motivators = COALESCE($11, motivators),
         demotivators = COALESCE($12, demotivators),
-        personal_interests = COALESCE($13, personal_interests), 
-        stakeholders = COALESCE($14, stakeholders), 
+        personal_interests = COALESCE($13, personal_interests),
+        stakeholders = COALESCE($14, stakeholders),
         important_traits = COALESCE($15, important_traits),
-        comm_channels = COALESCE($16, comm_channels), 
-        comm_style = COALESCE($17, comm_style), 
-        comm_notes = COALESCE($18, comm_notes), 
+        comm_channels = COALESCE($16, comm_channels),
+        comm_style = COALESCE($17, comm_style),
+        comm_notes = COALESCE($18, comm_notes),
         work_style = COALESCE($19, work_style),
-        okr_goals = COALESCE($20, okr_goals), 
-        disc_type = COALESCE($21, disc_type), 
-        disc_data = COALESCE($22, disc_data), 
+        okr_goals = COALESCE($20, okr_goals),
+        disc_type = COALESCE($21, disc_type),
+        disc_data = COALESCE($22, disc_data),
         development_plan = COALESCE($23, development_plan),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $24 RETURNING *
     `, [
-  name, emailValue, position, phone, roles, homeBase, timeZone, meetingTimes,
-  domains, expertise, motivators, demotivators, personalInterests,
-  stakeholders, importantTraits, comm_channels || commChannels, commStyle,
-  commNotes, workStyle, okrGoalsJson, discType, discDataJson, developmentPlanJson,
-  employeeId
-]);
-    
+      name, emailValue, position, phone, roles, homeBase, timeZone, meetingTimes,
+      domains, expertise, motivators, demotivators, personalInterests,
+      stakeholders, importantTraits, (comm_channels || commChannels), commStyle,
+      commNotes, workStyle, okrGoalsJson, discType, discDataJson, developmentPlanJson,
+      employeeId
+    ]);
+
     const updatedEmployee = await client.query(`
       SELECT e.*, t.name as team_name 
       FROM employees e 
       LEFT JOIN teams t ON e.team_id = t.id 
       WHERE e.id = $1
     `, [employeeId]);
-    
+
     return updatedEmployee.rows[0];
   } finally {
     client.release();
   }
 }
+
 
 async function createEmployeeSecureToken(employeeId, managerId) {
   const client = await pool.connect();
