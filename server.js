@@ -369,7 +369,7 @@ app.get('/api/employee/:id/profile', async (req, res) => {
     }
 
     const tokenData = await validateEmployeeSecureToken(token);
-    if (!tokenData || tokenData.employee_id !== req.params.id) {
+    if (!tokenData || tokenData.id !== req.params.id) {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
 
