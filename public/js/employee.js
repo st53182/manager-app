@@ -334,6 +334,40 @@ function displayDevelopmentPlan(plan) {
     `).join('');
 }
 
+async function persistMotivationalTriggers() {
+  const token = checkAuth();
+  if (!token || !employeeId) return;
+
+  const headers = isEmployeeView
+    ? { 'Content-Type': 'application/json' }
+    : { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+  const endpoint = isEmployeeView
+    ? `/employee/${employeeId}/profile?token=${token}`
+    : `/api/employee/${employeeId}/profile`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        // отправляем только нужное поле, чтобы ничего лишнего не затирать
+        motivationalTriggers: currentEmployee.motivational_triggers || []
+      })
+    });
+    if (response.ok) {
+      const updated = await response.json();
+      currentEmployee = updated;
+      window.currentEmployee = updated;
+    } else {
+      console.warn('Failed to persist motivational triggers');
+    }
+  } catch (err) {
+    console.error('Persist motivators error:', err);
+  }
+}
+
+
 async function generateSecureLink() {
     const token = checkAuth();
     if (!token || !employeeId) return;
@@ -1938,23 +1972,39 @@ function setupEditWorkspaceDropZone() {
 }
 
 function positionTriggerCard(triggerId, scale, isAboveLine, x, y, isEdit) {
-    const cardSelector = `[data-trigger-id="${triggerId}"][data-is-edit="${isEdit}"]`;
-    const card = document.querySelector(cardSelector);
-    const workspaceId = isEdit ? 'editTriggersWorkspace' : 'triggersWorkspace';
-    const workspace = document.getElementById(workspaceId);
-    
-    if (!card || !workspace) return;
-    
-    card.classList.add('positioned', 'in-workspace');
-    card.style.position = 'absolute';
-    card.style.left = `${Math.max(0, Math.min(x - 40, workspace.clientWidth - 80))}px`;
-    card.style.top = `${Math.max(0, Math.min(y - 40, workspace.clientHeight - 80))}px`;
-    card.style.zIndex = '10';
-    
-    workspace.appendChild(card);
-    
-    saveTriggerPosition(triggerId, scale, isAboveLine, x, y);
+  const cardSelector = `[data-trigger-id="${triggerId}"][data-is-edit="${isEdit}"]`;
+  const card = document.querySelector(cardSelector);
+  const workspaceId = isEdit ? 'editTriggersWorkspace' : 'triggersWorkspace';
+  const workspace = document.getElementById(workspaceId);
+  if (!card || !workspace) return;
+
+  // --- защёлкивание по X к «центрам» 10 колонок ---
+  const bucketWidth = workspace.clientWidth / 10;   // ширина одного деления
+  const halfCard = 40;                               // половина 80px
+  const snappedLeft = Math.max(
+    0,
+    Math.min((scale - 0.5) * bucketWidth - halfCard, workspace.clientWidth - 80)
+  );
+
+  // --- два «яруса» по Y: верх (25%) или низ (75%) области ---
+  const centerYTop = Math.max(halfCard, Math.min(workspace.clientHeight * 0.25, workspace.clientHeight - halfCard));
+  const centerYBottom = Math.max(halfCard, Math.min(workspace.clientHeight * 0.75, workspace.clientHeight - halfCard));
+  const snappedTop = (isAboveLine ? centerYTop : centerYBottom) - halfCard;
+
+  card.classList.add('positioned', 'in-workspace');
+  card.style.position = 'absolute';
+  card.style.left = `${snappedLeft}px`;
+  card.style.top = `${snappedTop}px`;
+  card.style.zIndex = '10';
+  workspace.appendChild(card);
+
+  // сохраняем уже «защёлкнутые» координаты (центр карточки)
+  saveTriggerPosition(triggerId, scale, isAboveLine, snappedLeft + halfCard, snappedTop + halfCard);
+
+  // автосохранение в БД после каждого перетаскивания
+  persistMotivationalTriggers();
 }
+
 
 function saveTriggerPosition(triggerId, scale, isAboveLine, x, y) {
     if (!currentEmployee.motivational_triggers) {

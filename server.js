@@ -43,35 +43,36 @@ const openai = process.env.OPENAI_API_KEY ? new OpenAI({
 }) : null;
 function normalizeProfileBody(body = {}) {
   const out = {};
-  const copy = (srcKey, dstKey = srcKey) => {
-    if (Object.prototype.hasOwnProperty.call(body, srcKey) && body[srcKey] !== undefined) {
-      out[dstKey] = body[srcKey];
-    }
+  const copy = (src, dst) => {
+    if (typeof body[src] !== 'undefined' && body[src] !== null) out[dst] = body[src];
   };
 
-  // простые поля (как есть)
-  ['name','email','position','phone','roles','domains','expertise','motivators','demotivators','stakeholders']
-    .forEach(k => copy(k));
+  // простые поля/теги
+  copy('name','name'); copy('email','email'); copy('position','position'); copy('phone','phone');
+  copy('roles','roles'); copy('domains','domains'); copy('expertise','expertise');
+  copy('personal_interests','personalInterests'); copy('personalInterests','personalInterests');
+  copy('comm_channels','commChannels'); copy('commChannels','commChannels');
+  copy('stakeholders','stakeholders'); copy('important_traits','importantTraits'); copy('importantTraits','importantTraits');
+  copy('meeting_times','meetingTimes'); copy('meetingTimes','meetingTimes');
+  copy('comm_style','commStyle'); copy('commStyle','commStyle');
+  copy('work_style','workStyle'); copy('workStyle','workStyle');
+  copy('motivators','motivators'); copy('demotivators','demotivators');
+  copy('time_zone','timeZone'); copy('timeZone','timeZone');
+  copy('comm_notes','commNotes'); copy('commNotes','commNotes');
 
-  // поддерживаем snake_case и camelCase
-  copy('personal_interests', 'personalInterests');  copy('personalInterests', 'personalInterests');
-  copy('comm_channels', 'commChannels');            copy('commChannels', 'commChannels');
-  copy('meeting_times', 'meetingTimes');            copy('meetingTimes', 'meetingTimes');
-  copy('comm_style', 'commStyle');                  copy('commStyle', 'commStyle');
-  copy('work_style', 'workStyle');                  copy('workStyle', 'workStyle');
-  copy('important_traits', 'importantTraits');      copy('importantTraits', 'importantTraits');
-  copy('time_zone', 'timeZone');                    copy('timeZone', 'timeZone');
-  // если когда-нибудь вернёте поле:
-  // copy('home_base','homeBase');                  copy('homeBase','homeBase');
+  // JSON-поля
+  copy('okr_goals','okrGoals'); copy('okrGoals','okrGoals');
+  copy('development_plan','developmentPlan'); copy('developmentPlan','developmentPlan');
+  copy('disc_type','discType'); copy('discType','discType');
+  copy('disc_data','discData'); copy('discData','discData');
 
-  // массивы/JSON
-  copy('okr_goals', 'okrGoals');                    copy('okrGoals', 'okrGoals');
-  copy('development_plan', 'developmentPlan');      copy('developmentPlan', 'developmentPlan');
-  copy('disc_type', 'discType');                    copy('discType', 'discType');
-  copy('disc_data', 'discData');                    copy('discData', 'discData');
+  // ВАЖНО: мотиваторы (позиции карточек)
+  copy('motivational_triggers','motivationalTriggers');
+  copy('motivationalTriggers','motivationalTriggers');
 
   return out;
 }
+
 
 
 app.set('trust proxy', 1);
