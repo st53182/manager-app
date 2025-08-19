@@ -86,6 +86,8 @@ async function loadEmployeeProfile() {
 
         currentEmployee = await response.json();
         displayEmployeeProfile(currentEmployee);
+        window.currentEmployee = currentEmployee;
+
         
     } catch (error) {
         console.error('Error loading employee profile:', error);
@@ -873,7 +875,7 @@ function initializeOkrModal() {
 }
 
 function loadCurrentOkrs() {
-    const employee = window.currentEmployee;
+    const employee = currentEmployee || window.currentEmployee;
     if (employee && employee.okr_goals) {
         try {
             currentOkrs = typeof employee.okr_goals === 'string' ? 
@@ -1325,6 +1327,9 @@ async function saveOkrs(event) {
         if (currentEmployee) {
             currentEmployee.okr_goals = okrs;
         }
+        if (window.currentEmployee) {
+    window.currentEmployee.okr_goals = okrs;
+}
         displayOkrGoals(okrs);
         closeOkrModal();
         showToast('OKR успешно сохранены');
