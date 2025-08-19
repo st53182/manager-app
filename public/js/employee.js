@@ -1213,65 +1213,91 @@ function collectOkrsFromForm() {
 
 async function saveOkrs(event) {
     event.preventDefault();
-    
+
     const saveBtn = document.getElementById('saveOkrBtn');
     const originalText = saveBtn.textContent;
-    
+
     try {
         saveBtn.textContent = 'Сохранение...';
         saveBtn.disabled = true;
-        
+
+        // 1) Собираем OKR из формы
         const okrs = collectOkrsFromForm();
-        
-        if (okrs.length === 0) {
+        if (!okrs || okrs.length === 0) {
             showToast('Добавьте хотя бы одну цель');
             return;
         }
-        
+
         const token = checkAuth();
         if (!token) return;
-        
-        const headers = isEmployeeView ? {} : {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        };
-        
-        if (isEmployeeView) {
-            headers['Content-Type'] = 'application/json';
-        }
-        
-        const endpoint = isEmployeeView ? 
-            `/employee/${employeeId}/profile?token=${token}` : 
-            `/api/employee/${employeeId}/profile`;
-        
-        const response = await fetch(endpoint, {
-            method: 'PUT',
+
+        // Заголовки для обоих режимов (по защищённой ссылке и по авторизации)
+        const headers = isEmployeeView
+            ? { 'Content-Type': 'application/json' }
+            : { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+        // Один и тот же endpoint профиля, но с разной авторизацией
+        const profileEndpoint = isEmployeeView
+            ? `/employee/${employeeId}/profile?token=${token}`
+            : `/api/employee/${employeeId}/profile`;
+
+        // 2) Пытаемся сначала сделать частичное обновление OKR (PATCH)
+        let response = await fetch(profileEndpoint, {
+            method: 'PATCH',
             headers,
-            body: JSON.stringify({
-                okr_goals: okrs
-            })
+            body: JSON.stringify({ okr_goals: okrs })
         });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            if (currentEmployee) {
-                currentEmployee.okr_goals = okrs;
-                displayOkrGoals(okrs);
+
+        // Если PATCH не поддерживается сервером — откатываемся на безопасный merge + PUT
+        if (response.status === 404 || response.status === 405 || response.status === 501) {
+            // 3a) Подтянуть актуальный профиль (если в currentEmployee чего-то не хватает)
+            let profile = currentEmployee;
+            if (!profile || !profile.id) {
+                const getResp = await fetch(profileEndpoint, { headers });
+                if (!getResp.ok) {
+                    throw new Error('Не удалось загрузить текущий профиль для сохранения OKR');
+                }
+                profile = await getResp.json();
             }
-            closeOkrModal();
-            showToast('OKR успешно сохранены');
-        } else {
-            throw new Error(data.error || 'Ошибка сохранения');
+
+            // 3b) Сформировать merged-профиль: заменяем только okr_goals
+            const mergedProfile = { ...profile, okr_goals: okrs };
+
+            // На всякий случай уберём «только для чтения» системные поля, если они есть
+            delete mergedProfile.created_at;
+            delete mergedProfile.updated_at;
+
+            // 3c) Отправляем полный PUT с объединённым профилем (не затирает DISC и т.п.)
+            response = await fetch(profileEndpoint, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify(mergedProfile)
+            });
         }
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            throw new Error(data?.error || 'Ошибка сохранения OKR');
+        }
+
+        // 4) Обновляем локальное состояние и UI
+        if (currentEmployee) {
+            currentEmployee.okr_goals = okrs;
+        }
+        displayOkrGoals(okrs);
+        closeOkrModal();
+        showToast('OKR успешно сохранены');
+
     } catch (error) {
         console.error('Error saving OKRs:', error);
-        showToast('Ошибка при сохранении OKR: ' + error.message);
+        showToast('Ошибка при сохранении OKR: ' + error.message, 'error');
     } finally {
         saveBtn.textContent = originalText;
         saveBtn.disabled = false;
     }
 }
+
 
 function calculateOkrProgress(okr) {
     if (okr.completed) return 100;

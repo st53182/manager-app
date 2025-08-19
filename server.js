@@ -125,6 +125,17 @@ app.post('/api/register', authLimiter, async (req, res) => {
   }
 });
 
+app.post('/api/employee/:id/okrs', authMiddleware, async (req, res) => {
+    const { okr_goals } = req.body;
+    try {
+        await db.query('UPDATE employees SET okr_goals = ? WHERE id = ?', [JSON.stringify(okr_goals), req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Ошибка сохранения OKR' });
+    }
+});
+
 app.post('/api/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
