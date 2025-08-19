@@ -1052,6 +1052,8 @@ function renderOkrForm() {
     });
 }
 
+
+
 async function improveObjectiveWithAI(objectiveIndex) {
     const objectiveTextarea = document.querySelector(`textarea[name="objective-${objectiveIndex}"]`);
     const currentText = objectiveTextarea.value.trim();
