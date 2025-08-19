@@ -1177,6 +1177,47 @@ async function improveKeyResultWithAI(objectiveIndex, keyResultIndex) {
         button.disabled = false;
     }
 }
+// === OKR helpers (вставить выше displayOkrGoals) ===
+function ensureKeyResultsCompleted(goal) {
+  // гарантируем согласованность длин массивов
+  const krCount = Array.isArray(goal.key_results) ? goal.key_results.length : 0;
+  if (!Array.isArray(goal.key_results_completed)) {
+    goal.key_results_completed = Array(krCount).fill(false);
+  } else if (goal.key_results_completed.length !== krCount) {
+    const arr = Array(krCount).fill(false);
+    for (let i = 0; i < Math.min(goal.key_results_completed.length, krCount); i++) {
+      arr[i] = !!goal.key_results_completed[i];
+    }
+    goal.key_results_completed = arr;
+  }
+  return goal;
+}
+
+function calculateOkrProgress(goal) {
+  // Если есть ключевые результаты — считаем по ним
+  if (Array.isArray(goal.key_results) && goal.key_results.length > 0) {
+    ensureKeyResultsCompleted(goal);
+    const total = goal.key_results.length;
+    const done = goal.key_results_completed.filter(Boolean).length;
+    return Math.round((done / total) * 100);
+  }
+  // Иначе — по статусу/флажку completed
+  if (goal.completed) return 100;
+  if (goal.status === 'in_progress') return 50;
+  return 0;
+}
+
+function calculateTimeRemaining(deadline) {
+  if (!deadline) return { days: null, isOverdue: false };
+  const now = new Date();
+  // поддержим как ISO, так и 'YYYY-MM-DD'
+  const due = new Date(deadline);
+  // нормализуем к полуночи без времени для корректного подсчёта дней
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const days = Math.ceil((due.setHours(0,0,0,0) - now.setHours(0,0,0,0)) / msPerDay);
+  return { days: Math.abs(days), isOverdue: days < 0 };
+}
+// === /OKR helpers ===
 
 function collectOkrsFromForm() {
     const objectives = document.querySelectorAll('.objective-item');
