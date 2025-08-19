@@ -853,9 +853,17 @@ function initializeOkrModal() {
     document.getElementById('closeOkrModal').addEventListener('click', closeOkrModal);
     document.getElementById('cancelOkrBtn').addEventListener('click', closeOkrModal);
     document.getElementById('okrForm').addEventListener('submit', saveOkrs);
-    document.getElementById('generateOkrBtn').addEventListener('click', generateOkrWithAI);
-    document.getElementById('improveOkrBtn').addEventListener('click', improveOkrWithAI);
     document.getElementById('addObjectiveBtn').addEventListener('click', addObjective);
+    
+    const generateBtn = document.getElementById('generateOkrBtn');
+    const improveBtn = document.getElementById('improveOkrBtn');
+    
+    if (generateBtn) {
+        generateBtn.addEventListener('click', generateOkrWithAI);
+    }
+    if (improveBtn) {
+        improveBtn.addEventListener('click', improveOkrWithAI);
+    }
     
     document.getElementById('okrModal').addEventListener('click', (e) => {
         if (e.target.id === 'okrModal') {
@@ -1365,6 +1373,133 @@ async function toggleOkrCompletion(goalIndex, type, keyResultIndex = null) {
         console.error('Error toggling OKR completion:', error);
         showToast('Ошибка при обновлении статуса: ' + error.message);
     }
+}
+
+function generateOkrWithAI() {
+    const context = document.getElementById('okrContext').value;
+    const additionalGoals = document.getElementById('okrAdditionalGoals').value;
+    const position = window.currentEmployee?.position || 'Not specified';
+    
+    const generateBtn = document.getElementById('generateOkrBtn');
+    const originalText = generateBtn.textContent;
+    generateBtn.textContent = translations[currentLanguage].employee.okr_generating || 'Генерация...';
+    generateBtn.disabled = true;
+    
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+    };
+    
+    const endpoint = `/api/employee/${getEmployeeIdFromUrl()}/okr-generate`;
+    
+    fetch(endpoint, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+            context: context,
+            position: position,
+            goals: additionalGoals
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to generate OKRs');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success && data.okrs) {
+            populateOkrForm(data.okrs);
+            document.getElementById('improveOkrBtn').classList.remove('hidden');
+        }
+    })
+    .catch(error => {
+        console.error('Error generating OKRs:', error);
+        showToast(translations[currentLanguage].employee.okr_error || 'Ошибка при генерации OKR', 'error');
+    })
+    .finally(() => {
+        generateBtn.textContent = originalText;
+        generateBtn.disabled = false;
+    });
+}
+
+function improveOkrWithAI() {
+    const feedback = document.getElementById('okrFeedback').value;
+    const currentOkrs = collectOkrsFromForm();
+    
+    if (currentOkrs.length === 0) {
+        showToast('Сначала добавьте OKR цели', 'error');
+        return;
+    }
+    
+    const improveBtn = document.getElementById('improveOkrBtn');
+    const originalText = improveBtn.textContent;
+    improveBtn.textContent = translations[currentLanguage].employee.okr_improving || 'Улучшение...';
+    improveBtn.disabled = true;
+    
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+    };
+    
+    const endpoint = `/api/employee/${getEmployeeIdFromUrl()}/okr-improve`;
+    
+    fetch(endpoint, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+            okrs: currentOkrs,
+            feedback: feedback
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to improve OKRs');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success && data.okrs) {
+            populateOkrForm(data.okrs);
+        }
+    })
+    .catch(error => {
+        console.error('Error improving OKRs:', error);
+        showToast(translations[currentLanguage].employee.okr_error || 'Ошибка при улучшении OKR', 'error');
+    })
+    .finally(() => {
+        improveBtn.textContent = originalText;
+        improveBtn.disabled = false;
+    });
+}
+
+function populateOkrForm(okrs) {
+    const objectivesContainer = document.getElementById('okrObjectives');
+    objectivesContainer.innerHTML = '';
+    
+    okrs.forEach((okr, index) => {
+        addObjective();
+        const objectiveDiv = objectivesContainer.children[index];
+        
+        const objectiveInput = objectiveDiv.querySelector('input[name="objective"]');
+        const deadlineInput = objectiveDiv.querySelector('input[name="deadline"]');
+        const progressInput = objectiveDiv.querySelector('input[name="progress"]');
+        
+        if (objectiveInput) objectiveInput.value = okr.objective || '';
+        if (deadlineInput) deadlineInput.value = okr.deadline || '';
+        if (progressInput) progressInput.value = okr.progress || 0;
+        
+        const keyResultsContainer = objectiveDiv.querySelector('.key-results-container');
+        if (keyResultsContainer && okr.key_results) {
+            keyResultsContainer.innerHTML = '';
+            okr.key_results.forEach(keyResult => {
+                addKeyResult(index);
+                const keyResultInputs = keyResultsContainer.querySelectorAll('input[name="key_result"]');
+                const lastInput = keyResultInputs[keyResultInputs.length - 1];
+                if (lastInput) lastInput.value = keyResult;
+            });
+        }
+    });
 }
 
 function editOkr(index) {
