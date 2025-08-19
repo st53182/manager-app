@@ -123,7 +123,6 @@ function displayEmployeeProfile(employee) {
     displayDevelopmentPlan(employee.development_plan || []);
 
     document.getElementById('roles').textContent = employee.roles || '-';
-    document.getElementById('homeBase').textContent = employee.home_base || '-';
     document.getElementById('timeZone').textContent = employee.time_zone || '-';
     document.getElementById('domains').textContent = employee.domains || '-';
     document.getElementById('expertise').textContent = employee.expertise || '-';
