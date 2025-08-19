@@ -853,8 +853,6 @@ function initializeOkrModal() {
     document.getElementById('closeOkrModal').addEventListener('click', closeOkrModal);
     document.getElementById('cancelOkrBtn').addEventListener('click', closeOkrModal);
     document.getElementById('okrForm').addEventListener('submit', saveOkrs);
-    document.getElementById('generateOkrBtn').addEventListener('click', generateOkrWithAI);
-    document.getElementById('improveOkrBtn').addEventListener('click', improveOkrWithAI);
     document.getElementById('addObjectiveBtn').addEventListener('click', addObjective);
     
     document.getElementById('okrModal').addEventListener('click', (e) => {
