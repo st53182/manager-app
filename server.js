@@ -486,7 +486,7 @@ app.post('/employee/:id/disc-test', async (req, res) => {
     }
     
     const tokenData = await validateEmployeeSecureToken(token);
-    if (!tokenData || tokenData.employee_id !== employeeId) {
+    if (!tokenData || tokenData.id !== employeeId) {
       return res.status(401).json({ error: 'Недействительный токен' });
     }
     

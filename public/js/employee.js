@@ -876,8 +876,6 @@ function loadCurrentOkrs() {
     }
     
     if (currentOkrs.length > 0) {
-        document.getElementById('improveOkrBtn').classList.remove('hidden');
-        document.getElementById('okrImprovementSection').classList.remove('hidden');
         renderOkrForm();
     } else {
         addObjective();
@@ -886,11 +884,6 @@ function loadCurrentOkrs() {
 
 function resetOkrModal() {
     document.getElementById('okrObjectives').innerHTML = '';
-    document.getElementById('okrContext').value = '';
-    document.getElementById('okrAdditionalGoals').value = '';
-    document.getElementById('okrFeedback').value = '';
-    document.getElementById('improveOkrBtn').classList.add('hidden');
-    document.getElementById('okrImprovementSection').classList.add('hidden');
     editingOkrIndex = -1;
 }
 
