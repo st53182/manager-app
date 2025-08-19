@@ -1826,6 +1826,104 @@ async function saveProfileChanges(e) {
         showToast('Ошибка сохранения профиля', 'error');
     }
 }
+// === Tips for motivational triggers ===
+const DEFAULT_TRIGGER_TIPS = {
+  curiosity:   'Любопытство: доступ к новой информации и исследованиям.',
+  honor:       'Честь/признание: видимая оценка вклада и достижений.',
+  acceptance:  'Принятие: ощущение принадлежности к команде/культуре.',
+  mastery:     'Мастерство: сложные задачи, рост компетенций, обучение.',
+  power:       'Влияние: возможность принимать решения и менять исход.',
+  freedom:     'Свобода: автономия в выборе способов и порядка работы.',
+  relatedness: 'Связи: работа с людьми, доверие и командные взаимодействия.',
+  order:       'Порядок: ясные процессы, правила, предсказуемость.',
+  goal:        'Цели: ясные, измеримые ориентиры и прогресс к ним.',
+  status:      'Статус: роль/титул/видимость экспертизы и результатов.'
+};
+
+// Берём перевод из файлов локализаций, иначе — фолбэк
+function getTriggerTip(triggerId) {
+  const key = `motivational_triggers.tips.${triggerId}`;
+  if (window.translationManager) {
+    const tip = window.translationManager.t(key);
+    if (tip && tip !== key) return tip;
+
+    // общий дефолт из переводов, если есть
+    const common = window.translationManager.t('motivational_triggers.tips._default');
+    if (common && common !== 'motivational_triggers.tips._default') return common;
+  }
+  return DEFAULT_TRIGGER_TIPS[triggerId] || 'Подсказка будет добавлена позже.';
+}
+
+// Создаёт/показывает тултип рядом с кнопкой
+function showTriggerTooltip(anchorEl, text) {
+  hideTriggerTooltip(); // на всякий случай закрыть другие
+
+  const rect = anchorEl.getBoundingClientRect();
+  const tt = document.createElement('div');
+  tt.id = 'trigger-tooltip';
+  tt.className = 'fixed z-50 max-w-xs bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-lg';
+  tt.style.top = `${rect.bottom + 8}px`;
+  tt.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 260))}px`;
+  tt.textContent = text;
+
+  document.body.appendChild(tt);
+
+  // клик вне — закрыть
+  setTimeout(() => {
+    function off(e) {
+      if (!tt.contains(e.target) && e.target !== anchorEl) {
+        hideTriggerTooltip();
+        document.removeEventListener('mousedown', off, true);
+        document.removeEventListener('touchstart', off, true);
+      }
+    }
+    document.addEventListener('mousedown', off, true);
+    document.addEventListener('touchstart', off, true);
+  }, 0);
+}
+
+function hideTriggerTooltip() {
+  const el = document.getElementById('trigger-tooltip');
+  if (el) el.remove();
+}
+
+// Добавляет кнопку "i" на карточку и вешает обработчики
+function attachTriggerHelp(cardEl) {
+  if (!cardEl || cardEl.querySelector('.trigger-help-btn')) return;
+
+  // Обертка, чтобы позиционировать иконку
+  cardEl.classList.add('relative');
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'trigger-help-btn absolute -top-2 -right-2 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center shadow focus:outline-none';
+  btn.setAttribute('aria-label', 'Подсказка по триггеру');
+  btn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M11 17h2m-1-8h.01M12 3a9 9 0 100 18 9 9 0 000-18z"/>
+    </svg>
+  `;
+
+  // не даем начаться drag при нажатии на кнопку
+  btn.addEventListener('mousedown', e => e.stopPropagation(), { passive: true });
+  btn.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const id = cardEl.getAttribute('data-trigger-id');
+    showTriggerTooltip(btn, getTriggerTip(id));
+  });
+
+  cardEl.appendChild(btn);
+}
+
+// Вызывает attachTriggerHelp для всех карточек триггеров (и в библиотеке, и на рабочем поле)
+function attachHelpToAllTriggers() {
+  const nodes = document.querySelectorAll(
+    '#triggersLibrary [data-trigger-id], #triggersWorkspace [data-trigger-id], #editTriggersWorkspace [data-trigger-id]'
+  );
+  nodes.forEach(attachTriggerHelp);
+}
 
 const MOTIVATIONAL_TRIGGERS = [
     { id: 'curiosity', color: '#3b82f6', icon: '🔍' },
@@ -1856,6 +1954,8 @@ function initializeMotivationalTriggers() {
     if (currentEmployee && currentEmployee.motivational_triggers) {
         loadTriggerPositions(currentEmployee.motivational_triggers, false);
     }
+    attachHelpToAllTriggers();
+
 }
 
 function initializeEditMotivationalTriggers() {
@@ -1874,6 +1974,7 @@ function initializeEditMotivationalTriggers() {
     if (currentEmployee && currentEmployee.motivational_triggers) {
         loadTriggerPositions(currentEmployee.motivational_triggers, true);
     }
+     attachHelpToAllTriggers();
 }
 
 function createTriggerCard(trigger, isEdit) {
