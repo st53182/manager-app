@@ -1241,7 +1241,7 @@ async function saveOkrs(event) {
         }
         
         const endpoint = isEmployeeView ? 
-            `/employee/${employeeId}/profile?token=${token}` : 
+            `/api/employee/${employeeId}/profile?token=${token}` : 
             `/api/employee/${employeeId}/profile`;
         
         const response = await fetch(endpoint, {
@@ -1349,7 +1349,7 @@ async function toggleOkrCompletion(goalIndex, type, keyResultIndex = null) {
         }
         
         const endpoint = isEmployeeView ? 
-            `/employee/${employeeId}/profile?token=${token}` : 
+            `/api/employee/${employeeId}/profile?token=${token}` : 
             `/api/employee/${employeeId}/profile`;
         
         const response = await fetch(endpoint, {
@@ -1536,7 +1536,7 @@ async function deleteOkr(index) {
         }
         
         const endpoint = isEmployeeView ? 
-            `/employee/${employeeId}/profile?token=${token}` : 
+            `/api/employee/${employeeId}/profile?token=${token}` : 
             `/api/employee/${employeeId}/profile`;
         
         const response = await fetch(endpoint, {
