@@ -403,8 +403,9 @@ app.put('/api/employee/:id/profile', async (req, res) => {
       
       try {
         const user = jwt.verify(jwtToken, JWT_SECRET);
+        req.user = user;
         employee = await getEmployeeById(req.params.id);
-        if (!employee || employee.manager_id !== user.userId) {
+        if (!employee || employee.manager_id !== req.user.userId) {
           return res.status(404).json({ error: 'Employee not found' });
         }
       } catch (err) {
