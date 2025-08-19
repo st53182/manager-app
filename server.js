@@ -41,6 +41,39 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 }) : null;
+function normalizeProfileBody(body = {}) {
+  const out = {};
+
+  // простые поля
+  if ('name' in body) out.name = body.name;
+  if ('email' in body) out.email = body.email;
+  if ('position' in body) out.position = body.position;
+  if ('phone' in body) out.phone = body.phone;
+  if ('roles' in body) out.roles = body.roles;
+  if ('domains' in body) out.domains = body.domains;
+  if ('expertise' in body) out.expertise = body.expertise;
+  if ('motivators' in body) out.motivators = body.motivators;
+  if ('demotivators' in body) out.demotivators = body.demotivators;
+  if ('stakeholders' in body) out.stakeholders = body.stakeholders;
+
+  // snake → camel
+  if ('personal_interests' in body) out.personalInterests = body.personal_interests;
+  if ('comm_channels' in body) out.commChannels = body.comm_channels;
+  if ('meeting_times' in body) out.meetingTimes = body.meeting_times;
+  if ('comm_style' in body) out.commStyle = body.comm_style;
+  if ('work_style' in body) out.workStyle = body.work_style;
+  if ('important_traits' in body) out.importantTraits = body.important_traits;
+  if ('time_zone' in body) out.timeZone = body.time_zone;
+  if ('home_base' in body) out.homeBase = body.home_base; // если не нужен — просто не передавайте
+
+  // OKR/прочее
+  if ('okr_goals' in body) out.okrGoals = body.okr_goals;
+  if ('development_plan' in body) out.developmentPlan = body.development_plan;
+  if ('disc_type' in body) out.discType = body.disc_type;
+  if ('disc_data' in body) out.discData = body.disc_data;
+
+  return out;
+}
 
 app.set('trust proxy', 1);
 
@@ -446,7 +479,8 @@ app.put('/api/employee/:id/profile', async (req, res) => {
       return res.status(404).json({ error: 'Employee not found' });
     }
 
-    const updatedEmployee = await updateEmployeeProfile(req.params.id, req.body);
+    const updatedEmployee = await updateEmployeeProfile(req.params.id, normalizeProfileBody(req.body));
+
     res.json(updatedEmployee);
   } catch (error) {
     console.error('Update employee profile error:', error);
@@ -710,8 +744,6 @@ Return improved OKRs in the same JSON format, maintaining the same structure but
 app.put('/employee/:id/profile', async (req, res) => {
   try {
     const { token } = req.query;
-    const { okr_goals, ...profileData } = req.body; // корректный rest
-
     if (!token) {
       return res.status(401).json({ error: 'Token required' });
     }
@@ -721,12 +753,15 @@ app.put('/employee/:id/profile', async (req, res) => {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    // Для общего апдейтера переводим snake_case → camelCase
-    const updatedEmployee = await updateEmployeeProfile(req.params.id, {
-      ...profileData,
-      okrGoals: okr_goals ?? employee.okr_goals
-    });
+    // Нормализуем всё тело (snake→camel), включая okr_goals
+    const normalized = normalizeProfileBody(req.body);
 
+    // Если OKR не прислали — оставляем прежние
+    if (typeof normalized.okrGoals === 'undefined') {
+      normalized.okrGoals = employee.okr_goals;
+    }
+
+    const updatedEmployee = await updateEmployeeProfile(req.params.id, normalized);
     res.json({ success: true, employee: updatedEmployee });
   } catch (error) {
     console.error('Error updating employee profile:', error);

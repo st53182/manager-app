@@ -1627,7 +1627,11 @@ function showEditModal() {
     populateTagField('expertise', currentEmployee.expertise);
     populateTagField('personal_interests', currentEmployee.personal_interests);
     populateTagField('comm_channels', currentEmployee.comm_channels);
-    
+    populateTagField('stakeholders', currentEmployee.stakeholders);
+    populateTagField('important_traits', currentEmployee.important_traits);
+
+const tzEl = document.getElementById('editTimeZone');
+if (tzEl) tzEl.value = currentEmployee.time_zone || '';
     document.getElementById('editModal').classList.remove('hidden');
 }
 
@@ -1712,58 +1716,66 @@ async function saveProfileChanges(e) {
     
     const token = checkAuth();
     if (!token || !employeeId) return;
-    
+
+    // собираем данные из формы
     const profileData = {
         name: document.getElementById('editName').value,
         email: document.getElementById('editEmail').value,
         position: document.getElementById('editPosition').value,
         phone: document.getElementById('editPhone').value,
+
+        // теги
         roles: getTagValues('roles'),
         domains: getTagValues('domains'),
         expertise: getTagValues('expertise'),
-        personal_interests: getTagValues('personal_interests'),
-        comm_channels: getTagValues('comm_channels'),
-        meeting_times: document.getElementById('editMeetingTimes').value,
-        comm_style: document.getElementById('editCommStyle').value,
-        work_style: document.getElementById('editWorkStyle').value,
+        personalInterests: getTagValues('personal_interests'), // было personal_interests
+        commChannels: getTagValues('comm_channels'),           // было comm_channels
+        stakeholders: getTagValues('stakeholders'),            // добавили
+        importantTraits: getTagValues('important_traits'),     // добавили
+
+        // строки
+        meetingTimes: document.getElementById('editMeetingTimes').value, // было meeting_times
+        commStyle: document.getElementById('editCommStyle').value,       // было comm_style
+        workStyle: document.getElementById('editWorkStyle').value,       // было work_style
         motivators: document.getElementById('editMotivators').value,
         demotivators: document.getElementById('editDemotivators').value
     };
-    
+
+    // опционально — часовой пояс, если поле есть в модалке
+    const tzEl = document.getElementById('editTimeZone');
+    if (tzEl) profileData.timeZone = tzEl.value;
+
     try {
-        const headers = isEmployeeView ? {} : {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        };
-        
-        if (isEmployeeView) {
-            headers['Content-Type'] = 'application/json';
-        }
-        
-        const endpoint = isEmployeeView ? 
-            `/api/employee/${employeeId}/profile?token=${token}` : 
-            `/api/employee/${employeeId}/profile`;
-        
+        const headers = isEmployeeView
+            ? { 'Content-Type': 'application/json' }
+            : { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+        // ВАЖНО: в режиме по токену должен быть публичный endpoint (без /api)
+        const endpoint = isEmployeeView
+            ? `/employee/${employeeId}/profile?token=${token}`
+            : `/api/employee/${employeeId}/profile`;
+
         const response = await fetch(endpoint, {
             method: 'PUT',
-            headers: headers,
+            headers,
             body: JSON.stringify(profileData)
         });
-        
+
         if (!response.ok) {
             const errorText = await response.text();
             console.error('Profile save failed:', response.status, errorText);
             throw new Error('Не удалось сохранить изменения');
         }
-        
+
         const updatedEmployee = await response.json();
         currentEmployee = updatedEmployee;
+        window.currentEmployee = updatedEmployee; // синхронизируем оба места
         displayEmployeeProfile(updatedEmployee);
         hideEditModal();
         showToast('Профиль успешно обновлен');
-        
     } catch (error) {
         console.error('Error saving profile:', error);
         showToast('Ошибка сохранения профиля', 'error');
     }
 }
+
