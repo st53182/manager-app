@@ -369,7 +369,7 @@ app.get('/api/employee/:id/profile', async (req, res) => {
     }
 
     const tokenData = await validateEmployeeSecureToken(token);
-    if (!tokenData || tokenData.employee_id !== req.params.id) {
+    if (!tokenData || tokenData.id !== req.params.id) {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
 
@@ -390,7 +390,7 @@ app.put('/api/employee/:id/profile', async (req, res) => {
     
     if (token) {
       const tokenData = await validateEmployeeSecureToken(token);
-      if (!tokenData || tokenData.employee_id !== req.params.id) {
+      if (!tokenData || tokenData.id !== req.params.id) {
         return res.status(403).json({ error: 'Invalid or expired token' });
       }
       employee = await getEmployeeById(req.params.id);
@@ -486,7 +486,7 @@ app.post('/employee/:id/disc-test', async (req, res) => {
     }
     
     const tokenData = await validateEmployeeSecureToken(token);
-    if (!tokenData || tokenData.employee_id !== employeeId) {
+    if (!tokenData || tokenData.id !== employeeId) {
       return res.status(401).json({ error: 'Недействительный токен' });
     }
     
@@ -688,8 +688,8 @@ app.put('/employee/:id/profile', async (req, res) => {
       return res.status(401).json({ error: 'Token required' });
     }
     
-    const employee = await validateEmployeeSecureToken(req.params.id, token);
-    if (!employee) {
+    const employee = await validateEmployeeSecureToken(token);
+    if (!employee || employee.id !== req.params.id) {
       return res.status(401).json({ error: 'Invalid token' });
     }
     
@@ -717,8 +717,8 @@ app.post('/employee/:id/okr-improve-single', async (req, res) => {
       return res.status(401).json({ error: 'Token required' });
     }
     
-    const employee = await validateEmployeeSecureToken(req.params.id, token);
-    if (!employee) {
+    const employee = await validateEmployeeSecureToken(token);
+    if (!employee || employee.id !== req.params.id) {
       return res.status(401).json({ error: 'Invalid token' });
     }
     
