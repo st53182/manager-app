@@ -7,6 +7,8 @@ const path = require('path');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
+const OpenAI = require('openai');
+require('dotenv').config();
 
 const { 
   initializeDatabase,
@@ -35,6 +37,10 @@ const server = http.createServer(app);
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+}) : null;
 
 app.set('trust proxy', 1);
 
@@ -510,6 +516,127 @@ app.post('/employee/:id/disc-test', async (req, res) => {
   } catch (error) {
     console.error('Error submitting DISC test via secure token:', error);
     res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+app.post('/api/employee/:id/okr-generate', authenticateToken, async (req, res) => {
+  try {
+    const { context, position, goals } = req.body;
+    
+    if (!openai) {
+      return res.status(500).json({ error: 'OpenAI API key not configured' });
+    }
+
+    const employee = await getEmployeeById(req.params.id);
+    if (!employee || employee.manager_id !== req.user.userId) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    const prompt = `Generate 1-3 OKR (Objectives and Key Results) for an employee with the following context:
+Position: ${position || employee.position || 'Not specified'}
+Context: ${context || 'General professional development'}
+Additional goals: ${goals || 'Not specified'}
+
+Return a JSON array of objects with this exact structure:
+[
+  {
+    "objective": "Clear, measurable objective statement",
+    "key_results": ["Specific measurable result 1", "Specific measurable result 2", "Specific measurable result 3"],
+    "deadline": "2024-12-31",
+    "progress": 0,
+    "status": "not_started",
+    "completed": false,
+    "key_results_completed": [false, false, false]
+  }
+]
+
+Make objectives SMART (Specific, Measurable, Achievable, Relevant, Time-bound). Each objective should have 2-3 key results. Set deadline to end of current quarter. Return only valid JSON without markdown formatting.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      max_tokens: 1000
+    });
+
+    let okrs;
+    try {
+      const content = response.choices[0].message.content.trim();
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      const jsonString = jsonMatch ? jsonMatch[0] : content;
+      okrs = JSON.parse(jsonString);
+    } catch (parseError) {
+      console.error('Failed to parse OpenAI response:', response.choices[0].message.content);
+      return res.status(500).json({ error: 'Failed to parse AI response' });
+    }
+
+    if (!Array.isArray(okrs)) {
+      return res.status(500).json({ error: 'AI response is not an array' });
+    }
+
+    res.json({ success: true, okrs });
+  } catch (error) {
+    console.error('Error in okr-generate:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/employee/:id/okr-improve', authenticateToken, async (req, res) => {
+  try {
+    const { okrs, feedback } = req.body;
+    
+    if (!openai) {
+      return res.status(500).json({ error: 'OpenAI API key not configured' });
+    }
+
+    const employee = await getEmployeeById(req.params.id);
+    if (!employee || employee.manager_id !== req.user.userId) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    const prompt = `Improve the following OKRs based on the feedback provided:
+
+Current OKRs:
+${JSON.stringify(okrs, null, 2)}
+
+Feedback: ${feedback || 'Make them more specific and measurable'}
+
+Return improved OKRs in the same JSON format, maintaining the same structure but with enhanced objectives and key results. Make sure objectives are SMART and key results are specific and measurable. Return only valid JSON without markdown formatting.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      max_tokens: 1000
+    });
+
+    let improvedOkrs;
+    try {
+      const content = response.choices[0].message.content.trim();
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      const jsonString = jsonMatch ? jsonMatch[0] : content;
+      improvedOkrs = JSON.parse(jsonString);
+    } catch (parseError) {
+      console.error('Failed to parse OpenAI response:', response.choices[0].message.content);
+      return res.status(500).json({ error: 'Failed to parse AI response' });
+    }
+
+    if (!Array.isArray(improvedOkrs)) {
+      return res.status(500).json({ error: 'AI response is not an array' });
+    }
+
+    res.json({ success: true, okrs: improvedOkrs });
+  } catch (error) {
+    console.error('Error in okr-improve:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
