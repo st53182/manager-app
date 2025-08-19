@@ -154,32 +154,90 @@ function displayOkrGoals(goals) {
         return;
     }
 
-    container.innerHTML = goals.map(goal => `
-        <div class="border border-gray-200 rounded-lg p-4">
-            <div class="flex items-start justify-between mb-2">
-                <h4 class="font-medium text-gray-900">${goal.objective || 'Цель не указана'}</h4>
-                <span class="text-xs px-2 py-1 rounded-full ${
-                    goal.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    goal.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-gray-100 text-gray-800'
-                }">
-                    ${goal.status === 'completed' ? 'Выполнено' :
-                      goal.status === 'in_progress' ? 'В процессе' : 'Не начато'}
-                </span>
-            </div>
-            ${goal.key_results ? `
-                <div class="space-y-1">
-                    <p class="text-sm font-medium text-gray-700">Ключевые результаты:</p>
-                    <ul class="text-sm text-gray-600 space-y-1">
-                        ${goal.key_results.map(kr => `<li>• ${kr}</li>`).join('')}
-                    </ul>
+    container.innerHTML = goals.map((goal, goalIndex) => {
+        const progress = calculateOkrProgress(goal);
+        const timeRemaining = calculateTimeRemaining(goal.deadline);
+        const isOverdue = timeRemaining.isOverdue;
+        
+        return `
+            <div class="border border-gray-200 rounded-lg p-4 mb-4">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" 
+                               id="objective-${goalIndex}" 
+                               ${goal.completed ? 'checked' : ''} 
+                               onchange="toggleOkrCompletion(${goalIndex}, 'objective')"
+                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <h4 class="font-medium text-gray-900 ${goal.completed ? 'line-through text-gray-500' : ''}">${goal.objective || 'Цель не указана'}</h4>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs px-2 py-1 rounded-full ${
+                            goal.completed ? 'bg-green-100 text-green-800' :
+                            goal.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                            isOverdue ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                        }" data-translate="employee.okr_${goal.completed ? 'completed' : goal.status || 'not_started'}">
+                            ${goal.completed ? 'Выполнено' :
+                              goal.status === 'in_progress' ? 'В процессе' : 
+                              isOverdue ? 'Просрочено' : 'Не начато'}
+                        </span>
+                        <button onclick="editOkr(${goalIndex})" class="text-blue-600 hover:text-blue-800 text-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="deleteOkr(${goalIndex})" class="text-red-600 hover:text-red-800 text-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-            ` : ''}
-            ${goal.deadline ? `
-                <p class="text-xs text-gray-500 mt-2">Срок: ${formatDate(goal.deadline)}</p>
-            ` : ''}
-        </div>
-    `).join('');
+                
+                <!-- Progress Bar -->
+                <div class="mb-3">
+                    <div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span data-translate="employee.okr_progress">Прогресс</span>
+                        <span>${progress}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+                
+                <!-- Time Remaining -->
+                ${goal.deadline ? `
+                    <div class="mb-3 text-sm ${isOverdue ? 'text-red-600' : 'text-gray-600'}">
+                        <span data-translate="employee.okr_time_remaining">Осталось времени</span>: 
+                        ${isOverdue ? 
+                            `<span class="font-medium" data-translate="employee.okr_overdue">Просрочено</span>` :
+                            `<span class="font-medium">${timeRemaining.days} <span data-translate="employee.okr_days">дней</span></span>`
+                        }
+                        <span class="text-gray-400 ml-2">до ${formatDate(goal.deadline)}</span>
+                    </div>
+                ` : ''}
+                
+                <!-- Key Results -->
+                ${goal.key_results && goal.key_results.length > 0 ? `
+                    <div class="space-y-2">
+                        <p class="text-sm font-medium text-gray-700">Ключевые результаты:</p>
+                        <ul class="space-y-2">
+                            ${goal.key_results.map((kr, krIndex) => `
+                                <li class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" 
+                                           id="kr-${goalIndex}-${krIndex}" 
+                                           ${goal.key_results_completed && goal.key_results_completed[krIndex] ? 'checked' : ''} 
+                                           onchange="toggleOkrCompletion(${goalIndex}, 'key_result', ${krIndex})"
+                                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="${goal.key_results_completed && goal.key_results_completed[krIndex] ? 'line-through text-gray-500' : 'text-gray-600'}">${kr}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
 }
 
 function displayDiscPersonality(discType, discData) {
@@ -330,9 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('editProfileBtn').addEventListener('click', showEditModal);
 
-    document.getElementById('addOkrBtn').addEventListener('click', () => {
-        showToast('Функция добавления OKR целей будет добавлена позже');
-    });
+    document.getElementById('addOkrBtn').addEventListener('click', openOkrModal);
     
     document.getElementById('setDiscBtn').addEventListener('click', openDiscModal);
     
@@ -777,6 +833,540 @@ function determinePersonalityType(scores) {
 function retakeDiscTest() {
     resetDiscTest();
     startDiscTest();
+}
+
+let currentOkrs = [];
+let editingOkrIndex = -1;
+
+function openOkrModal() {
+    document.getElementById('okrModal').classList.remove('hidden');
+    loadCurrentOkrs();
+    initializeOkrModal();
+}
+
+function closeOkrModal() {
+    document.getElementById('okrModal').classList.add('hidden');
+    resetOkrModal();
+}
+
+function initializeOkrModal() {
+    document.getElementById('closeOkrModal').addEventListener('click', closeOkrModal);
+    document.getElementById('cancelOkrBtn').addEventListener('click', closeOkrModal);
+    document.getElementById('okrForm').addEventListener('submit', saveOkrs);
+    document.getElementById('generateOkrBtn').addEventListener('click', generateOkrWithAI);
+    document.getElementById('improveOkrBtn').addEventListener('click', improveOkrWithAI);
+    document.getElementById('addObjectiveBtn').addEventListener('click', addObjective);
+    
+    document.getElementById('okrModal').addEventListener('click', (e) => {
+        if (e.target.id === 'okrModal') {
+            closeOkrModal();
+        }
+    });
+}
+
+function loadCurrentOkrs() {
+    const employee = window.currentEmployee;
+    if (employee && employee.okr_goals) {
+        try {
+            currentOkrs = typeof employee.okr_goals === 'string' ? 
+                JSON.parse(employee.okr_goals) : employee.okr_goals;
+        } catch (e) {
+            currentOkrs = [];
+        }
+    } else {
+        currentOkrs = [];
+    }
+    
+    if (currentOkrs.length > 0) {
+        document.getElementById('improveOkrBtn').classList.remove('hidden');
+        document.getElementById('okrImprovementSection').classList.remove('hidden');
+        renderOkrForm();
+    } else {
+        addObjective();
+    }
+}
+
+function resetOkrModal() {
+    document.getElementById('okrObjectives').innerHTML = '';
+    document.getElementById('okrContext').value = '';
+    document.getElementById('okrAdditionalGoals').value = '';
+    document.getElementById('okrFeedback').value = '';
+    document.getElementById('improveOkrBtn').classList.add('hidden');
+    document.getElementById('okrImprovementSection').classList.add('hidden');
+    editingOkrIndex = -1;
+}
+
+function addObjective() {
+    const objectivesContainer = document.getElementById('okrObjectives');
+    const objectiveIndex = objectivesContainer.children.length;
+    
+    if (objectiveIndex >= 3) {
+        showToast('Максимум 3 цели на квартал');
+        return;
+    }
+    
+    const objectiveHtml = `
+        <div class="objective-item border border-gray-200 rounded-lg p-4" data-index="${objectiveIndex}">
+            <div class="flex justify-between items-start mb-3">
+                <h4 class="font-medium text-gray-900">Цель ${objectiveIndex + 1}</h4>
+                <button type="button" onclick="removeObjective(${objectiveIndex})" class="text-red-600 hover:text-red-800">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.okr_objective">Цель</label>
+                    <textarea name="objective-${objectiveIndex}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" required></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.okr_deadline">Срок выполнения</label>
+                    <input type="date" name="deadline-${objectiveIndex}" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.okr_key_results">Ключевые результаты</label>
+                    <div class="key-results-container space-y-2" data-objective="${objectiveIndex}">
+                        <div class="key-result-item flex space-x-2">
+                            <input type="text" name="key-result-${objectiveIndex}-0" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ключевой результат 1" required>
+                            <button type="button" onclick="removeKeyResult(this)" class="text-red-600 hover:text-red-800">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" onclick="addKeyResult(${objectiveIndex})" class="mt-2 text-sm text-blue-600 hover:text-blue-800">
+                        + Добавить ключевой результат
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    objectivesContainer.insertAdjacentHTML('beforeend', objectiveHtml);
+}
+
+function removeObjective(index) {
+    const objective = document.querySelector(`[data-index="${index}"]`);
+    if (objective) {
+        objective.remove();
+        reindexObjectives();
+    }
+}
+
+function addKeyResult(objectiveIndex) {
+    const container = document.querySelector(`[data-objective="${objectiveIndex}"]`);
+    const keyResultIndex = container.children.length;
+    
+    if (keyResultIndex >= 3) {
+        showToast('Максимум 3 ключевых результата на цель');
+        return;
+    }
+    
+    const keyResultHtml = `
+        <div class="key-result-item flex space-x-2">
+            <input type="text" name="key-result-${objectiveIndex}-${keyResultIndex}" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ключевой результат ${keyResultIndex + 1}" required>
+            <button type="button" onclick="removeKeyResult(this)" class="text-red-600 hover:text-red-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', keyResultHtml);
+}
+
+function removeKeyResult(button) {
+    const keyResultItem = button.closest('.key-result-item');
+    const container = keyResultItem.parentElement;
+    
+    if (container.children.length > 1) {
+        keyResultItem.remove();
+    } else {
+        showToast('Должен быть хотя бы один ключевой результат');
+    }
+}
+
+function reindexObjectives() {
+    const objectives = document.querySelectorAll('.objective-item');
+    objectives.forEach((objective, index) => {
+        objective.setAttribute('data-index', index);
+        objective.querySelector('h4').textContent = `Цель ${index + 1}`;
+        
+        const inputs = objective.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+            const name = input.getAttribute('name');
+            if (name) {
+                const newName = name.replace(/\d+/, index);
+                input.setAttribute('name', newName);
+            }
+        });
+    });
+}
+
+function renderOkrForm() {
+    const objectivesContainer = document.getElementById('okrObjectives');
+    objectivesContainer.innerHTML = '';
+    
+    currentOkrs.forEach((okr, index) => {
+        addObjective();
+        const objective = document.querySelector(`[data-index="${index}"]`);
+        
+        objective.querySelector(`[name="objective-${index}"]`).value = okr.objective || '';
+        objective.querySelector(`[name="deadline-${index}"]`).value = okr.deadline || '';
+        
+        if (okr.key_results && okr.key_results.length > 0) {
+            const keyResultsContainer = objective.querySelector(`[data-objective="${index}"]`);
+            keyResultsContainer.innerHTML = '';
+            
+            okr.key_results.forEach((kr, krIndex) => {
+                addKeyResult(index);
+                const keyResultInput = objective.querySelector(`[name="key-result-${index}-${krIndex}"]`);
+                if (keyResultInput) {
+                    keyResultInput.value = kr;
+                }
+            });
+        }
+    });
+}
+
+async function generateOkrWithAI() {
+    const generateBtn = document.getElementById('generateOkrBtn');
+    const originalText = generateBtn.textContent;
+    
+    try {
+        generateBtn.textContent = 'Генерация...';
+        generateBtn.disabled = true;
+        
+        const context = document.getElementById('okrContext').value;
+        const additionalGoals = document.getElementById('okrAdditionalGoals').value;
+        
+        const response = await fetch(`/api/employee/${employeeId}/okr-generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                context,
+                goals: additionalGoals,
+                position: window.currentEmployee?.position
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.okrs) {
+            currentOkrs = data.okrs;
+            renderOkrForm();
+            document.getElementById('improveOkrBtn').classList.remove('hidden');
+            document.getElementById('okrImprovementSection').classList.remove('hidden');
+            showToast('OKR успешно сгенерированы');
+        } else {
+            throw new Error(data.error || 'Ошибка генерации OKR');
+        }
+    } catch (error) {
+        console.error('Error generating OKRs:', error);
+        showToast('Ошибка при генерации OKR: ' + error.message);
+    } finally {
+        generateBtn.textContent = originalText;
+        generateBtn.disabled = false;
+    }
+}
+
+async function improveOkrWithAI() {
+    const improveBtn = document.getElementById('improveOkrBtn');
+    const originalText = improveBtn.textContent;
+    
+    try {
+        improveBtn.textContent = 'Улучшение...';
+        improveBtn.disabled = true;
+        
+        const feedback = document.getElementById('okrFeedback').value;
+        const currentFormOkrs = collectOkrsFromForm();
+        
+        const response = await fetch(`/api/employee/${employeeId}/okr-improve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                okrs: currentFormOkrs.length > 0 ? currentFormOkrs : currentOkrs,
+                feedback
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.okrs) {
+            currentOkrs = data.okrs;
+            renderOkrForm();
+            showToast('OKR успешно улучшены');
+        } else {
+            throw new Error(data.error || 'Ошибка улучшения OKR');
+        }
+    } catch (error) {
+        console.error('Error improving OKRs:', error);
+        showToast('Ошибка при улучшении OKR: ' + error.message);
+    } finally {
+        improveBtn.textContent = originalText;
+        improveBtn.disabled = false;
+    }
+}
+
+function collectOkrsFromForm() {
+    const objectives = document.querySelectorAll('.objective-item');
+    const okrs = [];
+    
+    objectives.forEach((objective, index) => {
+        const objectiveText = objective.querySelector(`[name="objective-${index}"]`).value;
+        const deadline = objective.querySelector(`[name="deadline-${index}"]`).value;
+        
+        const keyResults = [];
+        const keyResultInputs = objective.querySelectorAll(`[name^="key-result-${index}-"]`);
+        keyResultInputs.forEach(input => {
+            if (input.value.trim()) {
+                keyResults.push(input.value.trim());
+            }
+        });
+        
+        if (objectiveText.trim()) {
+            const existingOkr = currentOkrs[index] || {};
+            okrs.push({
+                objective: objectiveText.trim(),
+                key_results: keyResults,
+                deadline: deadline,
+                progress: existingOkr.progress || 0,
+                status: existingOkr.status || 'not_started',
+                completed: existingOkr.completed || false,
+                key_results_completed: existingOkr.key_results_completed || keyResults.map(() => false)
+            });
+        }
+    });
+    
+    return okrs;
+}
+
+async function saveOkrs(event) {
+    event.preventDefault();
+    
+    const saveBtn = document.getElementById('saveOkrBtn');
+    const originalText = saveBtn.textContent;
+    
+    try {
+        saveBtn.textContent = 'Сохранение...';
+        saveBtn.disabled = true;
+        
+        const okrs = collectOkrsFromForm();
+        
+        if (okrs.length === 0) {
+            showToast('Добавьте хотя бы одну цель');
+            return;
+        }
+        
+        const token = localStorage.getItem('token');
+        const urlParams = new URLSearchParams(window.location.search);
+        const secureToken = urlParams.get('token');
+        
+        let endpoint = `/api/employee/${employeeId}/profile`;
+        let headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        if (secureToken) {
+            endpoint += `?token=${secureToken}`;
+        } else if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const response = await fetch(endpoint, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({
+                okrGoals: okrs
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            window.currentEmployee = data;
+            displayOkrGoals(okrs);
+            closeOkrModal();
+            showToast('OKR успешно сохранены');
+        } else {
+            throw new Error(data.error || 'Ошибка сохранения');
+        }
+    } catch (error) {
+        console.error('Error saving OKRs:', error);
+        showToast('Ошибка при сохранении OKR: ' + error.message);
+    } finally {
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+    }
+}
+
+function calculateOkrProgress(okr) {
+    if (okr.completed) return 100;
+    
+    if (!okr.key_results_completed || okr.key_results_completed.length === 0) {
+        return okr.progress || 0;
+    }
+    
+    const completedCount = okr.key_results_completed.filter(completed => completed).length;
+    return Math.round((completedCount / okr.key_results_completed.length) * 100);
+}
+
+function calculateTimeRemaining(deadline) {
+    if (!deadline) return { days: 0, isOverdue: false };
+    
+    const deadlineDate = new Date(deadline);
+    const today = new Date();
+    const timeDiff = deadlineDate.getTime() - today.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    
+    return {
+        days: Math.abs(daysDiff),
+        isOverdue: daysDiff < 0
+    };
+}
+
+async function toggleOkrCompletion(goalIndex, type, keyResultIndex = null) {
+    try {
+        const employee = window.currentEmployee;
+        let okrs = [];
+        
+        if (employee && employee.okr_goals) {
+            okrs = typeof employee.okr_goals === 'string' ? 
+                JSON.parse(employee.okr_goals) : employee.okr_goals;
+        }
+        
+        if (!okrs[goalIndex]) return;
+        
+        if (type === 'objective') {
+            okrs[goalIndex].completed = !okrs[goalIndex].completed;
+            okrs[goalIndex].status = okrs[goalIndex].completed ? 'completed' : 'in_progress';
+        } else if (type === 'key_result' && keyResultIndex !== null) {
+            if (!okrs[goalIndex].key_results_completed) {
+                okrs[goalIndex].key_results_completed = okrs[goalIndex].key_results.map(() => false);
+            }
+            okrs[goalIndex].key_results_completed[keyResultIndex] = !okrs[goalIndex].key_results_completed[keyResultIndex];
+            
+            const completedCount = okrs[goalIndex].key_results_completed.filter(completed => completed).length;
+            const totalCount = okrs[goalIndex].key_results_completed.length;
+            
+            if (completedCount === totalCount) {
+                okrs[goalIndex].status = 'completed';
+                okrs[goalIndex].completed = true;
+            } else if (completedCount > 0) {
+                okrs[goalIndex].status = 'in_progress';
+                okrs[goalIndex].completed = false;
+            } else {
+                okrs[goalIndex].status = 'not_started';
+                okrs[goalIndex].completed = false;
+            }
+        }
+        
+        okrs[goalIndex].progress = calculateOkrProgress(okrs[goalIndex]);
+        
+        const token = localStorage.getItem('token');
+        const urlParams = new URLSearchParams(window.location.search);
+        const secureToken = urlParams.get('token');
+        
+        let endpoint = `/api/employee/${employeeId}/profile`;
+        let headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        if (secureToken) {
+            endpoint += `?token=${secureToken}`;
+        } else if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const response = await fetch(endpoint, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({
+                okrGoals: okrs
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            window.currentEmployee = data;
+            displayOkrGoals(okrs);
+        } else {
+            throw new Error('Ошибка обновления статуса');
+        }
+    } catch (error) {
+        console.error('Error toggling OKR completion:', error);
+        showToast('Ошибка при обновлении статуса: ' + error.message);
+    }
+}
+
+function editOkr(index) {
+    editingOkrIndex = index;
+    openOkrModal();
+}
+
+async function deleteOkr(index) {
+    if (!confirm('Вы уверены, что хотите удалить эту цель?')) {
+        return;
+    }
+    
+    try {
+        const employee = window.currentEmployee;
+        let okrs = [];
+        
+        if (employee && employee.okr_goals) {
+            okrs = typeof employee.okr_goals === 'string' ? 
+                JSON.parse(employee.okr_goals) : employee.okr_goals;
+        }
+        
+        okrs.splice(index, 1);
+        
+        const token = localStorage.getItem('token');
+        const urlParams = new URLSearchParams(window.location.search);
+        const secureToken = urlParams.get('token');
+        
+        let endpoint = `/api/employee/${employeeId}/profile`;
+        let headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        if (secureToken) {
+            endpoint += `?token=${secureToken}`;
+        } else if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const response = await fetch(endpoint, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({
+                okrGoals: okrs
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            window.currentEmployee = data;
+            displayOkrGoals(okrs);
+            showToast('Цель успешно удалена');
+        } else {
+            throw new Error('Ошибка удаления цели');
+        }
+    } catch (error) {
+        console.error('Error deleting OKR:', error);
+        showToast('Ошибка при удалении цели: ' + error.message);
+    }
 }
 
 function showEditModal() {
