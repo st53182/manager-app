@@ -699,13 +699,25 @@ app.post('/api/team/:id/motivation-advice', authenticateToken, async (req, res) 
     }
 
     const employees = await getEmployeesByTeam(req.params.id);
-    const { topTriggers } = req.body;
+    const { topTriggers, language = 'ru' } = req.body;
 
     if (!openai) {
       return res.status(500).json({ error: 'OpenAI API key not configured' });
     }
 
-    const prompt = `Analyze this team's top motivational triggers and provide specific advice for motivating them:
+    let prompt;
+    if (language === 'ru') {
+      prompt = `Проанализируй топ мотивационные триггеры этой команды и предоставь конкретные советы по их мотивации:
+
+Команда: ${team.name}
+Размер команды: ${employees.length} сотрудников
+Топ 4 мотивационных триггера (наиболее распространенные в команде): ${topTriggers.join(', ')}
+
+Предоставь 3-4 конкретных, практических рекомендации для мотивации этой команды на основе их доминирующих мотивационных триггеров. Сосредоточься на практических управленческих стратегиях, которые учитывают эти конкретные триггеры.
+
+Структурируй ответ в виде пронумерованного списка. Каждая рекомендация должна быть конкретной и применимой на практике.`;
+    } else {
+      prompt = `Analyze this team's top motivational triggers and provide specific advice for motivating them:
 
 Team: ${team.name}
 Team size: ${employees.length} members
@@ -713,12 +725,13 @@ Top 4 motivational triggers (most common in team): ${topTriggers.join(', ')}
 
 Provide 3-4 specific, actionable recommendations for motivating this team based on their dominant motivational triggers. Focus on practical management strategies that address these specific triggers.
 
-Return only the advice text without additional formatting.`;
+Structure your response as a numbered list. Each recommendation should be specific and practically applicable.`;
+    }
 
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 500
+      max_tokens: 600
     });
 
     const advice = response.choices[0].message.content.trim();
