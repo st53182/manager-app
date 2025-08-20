@@ -946,13 +946,17 @@
         }
         
         .tag-input {
-            border: none;
-            outline: none;
-            flex: 1;
-            min-width: 120px;
-            padding: 0.25rem;
-            text-align: center;
-        }
+    border: none;
+    outline: none;
+    flex: 1;
+    min-width: 120px;
+    padding: 0.25rem;
+    text-align: left; /* текст слева */
+}
+
+.tag-input::placeholder {
+    text-align: center; /* но placeholder в центре */
+}
         
         .tag-suggestions {
             position: absolute;
