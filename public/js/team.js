@@ -87,7 +87,7 @@ async function loadTeamData() {
         displayTeamInfo(currentTeam);
         displayEmployeeCards(teamEmployees);
         generateRadarChart(teamEmployees);
-        generateTeamAdvice(teamEmployees);
+        displayInitialAdviceMessage();
 
     } catch (error) {
         console.error('Error loading team data:', error);
@@ -358,6 +358,8 @@ async function generateTeamAdvice(employees) {
     const teamId = getTeamIdFromUrl();
     if (!teamId) return;
 
+    const currentLanguage = window.translationManager ? window.translationManager.currentLanguage : 'ru';
+
     const triggerCounts = {};
     MOTIVATIONAL_TRIGGERS.forEach(trigger => {
         triggerCounts[trigger.id] = 0;
@@ -388,7 +390,8 @@ async function generateTeamAdvice(employees) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                topTriggers: sortedTriggers
+                topTriggers: sortedTriggers,
+                language: currentLanguage
             })
         });
 
@@ -401,13 +404,43 @@ async function generateTeamAdvice(employees) {
 
     } catch (error) {
         console.error('Error generating team advice:', error);
-        displayMotivationAdvice('Не удалось сгенерировать рекомендации. Попробуйте обновить страницу.');
+        const errorMessage = currentLanguage === 'ru' 
+            ? 'Не удалось сгенерировать рекомендации. Попробуйте обновить страницу.'
+            : 'Failed to generate recommendations. Please try refreshing the page.';
+        displayMotivationAdvice(errorMessage);
     }
 }
 
 function displayMotivationAdvice(advice) {
     const container = document.getElementById('motivationAdvice');
-    container.innerHTML = `<p class="leading-relaxed">${advice}</p>`;
+    
+    const formattedAdvice = advice
+        .split('\n')
+        .filter(line => line.trim())
+        .map(line => {
+            line = line.trim();
+            if (/^\d+\./.test(line)) {
+                return `<div class="mb-3"><strong class="text-white">${line}</strong></div>`;
+            }
+            if (line.startsWith('•') || line.startsWith('-')) {
+                return `<div class="mb-2 pl-4">${line}</div>`;
+            }
+            return `<div class="mb-2">${line}</div>`;
+        })
+        .join('');
+    
+    container.innerHTML = `<div class="leading-relaxed">${formattedAdvice}</div>`;
+}
+
+function displayInitialAdviceMessage() {
+    const container = document.getElementById('motivationAdvice');
+    const currentLanguage = window.translationManager ? window.translationManager.currentLanguage : 'ru';
+    
+    const message = currentLanguage === 'ru' 
+        ? 'Нажмите "Обновить рекомендации" для получения персонализированных советов по мотивации команды на основе анализа мотивационных триггеров.'
+        : 'Click "Refresh Recommendations" to get personalized team motivation advice based on motivational triggers analysis.';
+    
+    container.innerHTML = `<p class="leading-relaxed opacity-75 italic">${message}</p>`;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
