@@ -225,7 +225,15 @@
     "status": "Status: role/title and visibility of expertise and results."
   }
 },
-
+  "team": {
+    "page_title": "Team - Manager App",
+    "back_to_dashboard": "Back to Dashboard",
+    "team_members": "Team Members",
+    "motivational_triggers_chart": "Team Motivational Triggers",
+    "chart_description": "Frequency of motivational triggers in team members' top 4",
+    "motivation_advice": "Team Motivation Recommendations",
+    "refresh_advice": "Refresh Recommendations"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
