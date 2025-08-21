@@ -112,7 +112,7 @@ const SOFT_SKILLS_DATA = {
     }
 
 };
-autoLayoutDAG(SOFT_SKILLS_DATA);
+autoLayoutDAG(SOFT_SKILLS_DATA, { gapX: 260, gapY: 200, r: 50 });
 
 
 const HARD_SKILLS_DATA = {
@@ -477,7 +477,7 @@ const HARD_SKILLS_DATA = {
 };
 
 Object.keys(HARD_SKILLS_DATA).forEach(area => {
-     autoLayoutDAG(HARD_SKILLS_DATA[area]);
+  autoLayoutDAG(HARD_SKILLS_DATA[area], { gapX: 260, gapY: 200, r: 50 });
 });
 
 let currentSkillTreeData = {};
@@ -1112,24 +1112,43 @@ function renderSkillTree(type) {
 }
 
 function drawConnection(svg, fromSkill, toSkill, isActive, allSkills) {
-  const nodes = Array.isArray(allSkills) ? allSkills : Object.values(allSkills || {});
-  const res = routeEdge(fromSkill, toSkill, nodes, { cell: 24, margin: 12 });
-  const d = typeof res === 'string' ? res : res?.d || '';
+  // 1) генерим прямую
+  const d = makeStraightEdge(fromSkill, toSkill);
 
+  // 2) создаём path
   const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   pathElement.setAttribute('d', d);
   pathElement.setAttribute('class', `skill-connection ${isActive ? 'active' : ''}`);
   pathElement.setAttribute('fill', 'none');
-  pathElement.setAttribute('stroke', isActive ? '#3b82f6' : '#d1d5db');
+  pathElement.setAttribute('stroke', isActive ? '#3b82f6' : '#24a283'); // твой цвет
   pathElement.setAttribute('stroke-width', '2');
   pathElement.setAttribute('stroke-linecap', 'round');
   pathElement.setAttribute('stroke-linejoin', 'round');
   pathElement.style.pointerEvents = 'none';
 
+  // 3) добавляем в viewport-слой
   const container = svg.querySelector('#skillTreeViewport') || svg;
   container.appendChild(pathElement);
 }
+function makeStraightEdge(a, b) {
+  const ax = a.position.x, ay = a.position.y;
+  const bx = b.position.x, by = b.position.y;
 
+  const ra = Number(a.r) || 50;
+  const rb = Number(b.r) || 50;
+
+  const dx = bx - ax, dy = by - ay;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len, uy = dy / len;
+
+  // старт и финиш на окружностях, а не в центре
+  const sx = ax + ux * ra;
+  const sy = ay + uy * ra;
+  const ex = bx - ux * rb;
+  const ey = by - uy * rb;
+
+  return `M ${sx} ${sy} L ${ex} ${ey}`;
+}
 function drawSkillNode(svg, skill, type) {
   const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   if (!Number.isFinite(skill.r)) skill.r = 50;
