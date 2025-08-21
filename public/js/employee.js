@@ -5,7 +5,6 @@ let isEmployeeView = false; // true if accessed via employee secure link
 const SOFT_SKILLS_DATA = {
     'business_communication': {
         id: 'business_communication',
-        position: { x: 300, y: 100 },
         prerequisites: [],
         nameKey: 'soft_skill_business_communication',
         descKey: 'soft_skill_business_communication_desc',
@@ -13,7 +12,6 @@ const SOFT_SKILLS_DATA = {
     },
     'communication': {
         id: 'communication',
-        position: { x: 500, y: 100 },
         prerequisites: ['business_communication'],
         nameKey: 'soft_skill_communication',
         descKey: 'soft_skill_communication_desc',
@@ -21,7 +19,6 @@ const SOFT_SKILLS_DATA = {
     },
     'presentation': {
         id: 'presentation',
-        position: { x: 700, y: 100 },
         prerequisites: ['communication'],
         nameKey: 'soft_skill_presentation',
         descKey: 'soft_skill_presentation_desc',
@@ -29,7 +26,6 @@ const SOFT_SKILLS_DATA = {
     },
     'client_centricity': {
         id: 'client_centricity',
-        position: { x: 150, y: 250 },
         prerequisites: [],
         nameKey: 'soft_skill_client_centricity',
         descKey: 'soft_skill_client_centricity_desc',
@@ -37,7 +33,6 @@ const SOFT_SKILLS_DATA = {
     },
     'emotional_intelligence': {
         id: 'emotional_intelligence',
-        position: { x: 300, y: 250 },
         prerequisites: ['client_centricity'],
         nameKey: 'soft_skill_emotional_intelligence',
         descKey: 'soft_skill_emotional_intelligence_desc',
@@ -45,7 +40,6 @@ const SOFT_SKILLS_DATA = {
     },
     'mentoring': {
         id: 'mentoring',
-        position: { x: 500, y: 250 },
         prerequisites: ['emotional_intelligence', 'communication'],
         nameKey: 'soft_skill_mentoring',
         descKey: 'soft_skill_mentoring_desc',
@@ -53,7 +47,6 @@ const SOFT_SKILLS_DATA = {
     },
     'management': {
         id: 'management',
-        position: { x: 700, y: 250 },
         prerequisites: ['mentoring', 'presentation'],
         nameKey: 'soft_skill_management',
         descKey: 'soft_skill_management_desc',
@@ -61,7 +54,6 @@ const SOFT_SKILLS_DATA = {
     },
     'cognitive_flexibility': {
         id: 'cognitive_flexibility',
-        position: { x: 200, y: 400 },
         prerequisites: [],
         nameKey: 'soft_skill_cognitive_flexibility',
         descKey: 'soft_skill_cognitive_flexibility_desc',
@@ -69,7 +61,6 @@ const SOFT_SKILLS_DATA = {
     },
     'creative_thinking': {
         id: 'creative_thinking',
-        position: { x: 350, y: 400 },
         prerequisites: ['cognitive_flexibility'],
         nameKey: 'soft_skill_creative_thinking',
         descKey: 'soft_skill_creative_thinking_desc',
@@ -77,7 +68,6 @@ const SOFT_SKILLS_DATA = {
     },
     'critical_thinking': {
         id: 'critical_thinking',
-        position: { x: 500, y: 400 },
         prerequisites: ['creative_thinking'],
         nameKey: 'soft_skill_critical_thinking',
         descKey: 'soft_skill_critical_thinking_desc',
@@ -85,7 +75,6 @@ const SOFT_SKILLS_DATA = {
     },
     'problem_solving': {
         id: 'problem_solving',
-        position: { x: 650, y: 400 },
         prerequisites: ['critical_thinking'],
         nameKey: 'soft_skill_problem_solving',
         descKey: 'soft_skill_problem_solving_desc',
@@ -93,7 +82,6 @@ const SOFT_SKILLS_DATA = {
     },
     'systems_thinking': {
         id: 'systems_thinking',
-        position: { x: 250, y: 550 },
         prerequisites: ['cognitive_flexibility'],
         nameKey: 'soft_skill_systems_thinking',
         descKey: 'soft_skill_systems_thinking_desc',
@@ -101,7 +89,6 @@ const SOFT_SKILLS_DATA = {
     },
     'goal_setting': {
         id: 'goal_setting',
-        position: { x: 400, y: 550 },
         prerequisites: ['systems_thinking'],
         nameKey: 'soft_skill_goal_setting',
         descKey: 'soft_skill_goal_setting_desc',
@@ -109,7 +96,6 @@ const SOFT_SKILLS_DATA = {
     },
     'resource_management': {
         id: 'resource_management',
-        position: { x: 550, y: 550 },
         prerequisites: ['goal_setting', 'problem_solving'],
         nameKey: 'soft_skill_resource_management',
         descKey: 'soft_skill_resource_management_desc',
@@ -117,13 +103,15 @@ const SOFT_SKILLS_DATA = {
     },
     'stress_management': {
         id: 'stress_management',
-        position: { x: 400, y: 700 },
         prerequisites: ['goal_setting'],
         nameKey: 'soft_skill_stress_management',
         descKey: 'soft_skill_stress_management_desc',
         benefitKey: 'soft_skill_stress_management_benefit'
     }
+
 };
+autoLayout(SOFT_SKILLS_DATA, 150, 100);
+
 
 const HARD_SKILLS_DATA = {
     'backend': {
@@ -3139,7 +3127,20 @@ function loadTriggerPositions(positions, isEdit) {
         }
     });
 }
+function autoLayout(skills) {
+  const keys = Object.keys(skills);
+  const gapX = 200; // расстояние между карточками по горизонтали
+  const gapY = 150; // расстояние между карточками по вертикали
 
+  keys.forEach((key, i) => {
+    const row = Math.floor(i / 5); // по 5 элементов в строке
+    const col = i % 5;
+    skills[key].position = {
+      x: 150 + col * gapX,
+      y: 100 + row * gapY
+    };
+  });
+}
 function returnCardToPalette(triggerId, isEdit) {
     const cardSelector = `[data-trigger-id="${triggerId}"][data-is-edit="${isEdit}"]`;
     const card = document.querySelector(cardSelector);
