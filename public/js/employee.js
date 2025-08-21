@@ -1464,8 +1464,8 @@ function showSkillTooltip(skill, type, event) {
 
   // 4) Координаты относительно host
   const pad = 10;
-  let x = (nodeRect.right) + pad;
-  let y = (nodeRect.top   - hostRect.top);
+  let x = (nodeRect.x) + pad;
+  let y = (nodeRect.y);
 
   // если не влезает справа — покажем слева
   const maxX = hostRect.width - tW - pad;
