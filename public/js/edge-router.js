@@ -6,8 +6,8 @@ function routeEdge(a, b, allNodes, opts = {}) {
 
   const grid = buildGrid(bounds, cell, allNodes, margin);
 
-  const start = snapToGrid({ x: a.x, y: a.y }, bounds, cell);
-  const goal  = snapToGrid({ x: b.x, y: b.y }, bounds, cell);
+  const start = snapToGrid({ x: a.position.x, y: a.position.y }, bounds, cell);
+  const goal  = snapToGrid({ x: b.position.x, y: b.position.y }, bounds, cell);
 
   const route = aStar(grid, start, goal);
   if (!route || route.length === 0) {
@@ -21,8 +21,8 @@ function routeEdge(a, b, allNodes, opts = {}) {
 
   const p1 = smoothed[1] ?? smoothed[0];
   const pn = smoothed[smoothed.length - 2] ?? smoothed[0];
-  const startOnCircle = pointOnCircle(a, p1, a.r + 1); // +1 чтобы не залипало
-  const endOnCircle   = pointOnCircle(b, pn, b.r + 1);
+  const startOnCircle = pointOnCircle({ x: a.position.x, y: a.position.y }, p1, a.r + 1); // +1 чтобы не залипало
+  const endOnCircle   = pointOnCircle({ x: b.position.x, y: b.position.y }, pn, b.r + 1);
 
   const final = [startOnCircle, ...smoothed.slice(1, -1), endOnCircle];
 
@@ -30,7 +30,7 @@ function routeEdge(a, b, allNodes, opts = {}) {
 }
 
 function guessBounds(nodes, cell) {
-  const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y);
+  const xs = nodes.map(n => n.position.x), ys = nodes.map(n => n.position.y);
   const minX = Math.min(...xs) - 200, maxX = Math.max(...xs) + 200;
   const minY = Math.min(...ys) - 200, maxY = Math.max(...ys) + 200;
   const w = Math.ceil((maxX - minX) / cell) * cell;
@@ -45,15 +45,15 @@ function buildGrid(bounds, cell, nodes, margin) {
 
   for (const n of nodes) {
     const R = n.r + margin;
-    const minC = Math.max(0, Math.floor((n.x - R - bounds.x) / cell));
-    const maxC = Math.min(cols - 1, Math.ceil ((n.x + R - bounds.x) / cell));
-    const minR = Math.max(0, Math.floor((n.y - R - bounds.y) / cell));
-    const maxR = Math.min(rows - 1, Math.ceil ((n.y + R - bounds.y) / cell));
+    const minC = Math.max(0, Math.floor((n.position.x - R - bounds.x) / cell));
+    const maxC = Math.min(cols - 1, Math.ceil ((n.position.x + R - bounds.x) / cell));
+    const minR = Math.max(0, Math.floor((n.position.y - R - bounds.y) / cell));
+    const maxR = Math.min(rows - 1, Math.ceil ((n.position.y + R - bounds.y) / cell));
     for (let r = minR; r <= maxR; r++) {
       for (let c = minC; c <= maxC; c++) {
         const wx = bounds.x + c * cell + cell / 2;
         const wy = bounds.y + r * cell + cell / 2;
-        const d2 = (wx - n.x) ** 2 + (wy - n.y) ** 2;
+        const d2 = (wx - n.position.x) ** 2 + (wy - n.position.y) ** 2;
         if (d2 <= R ** 2) grid[r][c] = 1;
       }
     }
@@ -111,8 +111,8 @@ function aStar(grid, start, goal) {
     for (const [dc, dr] of dirs) {
       const nc = cur.c + dc, nr = cur.r + dr;
       if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
-      if (data[nr][nc] === 1) continue;
-      if (dc && dr && (data[cur.r][nc] === 1 || data[nr][cur.c] === 1)) continue;
+      if (!data[nr] || data[nr][nc] === undefined || data[nr][nc] === 1) continue;
+      if (dc && dr && ((!data[cur.r] || data[cur.r][nc] === 1) || (!data[nr] || data[nr][cur.c] === 1))) continue;
 
       const step = (dc && dr) ? Math.SQRT2 : 1;
       push(nc, nr, (gScore.get(key(cur.c, cur.r)) ?? 0) + step, key(cur.c, cur.r));
@@ -187,8 +187,8 @@ function pointOnCircle(node, toward, r) {
 }
 
 function simpleCurve(a, b) {
-  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-  return [pointOnCircle(a, mid, a.r), mid, pointOnCircle(b, mid, b.r)];
+  const mid = { x: (a.position.x + b.position.x) / 2, y: (a.position.y + b.position.y) / 2 };
+  return [pointOnCircle({ x: a.position.x, y: a.position.y }, mid, a.r), mid, pointOnCircle({ x: b.position.x, y: b.position.y }, mid, b.r)];
 }
 
 class MinHeap {
