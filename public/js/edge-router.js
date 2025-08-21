@@ -199,3 +199,4 @@ class MinHeap {
   _up(i){ const a=this.a, less=this.less; while(i){ const p=(i-1>>1); if(!less(a[i], a[p])) break; [a[i],a[p]]=[a[p],a[i]]; i=p; } }
   _down(i){ const a=this.a, less=this.less; for(;;){ let l=i*2+1, r=l+1, s=i; if(l<a.length && less(a[l],a[s])) s=l; if(r<a.length && less(a[r],a[s])) s=r; if(s===i) break; [a[i],a[s]]=[a[s],a[i]]; i=s; } }
 }
+window.routeEdge = routeEdge;

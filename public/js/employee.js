@@ -1,7 +1,7 @@
 let currentEmployee = null;
 let employeeId = null;
 let isEmployeeView = false; // true if accessed via employee secure link
-import { routeEdge } from './edge-router.js';
+
 
 
 const SOFT_SKILLS_DATA = {
