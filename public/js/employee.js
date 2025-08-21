@@ -1,6 +1,8 @@
 let currentEmployee = null;
 let employeeId = null;
 let isEmployeeView = false; // true if accessed via employee secure link
+import { routeEdge } from './edge-router.js';
+
 
 const SOFT_SKILLS_DATA = {
     'business_communication': {
@@ -110,7 +112,8 @@ const SOFT_SKILLS_DATA = {
     }
 
 };
-autoLayout(SOFT_SKILLS_DATA);
+autoLayoutDAG(SOFT_SKILLS_DATA);
+
 
 const HARD_SKILLS_DATA = {
     'backend': {
@@ -474,7 +477,7 @@ const HARD_SKILLS_DATA = {
 };
 
 Object.keys(HARD_SKILLS_DATA).forEach(area => {
-    autoLayout(HARD_SKILLS_DATA[area]);
+     autoLayoutDAG(HARD_SKILLS_DATA[area]);
 });
 
 let currentSkillTreeData = {};
@@ -1045,6 +1048,8 @@ function openSkillTreeModal() {
     document.getElementById('skillTreeModal').classList.remove('hidden');
     initializeSkillTreeModal();
     renderSkillTree('soft');
+    const svg = document.getElementById('softSkillsTreeSvg'); // и/или hard
+    initZoomPan(svg);
     updateSkillCounters();
     updateCompetencyAreaDisplay();
 }
@@ -1073,128 +1078,142 @@ function switchSkillTreeTab(type) {
 }
 
 function renderSkillTree(type) {
-    const svgId = type === 'soft' ? 'softSkillsTreeSvg' : 'hardSkillsTreeSvg';
-    const svg = document.getElementById(svgId);
-    
-    if (!svg) return;
-    
-    svg.innerHTML = '';
-    
-    let skillsData;
-    if (type === 'soft') {
-        skillsData = SOFT_SKILLS_DATA;
-    } else {
-        const competencyArea = skillTreeState.competencyArea;
-        skillsData = HARD_SKILLS_DATA[competencyArea] || HARD_SKILLS_DATA.backend;
-    }
-    
-    currentSkillTreeData = skillsData;
-    
-    Object.values(skillsData).forEach(skill => {
-        skill.prerequisites.forEach(prereqId => {
-            const prereq = skillsData[prereqId];
-            if (prereq) {
-                drawConnection(svg, prereq, skill, isConnectionActive(prereqId, skill.id, type), Object.values(skillsData));
-            }
-        });
+  // выбери правильный SVG (подстрой под свои id)
+  const svgId = type === 'soft' ? 'softSkillsTreeSvg' : 'hardSkillsTreeSvg';
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+
+  // очистка и создание viewport-группы
+  svg.innerHTML = '';
+  const vp = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  vp.setAttribute('id', 'skillTreeViewport');
+  svg.appendChild(vp);
+
+  // возьми нужные данные
+  const allSkills = type === 'soft'
+    ? SOFT_SKILLS_DATA
+    : HARD_SKILLS_DATA[skillTreeState.competencyArea] || {};
+
+  // сначала рёбра (чтобы были под узлами)
+  Object.values(allSkills).forEach(to => {
+    (to.prerequisites || []).forEach(fromId => {
+      const from = allSkills[fromId];
+      if (from) drawConnection(svg, from, to, allSkills);
     });
-    
-    Object.values(skillsData).forEach(skill => {
-        drawSkillNode(svg, skill, type);
-    });
-    
-    addSkillLegend(svg);
+  });
+
+  // затем узлы
+  Object.values(allSkills).forEach(skill => {
+    drawSkillNode(svg, skill, type);
+  });
+
+  // инициализируем зум/пан один раз на этот svg
+  initZoomPan(svg);
 }
 
-function drawConnection(svg, fromSkill, toSkill, isActive, allSkills) {
-    const path = routeEdge(fromSkill, toSkill, allSkills, {
-        cell: 24,
-        margin: 12,
-        bounds: { x: 0, y: 0, w: 1200, h: 800 }
-    });
-    
-    const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    pathElement.setAttribute('d', path.d);
-    pathElement.setAttribute('class', `skill-connection ${isActive ? 'active' : ''}`);
-    pathElement.setAttribute('fill', 'none');
-    pathElement.setAttribute('stroke', isActive ? '#3b82f6' : '#d1d5db');
-    pathElement.setAttribute('stroke-width', '2');
-    svg.appendChild(pathElement);
+function drawConnection(svg, fromSkill, toSkill, allSkills) {
+  const pathData = routeEdge(fromSkill, toSkill, allSkills, {
+    cell: 24,
+    margin: 12
+    // bounds НЕ передаём, пусть роутер сам их оценит
+  });
+
+  const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  pathElement.setAttribute('class', 'skill-connection');
+  pathElement.setAttribute('fill', 'none');
+  pathElement.setAttribute('stroke', '#999');
+  pathElement.setAttribute('stroke-width', '2');
+  pathElement.setAttribute('stroke-linecap', 'round');
+  pathElement.setAttribute('stroke-linejoin', 'round');
+  pathElement.style.pointerEvents = 'none';
+  pathElement.setAttribute('d', pathData);
+
+  const container = svg.querySelector('#skillTreeViewport') || svg;
+  container.appendChild(pathElement);
 }
 
 function drawSkillNode(svg, skill, type) {
-    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    group.setAttribute('class', `skill-node ${getSkillState(skill.id, type)}`);
-    group.setAttribute('data-skill-id', skill.id);
-    group.setAttribute('data-skill-type', type);
-    
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', skill.position.x);
-    circle.setAttribute('cy', skill.position.y);
-    circle.setAttribute('class', 'skill-node-circle');
-    group.appendChild(circle);
-    
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttribute('x', skill.position.x);
-    text.setAttribute('y', skill.position.y);
-    text.setAttribute('class', 'skill-node-text');
-    
-    let skillName;
-    if (type === 'soft') {
-        skillName = window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey;
-    } else {
-        skillName = skill.name;
-    }
-    
-    const words = skillName.split(' ');
-    const maxCharsPerLine = 14; // Increased for larger circles
-    
-    if (skillName.length > maxCharsPerLine || words.length > 2) {
-        const lines = [];
-        let currentLine = '';
-        
-        for (const word of words) {
-            if ((currentLine + ' ' + word).length <= maxCharsPerLine) {
-                currentLine = currentLine ? currentLine + ' ' + word : word;
-            } else {
-                if (currentLine) lines.push(currentLine);
-                currentLine = word;
-                if (word.length > maxCharsPerLine) {
-                    currentLine = word.substring(0, maxCharsPerLine - 1) + '...';
-                }
-            }
-        }
+  const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  group.setAttribute('class', `skill-node ${getSkillState(skill.id, type)}`);
+  group.setAttribute('data-skill-id', skill.id);
+  group.setAttribute('data-skill-type', type);
+
+  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circle.setAttribute('cx', skill.position.x);
+  circle.setAttribute('cy', skill.position.y);
+  circle.setAttribute('class', 'skill-node-circle');
+  // если радиус задаётся стилями — можно не трогать; иначе раскомментируй:
+  // circle.setAttribute('r', skill.r || 40);
+  group.appendChild(circle);
+
+  const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  text.setAttribute('x', skill.position.x);
+  text.setAttribute('y', skill.position.y);
+  text.setAttribute('class', 'skill-node-text');
+  // чтобы текст точно центрировался, даже если в CSS не прописано:
+  text.setAttribute('text-anchor', 'middle');
+  text.setAttribute('dominant-baseline', 'middle');
+
+  let skillName;
+  if (type === 'soft') {
+    skillName = window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey;
+  } else {
+    skillName = skill.name;
+  }
+
+  const words = skillName.split(' ');
+  const maxCharsPerLine = 14;
+
+  if (skillName.length > maxCharsPerLine || words.length > 2) {
+    const lines = [];
+    let currentLine = '';
+
+    for (const word of words) {
+      if ((currentLine + ' ' + word).length <= maxCharsPerLine) {
+        currentLine = currentLine ? currentLine + ' ' + word : word;
+      } else {
         if (currentLine) lines.push(currentLine);
-        
-        const displayLines = lines.slice(0, 3);
-        
-        displayLines.forEach((line, index) => {
-            const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
-            tspan.setAttribute('x', skill.position.x);
-            tspan.setAttribute('dy', index === 0 ? `-${(displayLines.length - 1) * 0.5}em` : '1em');
-            tspan.textContent = line;
-            text.appendChild(tspan);
-        });
-    } else {
-        text.textContent = skillName;
+        currentLine = word;
+        if (word.length > maxCharsPerLine) {
+          currentLine = word.substring(0, maxCharsPerLine - 1) + '...';
+        }
+      }
     }
-    
-    group.appendChild(text);
-    
-    group.addEventListener('click', (event) => {
-        handleSkillClick(skill.id, type, 'left');
-        showSkillTooltip(skill, type, event);
+    if (currentLine) lines.push(currentLine);
+
+    const displayLines = lines.slice(0, 3);
+
+    displayLines.forEach((line, index) => {
+      const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+      tspan.setAttribute('x', skill.position.x);
+      tspan.setAttribute('dy', index === 0 ? `-${(displayLines.length - 1) * 0.5}em` : '1em');
+      tspan.textContent = line;
+      text.appendChild(tspan);
     });
-    group.addEventListener('contextmenu', (event) => {
-        event.preventDefault();
-        handleSkillClick(skill.id, type, 'right');
-        showSkillTooltip(skill, type, event);
-    });
-    group.addEventListener('mouseenter', () => showSkillDetails(skill, type));
-    group.addEventListener('mouseleave', () => hideSkillDetails());
-    
-    svg.appendChild(group);
+  } else {
+    text.textContent = skillName;
+  }
+
+  group.appendChild(text);
+
+  group.addEventListener('click', (event) => {
+    handleSkillClick(skill.id, type, 'left');
+    showSkillTooltip(skill, type, event);
+  });
+  group.addEventListener('contextmenu', (event) => {
+    event.preventDefault();
+    handleSkillClick(skill.id, type, 'right');
+    showSkillTooltip(skill, type, event);
+  });
+  group.addEventListener('mouseenter', () => showSkillDetails(skill, type));
+  group.addEventListener('mouseleave', () => hideSkillDetails());
+
+  // КЛЮЧЕВОЕ изменение: не используем локальную переменную vp,
+  // берём контейнер из svg (или сам svg как запасной вариант)
+  const container = svg.querySelector('#skillTreeViewport') || svg;
+  container.appendChild(group);
 }
+
 
 function getSkillState(skillId, type) {
     const skills = skillTreeState[type === 'soft' ? 'softSkills' : 'hardSkills'];
@@ -1222,6 +1241,62 @@ function isConnectionActive(fromSkillId, toSkillId, type) {
     const skills = skillTreeState[type === 'soft' ? 'softSkills' : 'hardSkills'];
     return skills.mastered.includes(fromSkillId) && (skills.mastered.includes(toSkillId) || skills.selected.includes(toSkillId));
 }
+
+function initZoomPan(svg) {
+  if (!svg || svg.dataset.zoomInit === '1') return; // защита от повторной инициализации
+  svg.dataset.zoomInit = '1';
+
+  const vp = svg.querySelector('#skillTreeViewport');
+  if (!vp) return;
+
+  let scale = 1;
+  let tx = 0, ty = 0;
+  const minScale = 0.4, maxScale = 2.5;
+  const zoomStep = 0.1;
+
+  const apply = () => vp.setAttribute('transform', `translate(${tx} ${ty}) scale(${scale})`);
+
+  // Панорамирование (drag)
+  let isPanning = false, startX = 0, startY = 0, pointerId = null;
+  svg.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    isPanning = true;
+    startX = e.clientX; startY = e.clientY;
+    pointerId = e.pointerId;
+    svg.setPointerCapture(pointerId);
+  });
+  svg.addEventListener('pointermove', (e) => {
+    if (!isPanning) return;
+    tx += (e.clientX - startX);
+    ty += (e.clientY - startY);
+    startX = e.clientX; startY = e.clientY;
+    apply();
+  });
+  svg.addEventListener('pointerup', (e) => {
+    if (pointerId != null) svg.releasePointerCapture(pointerId);
+    isPanning = false; pointerId = null;
+  });
+
+  // Зум на курсор
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = svg.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+
+    const prevScale = scale;
+    scale = Math.max(minScale, Math.min(maxScale, scale * (e.deltaY < 0 ? (1 + zoomStep) : (1 - zoomStep))));
+
+    // Zoom-to-cursor: держим подкурсорную точку на месте
+    tx = cx - (cx - tx) * (scale / prevScale);
+    ty = cy - (cy - ty) * (scale / prevScale);
+
+    apply();
+  }, { passive: false });
+
+  apply();
+}
+
 
 function handleSkillClick(skillId, type, clickType = 'left') {
     const state = getSkillState(skillId, type);
@@ -3151,6 +3226,78 @@ function autoLayout(skills) {
     skills[key].r = 40; // добавляем радиус для edge routing
   });
 }
+
+function autoLayoutDAG(skills, opts = {}) {
+  const gapX = opts.gapX ?? 240;
+  const gapY = opts.gapY ?? 180;
+  const nodeR = opts.r ?? 40;
+
+  // 1) построим граф
+  const ids = Object.keys(skills);
+  const incoming = new Map(ids.map(id => [id, 0]));
+  const children = new Map(ids.map(id => [id, []]));
+
+  for (const id of ids) {
+    const prereqs = skills[id].prerequisites || [];
+    for (const p of prereqs) {
+      if (!skills[p]) continue;
+      incoming.set(id, (incoming.get(id) || 0) + 1);
+      children.get(p).push(id);
+    }
+  }
+
+  // 2) уровни (Kahn)
+  const levels = [];
+  let layer = ids.filter(id => (incoming.get(id) || 0) === 0);
+  const seen = new Set(layer);
+
+  while (layer.length) {
+    levels.push(layer);
+    const next = [];
+    for (const u of layer) {
+      for (const v of children.get(u)) {
+        incoming.set(v, incoming.get(v) - 1);
+        if (incoming.get(v) === 0 && !seen.has(v)) {
+          seen.add(v); next.push(v);
+        }
+      }
+    }
+    layer = next;
+  }
+
+  // 3) оставшиеся (на случай циклов/ошибок в данных)
+  const rest = ids.filter(id => !seen.has(id));
+  if (rest.length) levels.push(rest);
+
+  // 4) горизонтальное упорядочивание в уровне (минимизация «зигзагов»)
+  // простая эвристика: сортируем по среднему индексу родителей
+  const indexInPrev = new Map();
+  levels.forEach((lvl, li) => {
+    if (li === 0) {
+      lvl.sort(); // стабильно
+    } else {
+      lvl.sort((a, b) => {
+        const pa = (skills[a].prerequisites || []).filter(p => skills[p]);
+        const pb = (skills[b].prerequisites || []).filter(p => skills[p]);
+        const avg = (arr) => arr.length
+          ? arr.map(p => indexInPrev.get(p) ?? 0).reduce((s,x)=>s+x,0)/arr.length
+          : 0;
+        return avg(pa) - avg(pb);
+      });
+    }
+    lvl.forEach((id, i) => indexInPrev.set(id, i));
+  });
+
+  // 5) присвоение координат
+  levels.forEach((lvl, y) => {
+    lvl.forEach((id, x) => {
+      skills[id].position = { x: 120 + x * gapX, y: 100 + y * gapY };
+      skills[id].r = nodeR;
+    });
+  });
+}
+
+
 function returnCardToPalette(triggerId, isEdit) {
     const cardSelector = `[data-trigger-id="${triggerId}"][data-is-edit="${isEdit}"]`;
     const card = document.querySelector(cardSelector);
