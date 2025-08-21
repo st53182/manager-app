@@ -510,10 +510,23 @@
             </div>
 
             <div class="p-6">
+                <!-- Skill Tooltip -->
+                <div id="skillTooltip" class="fixed bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-[60] hidden max-w-xs">
+                    <h4 id="tooltipTitle" class="font-medium text-gray-900 mb-1 text-sm"></h4>
+                    <p id="tooltipDescription" class="text-xs text-gray-600 mb-2"></p>
+                    <div class="bg-green-50 p-2 rounded">
+                        <p class="text-xs font-medium text-green-800 mb-1" data-translate="skill_benefits">Что дает этот навык</p>
+                        <p id="tooltipBenefit" class="text-xs text-green-700"></p>
+                    </div>
+                </div>
+
                 <!-- Instructions -->
                 <div class="bg-blue-50 rounded-lg p-4 mb-6">
-                    <p class="text-sm text-blue-800" data-translate="select_skills_instruction">
+                    <p class="text-sm text-blue-800 mb-2" data-translate="select_skills_instruction">
                         Выберите до 3 навыков для развития в каждой категории
+                    </p>
+                    <p class="text-xs text-blue-700">
+                        Левый клик - выбрать для развития | Правый клик - отметить как освоенный
                     </p>
                 </div>
 
@@ -561,16 +574,6 @@
                         <p class="text-xs font-medium text-green-800 mb-1" data-translate="skill_benefits">Что дает этот навык</p>
                         <p id="skillDetailBenefit" class="text-sm text-green-700"></p>
                     </div>
-                <!-- Skill Tooltip -->
-                <div id="skillTooltip" class="absolute bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50 hidden max-w-xs">
-                    <h4 id="tooltipTitle" class="font-medium text-gray-900 mb-1 text-sm"></h4>
-                    <p id="tooltipDescription" class="text-xs text-gray-600 mb-2"></p>
-                    <div class="bg-green-50 p-2 rounded">
-                        <p class="text-xs font-medium text-green-800 mb-1" data-translate="skill_benefits">Что дает этот навык</p>
-                        <p id="tooltipBenefit" class="text-xs text-green-700"></p>
-                    </div>
-                </div>
-
                 </div>
 
                 <!-- Action Buttons -->
@@ -1299,7 +1302,7 @@
         }
 
         .skill-node-circle {
-            r: 40;
+            r: 50;
         }
 
         .skill-node-text {

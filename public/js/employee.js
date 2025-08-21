@@ -5,7 +5,7 @@ let isEmployeeView = false; // true if accessed via employee secure link
 const SOFT_SKILLS_DATA = {
     'business_communication': {
         id: 'business_communication',
-        position: { x: 200, y: 100 },
+        position: { x: 300, y: 100 },
         prerequisites: [],
         nameKey: 'soft_skill_business_communication',
         descKey: 'soft_skill_business_communication_desc',
@@ -13,7 +13,7 @@ const SOFT_SKILLS_DATA = {
     },
     'communication': {
         id: 'communication',
-        position: { x: 400, y: 100 },
+        position: { x: 500, y: 100 },
         prerequisites: ['business_communication'],
         nameKey: 'soft_skill_communication',
         descKey: 'soft_skill_communication_desc',
@@ -21,7 +21,7 @@ const SOFT_SKILLS_DATA = {
     },
     'presentation': {
         id: 'presentation',
-        position: { x: 600, y: 100 },
+        position: { x: 700, y: 100 },
         prerequisites: ['communication'],
         nameKey: 'soft_skill_presentation',
         descKey: 'soft_skill_presentation_desc',
@@ -29,7 +29,7 @@ const SOFT_SKILLS_DATA = {
     },
     'client_centricity': {
         id: 'client_centricity',
-        position: { x: 100, y: 250 },
+        position: { x: 150, y: 250 },
         prerequisites: [],
         nameKey: 'soft_skill_client_centricity',
         descKey: 'soft_skill_client_centricity_desc',
@@ -61,7 +61,7 @@ const SOFT_SKILLS_DATA = {
     },
     'cognitive_flexibility': {
         id: 'cognitive_flexibility',
-        position: { x: 150, y: 400 },
+        position: { x: 200, y: 400 },
         prerequisites: [],
         nameKey: 'soft_skill_cognitive_flexibility',
         descKey: 'soft_skill_cognitive_flexibility_desc',
@@ -77,7 +77,7 @@ const SOFT_SKILLS_DATA = {
     },
     'critical_thinking': {
         id: 'critical_thinking',
-        position: { x: 550, y: 400 },
+        position: { x: 500, y: 400 },
         prerequisites: ['creative_thinking'],
         nameKey: 'soft_skill_critical_thinking',
         descKey: 'soft_skill_critical_thinking_desc',
@@ -85,7 +85,7 @@ const SOFT_SKILLS_DATA = {
     },
     'problem_solving': {
         id: 'problem_solving',
-        position: { x: 750, y: 400 },
+        position: { x: 650, y: 400 },
         prerequisites: ['critical_thinking'],
         nameKey: 'soft_skill_problem_solving',
         descKey: 'soft_skill_problem_solving_desc',
@@ -93,7 +93,7 @@ const SOFT_SKILLS_DATA = {
     },
     'systems_thinking': {
         id: 'systems_thinking',
-        position: { x: 200, y: 550 },
+        position: { x: 250, y: 550 },
         prerequisites: ['cognitive_flexibility'],
         nameKey: 'soft_skill_systems_thinking',
         descKey: 'soft_skill_systems_thinking_desc',
@@ -109,7 +109,7 @@ const SOFT_SKILLS_DATA = {
     },
     'resource_management': {
         id: 'resource_management',
-        position: { x: 600, y: 550 },
+        position: { x: 550, y: 550 },
         prerequisites: ['goal_setting', 'problem_solving'],
         nameKey: 'soft_skill_resource_management',
         descKey: 'soft_skill_resource_management_desc',
@@ -1150,7 +1150,7 @@ function drawSkillNode(svg, skill, type) {
     }
     
     const words = skillName.split(' ');
-    const maxCharsPerLine = 12; // Adjusted for larger circles
+    const maxCharsPerLine = 14;
     
     if (skillName.length > maxCharsPerLine || words.length > 2) {
         const lines = [];
@@ -1162,6 +1162,9 @@ function drawSkillNode(svg, skill, type) {
             } else {
                 if (currentLine) lines.push(currentLine);
                 currentLine = word;
+                if (word.length > maxCharsPerLine) {
+                    currentLine = word.substring(0, maxCharsPerLine - 1) + '...';
+                }
             }
         }
         if (currentLine) lines.push(currentLine);
@@ -1171,7 +1174,7 @@ function drawSkillNode(svg, skill, type) {
         displayLines.forEach((line, index) => {
             const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
             tspan.setAttribute('x', skill.position.x);
-            tspan.setAttribute('dy', index === 0 ? `-${(displayLines.length - 1) * 0.4}em` : '0.8em');
+            tspan.setAttribute('dy', index === 0 ? `-${(displayLines.length - 1) * 0.5}em` : '1em');
             tspan.textContent = line;
             text.appendChild(tspan);
         });
@@ -1182,7 +1185,12 @@ function drawSkillNode(svg, skill, type) {
     group.appendChild(text);
     
     group.addEventListener('click', (event) => {
-        handleSkillClick(skill.id, type);
+        handleSkillClick(skill.id, type, 'left');
+        showSkillTooltip(skill, type, event);
+    });
+    group.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        handleSkillClick(skill.id, type, 'right');
         showSkillTooltip(skill, type, event);
     });
     group.addEventListener('mouseenter', () => showSkillDetails(skill, type));
@@ -1218,27 +1226,36 @@ function isConnectionActive(fromSkillId, toSkillId, type) {
     return skills.mastered.includes(fromSkillId) && (skills.mastered.includes(toSkillId) || skills.selected.includes(toSkillId));
 }
 
-function handleSkillClick(skillId, type) {
+function handleSkillClick(skillId, type, clickType = 'left') {
     const state = getSkillState(skillId, type);
     const skills = skillTreeState[type === 'soft' ? 'softSkills' : 'hardSkills'];
     
-    if (state === 'mastered') {
-        const index = skills.mastered.indexOf(skillId);
-        if (index > -1) {
-            skills.mastered.splice(index, 1);
+    if (clickType === 'right') {
+        if (state === 'mastered') {
+            const index = skills.mastered.indexOf(skillId);
+            if (index > -1) {
+                skills.mastered.splice(index, 1);
+            }
+        } else {
+            const selectedIndex = skills.selected.indexOf(skillId);
+            if (selectedIndex > -1) {
+                skills.selected.splice(selectedIndex, 1);
+            }
+            skills.mastered.push(skillId);
         }
-    } else if (state === 'selected') {
-        const index = skills.selected.indexOf(skillId);
-        if (index > -1) {
-            skills.selected.splice(index, 1);
+    } else {
+        if (state === 'selected') {
+            const index = skills.selected.indexOf(skillId);
+            if (index > -1) {
+                skills.selected.splice(index, 1);
+            }
+        } else if (state === 'available') {
+            if (skills.selected.length >= 3) {
+                showToast('Максимум 3 навыка для развития в каждой категории');
+                return;
+            }
+            skills.selected.push(skillId);
         }
-    } else if (state === 'available') {
-        if (skills.selected.length >= 3) {
-            showToast('Максимум 3 навыка для развития в каждой категории');
-            return;
-        }
-        
-        skills.selected.push(skillId);
     }
     
     renderSkillTree(type);
@@ -1288,13 +1305,12 @@ function showSkillTooltip(skill, type, event) {
         benefit.textContent = skill.benefit;
     }
     
-    const rect = event.target.closest('.skill-tree-container').getBoundingClientRect();
     const svgRect = event.target.closest('svg').getBoundingClientRect();
     const nodeX = skill.position.x;
     const nodeY = skill.position.y;
     
-    const tooltipX = (nodeX / 1200) * svgRect.width + 50;
-    const tooltipY = (nodeY / 1000) * svgRect.height - 20;
+    const tooltipX = svgRect.left + (nodeX / 1200) * svgRect.width + 50;
+    const tooltipY = svgRect.top + (nodeY / 1000) * svgRect.height - 20;
     
     tooltip.style.left = `${tooltipX}px`;
     tooltip.style.top = `${tooltipY}px`;
