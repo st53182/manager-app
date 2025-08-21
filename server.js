@@ -82,7 +82,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-hashes'", "https://cdn.tailwindcss.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-hashes'", "https://cdn.tailwindcss.com", "https://cdn.jsdelivr.net"],
       scriptSrcAttr: ["'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'"],
@@ -408,6 +408,10 @@ app.get('/employee/:id', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'employee.html'));
 });
 
+app.get('/team/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'team.html'));
+});
+
 app.get('/api/employee/:id', authenticateToken, async (req, res) => {
   try {
     const employee = await getEmployeeById(req.params.id);
@@ -683,6 +687,57 @@ app.post('/api/employee/:id/okr-improve-single', authenticateToken, async (req, 
     res.json({ success: true, improvedText });
   } catch (error) {
     console.error('Error in okr-improve-single:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/team/:id/motivation-advice', authenticateToken, async (req, res) => {
+  try {
+    const team = await getTeamById(req.params.id);
+    if (!team || team.manager_id !== req.user.userId) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+
+    const employees = await getEmployeesByTeam(req.params.id);
+    const { topTriggers, language = 'ru' } = req.body;
+
+    if (!openai) {
+      return res.status(500).json({ error: 'OpenAI API key not configured' });
+    }
+
+    let prompt;
+    if (language === 'ru') {
+      prompt = `Проанализируй топ мотивационные триггеры этой команды и предоставь конкретные советы по их мотивации:
+
+Команда: ${team.name}
+Размер команды: ${employees.length} сотрудников
+Топ 4 мотивационных триггера (наиболее распространенные в команде): ${topTriggers.join(', ')}
+
+Предоставь 3-4 конкретных, практических рекомендации для мотивации этой команды на основе их доминирующих мотивационных триггеров. Сосредоточься на практических управленческих стратегиях, которые учитывают эти конкретные триггеры.
+
+Структурируй ответ в виде пронумерованного списка. Каждая рекомендация должна быть конкретной и применимой на практике.`;
+    } else {
+      prompt = `Analyze this team's top motivational triggers and provide specific advice for motivating them:
+
+Team: ${team.name}
+Team size: ${employees.length} members
+Top 4 motivational triggers (most common in team): ${topTriggers.join(', ')}
+
+Provide 3-4 specific, actionable recommendations for motivating this team based on their dominant motivational triggers. Focus on practical management strategies that address these specific triggers.
+
+Structure your response as a numbered list. Each recommendation should be specific and practically applicable.`;
+    }
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 600
+    });
+
+    const advice = response.choices[0].message.content.trim();
+    res.json({ success: true, advice });
+  } catch (error) {
+    console.error('Error generating team motivation advice:', error);
     res.status(500).json({ error: error.message });
   }
 });

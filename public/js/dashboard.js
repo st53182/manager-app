@@ -79,12 +79,18 @@ function displayTeams(teams) {
 
     teams.forEach(team => {
         const teamCard = document.createElement('div');
-        teamCard.className = 'bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow';
+        teamCard.className = 'bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer';
+        teamCard.onclick = (e) => {
+            if (e.target.closest('button')) {
+                return;
+            }
+            window.location.href = `/team/${team.id}`;
+        };
         
         const createdDate = new Date(team.created_at).toLocaleDateString('ru-RU');
         teamCard.innerHTML = `
             <div class="flex items-start justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900 truncate">${escapeHtml(team.name)}</h3>
+                <h3 class="text-lg font-semibold text-gray-900 truncate hover:text-blue-600 transition-colors">${escapeHtml(team.name)}</h3>
                 <div class="flex space-x-2">
                     <button onclick="editTeam('${team.id}')" class="text-blue-600 hover:text-blue-800">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

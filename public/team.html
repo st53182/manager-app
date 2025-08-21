@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="team.page_title">Команда - Менеджер Команд</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .team-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .employee-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .employee-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .avatar-placeholder {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 1rem;
+        }
+        .disc-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .trigger-mini {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.625rem;
+            font-weight: 500;
+            margin: 0.125rem;
+            color: white;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 0.5rem;
+            background-color: #e5e7eb;
+            border-radius: 0.25rem;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            transition: width 0.3s ease;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+        }
+        .advice-container {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 12px;
+            padding: 2rem;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-semibold text-gray-900" data-translate="nav.title">Менеджер Команд</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex space-x-2">
+                        <button id="langRu" class="px-2 py-1 text-sm bg-blue-600 text-white rounded">RU</button>
+                        <button id="langEn" class="px-2 py-1 text-sm bg-gray-300 text-gray-700 rounded">EN</button>
+                    </div>
+                    <span id="userName" class="text-gray-700"></span>
+                    <button onclick="window.location.href='/dashboard'" class="text-blue-600 hover:text-blue-800" data-translate="team.back_to_dashboard">
+                        Назад к панели
+                    </button>
+                    <button onclick="logout()" class="text-red-600 hover:text-red-800" data-translate="nav.logout">Выйти</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Loading indicator -->
+    <div id="loadingIndicator" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-2 text-gray-600" data-translate="common.loading">Загрузка...</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Team Header -->
+        <div class="team-header">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 id="teamName" class="text-3xl font-bold mb-2">Название команды</h1>
+                    <p id="teamDescription" class="text-xl opacity-90 mb-2">Описание команды</p>
+                    <div class="flex items-center space-x-4">
+                        <span id="teamSize" class="text-lg opacity-80">0 сотрудников</span>
+                        <span id="teamCreated" class="text-sm opacity-75"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee Cards Grid -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6" data-translate="team.team_members">Участники команды</h2>
+            <div id="employeeCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Employee cards will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Motivational Triggers Analysis -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Radar Chart -->
+            <div class="chart-container">
+                <h3 class="text-xl font-bold text-gray-900 mb-4" data-translate="team.motivational_triggers_chart">Мотивационные триггеры команды</h3>
+                <p class="text-sm text-gray-600 mb-6" data-translate="team.chart_description">Частота мотивационных триггеров в топ-4 у участников команды</p>
+                <div class="relative h-80">
+                    <canvas id="motivationRadarChart"></canvas>
+                </div>
+            </div>
+
+            <!-- AI Motivation Advice -->
+            <div class="advice-container">
+                <h3 class="text-xl font-bold mb-4" data-translate="team.motivation_advice">Рекомендации по мотивации команды</h3>
+                <div id="motivationAdvice" class="text-sm leading-relaxed">
+                    <div class="animate-pulse">
+                        <div class="h-4 bg-white bg-opacity-20 rounded mb-2"></div>
+                        <div class="h-4 bg-white bg-opacity-20 rounded mb-2"></div>
+                        <div class="h-4 bg-white bg-opacity-20 rounded w-3/4"></div>
+                    </div>
+                </div>
+                <button id="refreshAdviceBtn" class="mt-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-colors" data-translate="team.refresh_advice">
+                    Обновить рекомендации
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/translations.js"></script>
+    <script src="/js/team.js"></script>
+</body>
+</html>
