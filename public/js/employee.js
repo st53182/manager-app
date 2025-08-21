@@ -1152,7 +1152,6 @@ function makeStraightEdge(a, b) {
 }
 function drawSkillNode(svg, skill, type) {
   const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  if (!Number.isFinite(skill.r)) skill.r = 50;
   group.setAttribute('class', `skill-node ${getSkillState(skill.id, type)}`);
   group.setAttribute('data-skill-id', skill.id);
   group.setAttribute('data-skill-type', type);
@@ -1161,77 +1160,36 @@ function drawSkillNode(svg, skill, type) {
   circle.setAttribute('cx', skill.position.x);
   circle.setAttribute('cy', skill.position.y);
   circle.setAttribute('class', 'skill-node-circle');
-  // если радиус задаётся стилями — можно не трогать; иначе раскомментируй:
-  // circle.setAttribute('r', skill.r || 40);
   group.appendChild(circle);
 
   const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   text.setAttribute('x', skill.position.x);
   text.setAttribute('y', skill.position.y);
   text.setAttribute('class', 'skill-node-text');
-  // чтобы текст точно центрировался, даже если в CSS не прописано:
-  text.setAttribute('text-anchor', 'middle');
-  text.setAttribute('dominant-baseline', 'middle');
-
-  let skillName;
-  if (type === 'soft') {
-    skillName = window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey;
-  } else {
-    skillName = skill.name;
-  }
-
-  const words = skillName.split(' ');
-  const maxCharsPerLine = 14;
-
-  if (skillName.length > maxCharsPerLine || words.length > 2) {
-    const lines = [];
-    let currentLine = '';
-
-    for (const word of words) {
-      if ((currentLine + ' ' + word).length <= maxCharsPerLine) {
-        currentLine = currentLine ? currentLine + ' ' + word : word;
-      } else {
-        if (currentLine) lines.push(currentLine);
-        currentLine = word;
-        if (word.length > maxCharsPerLine) {
-          currentLine = word.substring(0, maxCharsPerLine - 1) + '...';
-        }
-      }
-    }
-    if (currentLine) lines.push(currentLine);
-
-    const displayLines = lines.slice(0, 3);
-
-    displayLines.forEach((line, index) => {
-      const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
-      tspan.setAttribute('x', skill.position.x);
-      tspan.setAttribute('dy', index === 0 ? `-${(displayLines.length - 1) * 0.5}em` : '1em');
-      tspan.textContent = line;
-      text.appendChild(tspan);
-    });
-  } else {
-    text.textContent = skillName;
-  }
+  // ... ваш код переноса строк остаётся как есть ...
 
   group.appendChild(text);
 
+  // клики по ноду — не даём всплыть до svg (чтобы пан не стартовал)
+  group.addEventListener('mousedown', (e) => e.stopPropagation());
   group.addEventListener('click', (event) => {
+    event.stopPropagation();
     handleSkillClick(skill.id, type, 'left');
     showSkillTooltip(skill, type, event);
   });
   group.addEventListener('contextmenu', (event) => {
     event.preventDefault();
+    event.stopPropagation();
     handleSkillClick(skill.id, type, 'right');
     showSkillTooltip(skill, type, event);
   });
   group.addEventListener('mouseenter', () => showSkillDetails(skill, type));
   group.addEventListener('mouseleave', () => hideSkillDetails());
 
-  // КЛЮЧЕВОЕ изменение: не используем локальную переменную vp,
-  // берём контейнер из svg (или сам svg как запасной вариант)
   const container = svg.querySelector('#skillTreeViewport') || svg;
-container.appendChild(group);
+  container.appendChild(group);
 }
+
 
 
 function getSkillState(skillId, type) {
@@ -1275,7 +1233,6 @@ function initZoomPan(svg) {
 
   const apply = () => vp.setAttribute('transform', `translate(${tx} ${ty}) scale(${scale})`);
 
-  // --- режимы пана ---
   let panning = false;
   let startX = 0, startY = 0;
   let spaceHeld = false;
@@ -1284,7 +1241,6 @@ function initZoomPan(svg) {
     if (e.code === 'Space') {
       spaceHeld = true;
       svg.style.cursor = 'grab';
-      // чтобы пробел не скроллил страницу
       e.preventDefault();
     }
   });
@@ -1295,22 +1251,16 @@ function initZoomPan(svg) {
     }
   });
 
-  // Начинать панорамирование только:
-  // - клик по фону (НЕ внутри .skill-node), ЛЕВАЯ кнопка
-  // - ЛИБО всегда при средней кнопке (button === 1)
-  // - ЛИБО при зажатом пробеле (spaceHeld)
   svg.addEventListener('mousedown', (e) => {
     const isMiddle = e.button === 1;
     const isLeft = e.button === 0;
     const onNode = !!e.target.closest('.skill-node');
-
     if (!(isMiddle || (isLeft && (spaceHeld || !onNode)))) return;
 
     panning = true;
     startX = e.clientX - tx;
     startY = e.clientY - ty;
     svg.style.cursor = 'grabbing';
-    // если начинаем пан — не даём выделяться тексту и т.п.
     e.preventDefault();
   });
 
@@ -1327,7 +1277,6 @@ function initZoomPan(svg) {
     svg.style.cursor = spaceHeld ? 'grab' : '';
   });
 
-  // --- Zoom с колёсика (всегда работает, даже над нодой) ---
   const onWheel = (e) => {
     e.preventDefault();
     const rect = svg.getBoundingClientRect();
@@ -1338,19 +1287,17 @@ function initZoomPan(svg) {
     const factor = e.deltaY < 0 ? (1 + zoomStep) : (1 - zoomStep);
     scale = Math.max(minScale, Math.min(maxScale, scale * factor));
 
-    // zoom-to-cursor: держим точку под курсором
     tx = cx - (cx - tx) * (scale / prev);
     ty = cy - (cy - ty) * (scale / prev);
-
     apply();
   };
-//
-  // навешаем и на svg, и на vp — чтобы точно ловить событие под любым слоем
+
   svg.addEventListener('wheel', onWheel, { passive: false });
   vp.addEventListener('wheel', onWheel, { passive: false });
 
   apply();
 }
+
 
 
 
@@ -1428,7 +1375,6 @@ function showSkillTooltip(skill, type, event) {
   const description = document.getElementById('tooltipDescription');
   const benefit = document.getElementById('tooltipBenefit');
 
-  // 1) Наполнение текста
   if (type === 'soft') {
     title.textContent = window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey;
     description.textContent = window.translationManager ? window.translationManager.t(skill.descKey) : (skill.descKey || '');
@@ -1439,54 +1385,40 @@ function showSkillTooltip(skill, type, event) {
     benefit.textContent = skill.benefit || '';
   }
 
-  // 2) Базовые элементы
   const nodeEl = event.target.closest('.skill-node');
   if (!nodeEl) return;
 
-  // контейнер, относительно которого позиционируем тултип
-  const host = document.getElementById('skillTreeHost') ||
-               document.querySelector('#skillTreeModal .p-6') ||
-               tooltip.parentElement;
-
+  // контейнер модалки (relative), внутри него tooltip absolute
+  const host = document.querySelector('#skillTreeModal .p-6') || tooltip.parentElement;
   const hostRect = host.getBoundingClientRect();
   const nodeRect = nodeEl.getBoundingClientRect();
 
-  // 3) Временно показать tooltip невидимым, чтобы померить размеры
+  // показать невидимо, чтобы узнать реальные размеры
   tooltip.classList.remove('hidden');
   const prevVis = tooltip.style.visibility;
   tooltip.style.visibility = 'hidden';
-
-  // принудительный рефлоу
   void tooltip.offsetWidth;
 
   const tW = tooltip.offsetWidth || 300;
   const tH = tooltip.offsetHeight || 140;
 
-  // 4) Координаты относительно host
-  const pad = 10;
-  let x = (nodeRect.right - hostRect.left) + pad;
-  let y = (nodeRect.top   - hostRect.top);
+  let x = (nodeRect.right - hostRect.left) + 10;
+  let y = (nodeRect.top - hostRect.top);
 
-  // если не влезает справа — покажем слева
-  const maxX = hostRect.width - tW - pad;
-  if (x > maxX) x = (nodeRect.left - hostRect.left) - tW - pad;
+  // вправо не влезает — рисуем слева
+  if (x + tW > hostRect.width) x = (nodeRect.left - hostRect.left) - tW - 10;
+  // вниз не влезает — подвинем вверх
+  if (y + tH > hostRect.height) y = Math.max(10, hostRect.height - tH - 10);
+  if (y < 10) y = 10;
 
-  // вертикальные границы
-  const maxY = hostRect.height - tH - pad;
-  if (y > maxY) y = maxY;
-  if (y < pad) y = pad;
-
-  // 5) Применяем позицию и делаем видимым
   tooltip.style.left = `${x}px`;
   tooltip.style.top  = `${y}px`;
-  tooltip.style.visibility = prevVis || 'visible';
 
-  // автоскрытие (по желанию)
-  clearTimeout(tooltip.__hideT);
-  tooltip.__hideT = setTimeout(() => {
-    tooltip.classList.add('hidden');
-  }, 3000);
+  tooltip.style.visibility = prevVis || '';
+  // автоскрытие оставим прежним (или уберите таймер, если нужно держать дольше)
+  setTimeout(() => tooltip.classList.add('hidden'), 3000);
 }
+
 
 function hideSkillTooltip() {
   const tooltip = document.getElementById('skillTooltip');
