@@ -1243,7 +1243,7 @@ function isConnectionActive(fromSkillId, toSkillId, type) {
 }
 
 function initZoomPan(svg) {
-  if (!svg || svg.dataset.zoomInit === '1') return; // защита от повторной инициализации
+  if (!svg || svg.dataset.zoomInit === '1') return;
   svg.dataset.zoomInit = '1';
 
   const vp = svg.querySelector('#skillTreeViewport');
@@ -1251,51 +1251,88 @@ function initZoomPan(svg) {
 
   let scale = 1;
   let tx = 0, ty = 0;
-  const minScale = 0.4, maxScale = 2.5;
+  const minScale = 0.35, maxScale = 3;
   const zoomStep = 0.1;
 
   const apply = () => vp.setAttribute('transform', `translate(${tx} ${ty}) scale(${scale})`);
 
-  // Панорамирование (drag)
-  let isPanning = false, startX = 0, startY = 0, pointerId = null;
-  svg.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0) return;
-    isPanning = true;
-    startX = e.clientX; startY = e.clientY;
-    pointerId = e.pointerId;
-    svg.setPointerCapture(pointerId);
+  // --- режимы пана ---
+  let panning = false;
+  let startX = 0, startY = 0;
+  let spaceHeld = false;
+
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+      spaceHeld = true;
+      svg.style.cursor = 'grab';
+      // чтобы пробел не скроллил страницу
+      e.preventDefault();
+    }
   });
-  svg.addEventListener('pointermove', (e) => {
-    if (!isPanning) return;
-    tx += (e.clientX - startX);
-    ty += (e.clientY - startY);
-    startX = e.clientX; startY = e.clientY;
-    apply();
-  });
-  svg.addEventListener('pointerup', (e) => {
-    if (pointerId != null) svg.releasePointerCapture(pointerId);
-    isPanning = false; pointerId = null;
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') {
+      spaceHeld = false;
+      if (!panning) svg.style.cursor = '';
+    }
   });
 
-  // Зум на курсор
-  svg.addEventListener('wheel', (e) => {
+  // Начинать панорамирование только:
+  // - клик по фону (НЕ внутри .skill-node), ЛЕВАЯ кнопка
+  // - ЛИБО всегда при средней кнопке (button === 1)
+  // - ЛИБО при зажатом пробеле (spaceHeld)
+  svg.addEventListener('mousedown', (e) => {
+    const isMiddle = e.button === 1;
+    const isLeft = e.button === 0;
+    const onNode = !!e.target.closest('.skill-node');
+
+    if (!(isMiddle || (isLeft && (spaceHeld || !onNode)))) return;
+
+    panning = true;
+    startX = e.clientX - tx;
+    startY = e.clientY - ty;
+    svg.style.cursor = 'grabbing';
+    // если начинаем пан — не даём выделяться тексту и т.п.
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!panning) return;
+    tx = e.clientX - startX;
+    ty = e.clientY - startY;
+    apply();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!panning) return;
+    panning = false;
+    svg.style.cursor = spaceHeld ? 'grab' : '';
+  });
+
+  // --- Zoom с колёсика (всегда работает, даже над нодой) ---
+  const onWheel = (e) => {
     e.preventDefault();
     const rect = svg.getBoundingClientRect();
     const cx = e.clientX - rect.left;
     const cy = e.clientY - rect.top;
 
-    const prevScale = scale;
-    scale = Math.max(minScale, Math.min(maxScale, scale * (e.deltaY < 0 ? (1 + zoomStep) : (1 - zoomStep))));
+    const prev = scale;
+    const factor = e.deltaY < 0 ? (1 + zoomStep) : (1 - zoomStep);
+    scale = Math.max(minScale, Math.min(maxScale, scale * factor));
 
-    // Zoom-to-cursor: держим подкурсорную точку на месте
-    tx = cx - (cx - tx) * (scale / prevScale);
-    ty = cy - (cy - ty) * (scale / prevScale);
+    // zoom-to-cursor: держим точку под курсором
+    tx = cx - (cx - tx) * (scale / prev);
+    ty = cy - (cy - ty) * (scale / prev);
 
     apply();
-  }, { passive: false });
+  };
+
+  // навешаем и на svg, и на vp — чтобы точно ловить событие под любым слоем
+  svg.addEventListener('wheel', onWheel, { passive: false });
+  vp.addEventListener('wheel', onWheel, { passive: false });
 
   apply();
 }
+
 
 
 function handleSkillClick(skillId, type, clickType = 'left') {
