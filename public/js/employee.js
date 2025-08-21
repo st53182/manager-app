@@ -1111,22 +1111,22 @@ function renderSkillTree(type) {
   initZoomPan(svg);
 }
 
-function drawConnection(svg, fromSkill, toSkill, allSkills) {
-  const pathData = routeEdge(fromSkill, toSkill, allSkills, {
-    cell: 24,
-    margin: 12
-    // bounds НЕ передаём, пусть роутер сам их оценит
-  });
+function drawConnection(svg, fromSkill, toSkill, isActive, allSkills) {
+  const nodes = Array.isArray(allSkills) ? allSkills : Object.values(allSkills || {});
+  const res = routeEdge(fromSkill, toSkill, nodes, { cell: 24, margin: 12 });
+
+  // res может быть строкой или объектом { d }
+  const d = typeof res === 'string' ? res : res.d;
 
   const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  pathElement.setAttribute('class', 'skill-connection');
+  pathElement.setAttribute('d', d);
+  pathElement.setAttribute('class', `skill-connection ${isActive ? 'active' : ''}`);
   pathElement.setAttribute('fill', 'none');
-  pathElement.setAttribute('stroke', '#999');
+  pathElement.setAttribute('stroke', isActive ? '#3b82f6' : '#d1d5db');
   pathElement.setAttribute('stroke-width', '2');
   pathElement.setAttribute('stroke-linecap', 'round');
   pathElement.setAttribute('stroke-linejoin', 'round');
   pathElement.style.pointerEvents = 'none';
-  pathElement.setAttribute('d', pathData);
 
   const container = svg.querySelector('#skillTreeViewport') || svg;
   container.appendChild(pathElement);

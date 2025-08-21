@@ -25,8 +25,7 @@ function routeEdge(a, b, allNodes, opts = {}) {
   const endOnCircle   = pointOnCircle({ x: b.position.x, y: b.position.y }, pn, b.r + 1);
 
   const final = [startOnCircle, ...smoothed.slice(1, -1), endOnCircle];
-
-  return { points: final, d: pointsToSvg(final) };
+return { points: final, d: pointsToSvg(final) };
 }
 
 function guessBounds(nodes, cell) {
