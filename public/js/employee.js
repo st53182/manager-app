@@ -115,15 +115,15 @@ autoLayout(SOFT_SKILLS_DATA, 150, 100);
 
 const HARD_SKILLS_DATA = {
     'backend': {
-        'internet': { id: 'internet', position: { x: 400, y: 50 }, prerequisites: [], name: 'Internet', desc: 'How the internet works', benefit: 'Understanding of web fundamentals' },
-        'http': { id: 'http', position: { x: 500, y: 120 }, prerequisites: ['internet'], name: 'HTTP/HTTPS', desc: 'Web communication protocols', benefit: 'Secure web communication' },
-        'domain_names': { id: 'domain_names', position: { x: 300, y: 120 }, prerequisites: ['internet'], name: 'Domain Names', desc: 'DNS and domain system', benefit: 'Web addressing knowledge' },
-        'hosting': { id: 'hosting', position: { x: 400, y: 180 }, prerequisites: ['http', 'domain_names'], name: 'Hosting', desc: 'Web hosting concepts', benefit: 'Application deployment knowledge' },
+        'internet': { id: 'internet', position: { x: 400, y: 50 }, r: 40, prerequisites: [], name: 'Internet', desc: 'How the internet works', benefit: 'Understanding of web fundamentals' },
+        'http': { id: 'http', position: { x: 500, y: 120 }, r: 40, prerequisites: ['internet'], name: 'HTTP/HTTPS', desc: 'Web communication protocols', benefit: 'Secure web communication' },
+        'domain_names': { id: 'domain_names', position: { x: 300, y: 120 }, r: 40, prerequisites: ['internet'], name: 'Domain Names', desc: 'DNS and domain system', benefit: 'Web addressing knowledge' },
+        'hosting': { id: 'hosting', position: { x: 400, y: 180 }, r: 40, prerequisites: ['http', 'domain_names'], name: 'Hosting', desc: 'Web hosting concepts', benefit: 'Application deployment knowledge' },
         
-        'javascript': { id: 'javascript', position: { x: 150, y: 250 }, prerequisites: [], name: 'JavaScript', desc: 'Programming language for web development', benefit: 'Dynamic web applications' },
-        'python': { id: 'python', position: { x: 300, y: 250 }, prerequisites: [], name: 'Python', desc: 'Versatile programming language', benefit: 'Rapid development capabilities' },
-        'java': { id: 'java', position: { x: 450, y: 250 }, prerequisites: [], name: 'Java', desc: 'Enterprise programming language', benefit: 'Scalable applications' },
-        'go': { id: 'go', position: { x: 600, y: 250 }, prerequisites: [], name: 'Go', desc: 'Modern systems programming', benefit: 'High-performance services' },
+        'javascript': { id: 'javascript', position: { x: 150, y: 250 }, r: 40, prerequisites: [], name: 'JavaScript', desc: 'Programming language for web development', benefit: 'Dynamic web applications' },
+        'python': { id: 'python', position: { x: 300, y: 250 }, r: 40, prerequisites: [], name: 'Python', desc: 'Versatile programming language', benefit: 'Rapid development capabilities' },
+        'java': { id: 'java', position: { x: 450, y: 250 }, r: 40, prerequisites: [], name: 'Java', desc: 'Enterprise programming language', benefit: 'Scalable applications' },
+        'go': { id: 'go', position: { x: 600, y: 250 }, r: 40, prerequisites: [], name: 'Go', desc: 'Modern systems programming', benefit: 'High-performance services' },
         'rust': { id: 'rust', position: { x: 750, y: 250 }, prerequisites: [], name: 'Rust', desc: 'Systems programming language', benefit: 'Memory-safe performance' },
         
         'git': { id: 'git', position: { x: 100, y: 350 }, prerequisites: [], name: 'Git', desc: 'Version control system', benefit: 'Code collaboration and history' },
@@ -1091,7 +1091,7 @@ function renderSkillTree(type) {
         skill.prerequisites.forEach(prereqId => {
             const prereq = skillsData[prereqId];
             if (prereq) {
-                drawConnection(svg, prereq.position, skill.position, isConnectionActive(prereqId, skill.id, type));
+                drawConnection(svg, prereq, skill, isConnectionActive(prereqId, skill.id, type), Object.values(skillsData));
             }
         });
     });
@@ -1103,14 +1103,20 @@ function renderSkillTree(type) {
     addSkillLegend(svg);
 }
 
-function drawConnection(svg, fromPos, toPos, isActive) {
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', fromPos.x);
-    line.setAttribute('y1', fromPos.y);
-    line.setAttribute('x2', toPos.x);
-    line.setAttribute('y2', toPos.y);
-    line.setAttribute('class', `skill-connection ${isActive ? 'active' : ''}`);
-    svg.appendChild(line);
+function drawConnection(svg, fromSkill, toSkill, isActive, allSkills) {
+    const path = routeEdge(fromSkill, toSkill, allSkills, {
+        cell: 24,
+        margin: 12,
+        bounds: { x: 0, y: 0, w: 1200, h: 800 }
+    });
+    
+    const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pathElement.setAttribute('d', path.d);
+    pathElement.setAttribute('class', `skill-connection ${isActive ? 'active' : ''}`);
+    pathElement.setAttribute('fill', 'none');
+    pathElement.setAttribute('stroke', isActive ? '#3b82f6' : '#d1d5db');
+    pathElement.setAttribute('stroke-width', '2');
+    svg.appendChild(pathElement);
 }
 
 function drawSkillNode(svg, skill, type) {
@@ -3139,6 +3145,7 @@ function autoLayout(skills) {
       x: 150 + col * gapX,
       y: 100 + row * gapY
     };
+    skills[key].r = 40; // добавляем радиус для edge routing
   });
 }
 function returnCardToPalette(triggerId, isEdit) {
