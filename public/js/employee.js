@@ -2,6 +2,177 @@ let currentEmployee = null;
 let employeeId = null;
 let isEmployeeView = false; // true if accessed via employee secure link
 
+const SOFT_SKILLS_DATA = {
+    'business_communication': {
+        id: 'business_communication',
+        position: { x: 200, y: 100 },
+        prerequisites: [],
+        nameKey: 'soft_skill_business_communication',
+        descKey: 'soft_skill_business_communication_desc',
+        benefitKey: 'soft_skill_business_communication_benefit'
+    },
+    'communication': {
+        id: 'communication',
+        position: { x: 400, y: 100 },
+        prerequisites: ['business_communication'],
+        nameKey: 'soft_skill_communication',
+        descKey: 'soft_skill_communication_desc',
+        benefitKey: 'soft_skill_communication_benefit'
+    },
+    'presentation': {
+        id: 'presentation',
+        position: { x: 600, y: 100 },
+        prerequisites: ['communication'],
+        nameKey: 'soft_skill_presentation',
+        descKey: 'soft_skill_presentation_desc',
+        benefitKey: 'soft_skill_presentation_benefit'
+    },
+    'client_centricity': {
+        id: 'client_centricity',
+        position: { x: 100, y: 250 },
+        prerequisites: [],
+        nameKey: 'soft_skill_client_centricity',
+        descKey: 'soft_skill_client_centricity_desc',
+        benefitKey: 'soft_skill_client_centricity_benefit'
+    },
+    'emotional_intelligence': {
+        id: 'emotional_intelligence',
+        position: { x: 300, y: 250 },
+        prerequisites: ['client_centricity'],
+        nameKey: 'soft_skill_emotional_intelligence',
+        descKey: 'soft_skill_emotional_intelligence_desc',
+        benefitKey: 'soft_skill_emotional_intelligence_benefit'
+    },
+    'mentoring': {
+        id: 'mentoring',
+        position: { x: 500, y: 250 },
+        prerequisites: ['emotional_intelligence', 'communication'],
+        nameKey: 'soft_skill_mentoring',
+        descKey: 'soft_skill_mentoring_desc',
+        benefitKey: 'soft_skill_mentoring_benefit'
+    },
+    'management': {
+        id: 'management',
+        position: { x: 700, y: 250 },
+        prerequisites: ['mentoring', 'presentation'],
+        nameKey: 'soft_skill_management',
+        descKey: 'soft_skill_management_desc',
+        benefitKey: 'soft_skill_management_benefit'
+    },
+    'cognitive_flexibility': {
+        id: 'cognitive_flexibility',
+        position: { x: 150, y: 400 },
+        prerequisites: [],
+        nameKey: 'soft_skill_cognitive_flexibility',
+        descKey: 'soft_skill_cognitive_flexibility_desc',
+        benefitKey: 'soft_skill_cognitive_flexibility_benefit'
+    },
+    'creative_thinking': {
+        id: 'creative_thinking',
+        position: { x: 350, y: 400 },
+        prerequisites: ['cognitive_flexibility'],
+        nameKey: 'soft_skill_creative_thinking',
+        descKey: 'soft_skill_creative_thinking_desc',
+        benefitKey: 'soft_skill_creative_thinking_benefit'
+    },
+    'critical_thinking': {
+        id: 'critical_thinking',
+        position: { x: 550, y: 400 },
+        prerequisites: ['creative_thinking'],
+        nameKey: 'soft_skill_critical_thinking',
+        descKey: 'soft_skill_critical_thinking_desc',
+        benefitKey: 'soft_skill_critical_thinking_benefit'
+    },
+    'problem_solving': {
+        id: 'problem_solving',
+        position: { x: 750, y: 400 },
+        prerequisites: ['critical_thinking'],
+        nameKey: 'soft_skill_problem_solving',
+        descKey: 'soft_skill_problem_solving_desc',
+        benefitKey: 'soft_skill_problem_solving_benefit'
+    },
+    'systems_thinking': {
+        id: 'systems_thinking',
+        position: { x: 200, y: 550 },
+        prerequisites: ['cognitive_flexibility'],
+        nameKey: 'soft_skill_systems_thinking',
+        descKey: 'soft_skill_systems_thinking_desc',
+        benefitKey: 'soft_skill_systems_thinking_benefit'
+    },
+    'goal_setting': {
+        id: 'goal_setting',
+        position: { x: 400, y: 550 },
+        prerequisites: ['systems_thinking'],
+        nameKey: 'soft_skill_goal_setting',
+        descKey: 'soft_skill_goal_setting_desc',
+        benefitKey: 'soft_skill_goal_setting_benefit'
+    },
+    'resource_management': {
+        id: 'resource_management',
+        position: { x: 600, y: 550 },
+        prerequisites: ['goal_setting', 'problem_solving'],
+        nameKey: 'soft_skill_resource_management',
+        descKey: 'soft_skill_resource_management_desc',
+        benefitKey: 'soft_skill_resource_management_benefit'
+    },
+    'stress_management': {
+        id: 'stress_management',
+        position: { x: 400, y: 700 },
+        prerequisites: ['goal_setting'],
+        nameKey: 'soft_skill_stress_management',
+        descKey: 'soft_skill_stress_management_desc',
+        benefitKey: 'soft_skill_stress_management_benefit'
+    }
+};
+
+const HARD_SKILLS_DATA = {
+    'backend': {
+        'javascript': { id: 'javascript', position: { x: 200, y: 100 }, prerequisites: [], name: 'JavaScript', desc: 'Programming language for web development', benefit: 'Enables dynamic web applications' },
+        'nodejs': { id: 'nodejs', position: { x: 400, y: 100 }, prerequisites: ['javascript'], name: 'Node.js', desc: 'JavaScript runtime for server-side development', benefit: 'Allows full-stack JavaScript development' },
+        'express': { id: 'express', position: { x: 600, y: 100 }, prerequisites: ['nodejs'], name: 'Express.js', desc: 'Web framework for Node.js', benefit: 'Simplifies API and web server development' },
+        'databases': { id: 'databases', position: { x: 200, y: 250 }, prerequisites: [], name: 'Databases', desc: 'Data storage and retrieval systems', benefit: 'Enables persistent data management' },
+        'sql': { id: 'sql', position: { x: 400, y: 250 }, prerequisites: ['databases'], name: 'SQL', desc: 'Language for relational database queries', benefit: 'Allows complex data operations' },
+        'mongodb': { id: 'mongodb', position: { x: 600, y: 250 }, prerequisites: ['databases'], name: 'MongoDB', desc: 'NoSQL document database', benefit: 'Provides flexible data modeling' },
+        'api_design': { id: 'api_design', position: { x: 800, y: 200 }, prerequisites: ['express'], name: 'API Design', desc: 'Creating well-structured APIs', benefit: 'Improves system integration' },
+        'docker': { id: 'docker', position: { x: 300, y: 400 }, prerequisites: ['nodejs'], name: 'Docker', desc: 'Containerization platform', benefit: 'Ensures consistent deployment environments' },
+        'testing': { id: 'testing', position: { x: 500, y: 400 }, prerequisites: ['express'], name: 'Testing', desc: 'Automated testing frameworks', benefit: 'Improves code quality and reliability' },
+        'security': { id: 'security', position: { x: 700, y: 400 }, prerequisites: ['api_design'], name: 'Security', desc: 'Application security practices', benefit: 'Protects against vulnerabilities' }
+    },
+    'frontend': {
+        'html': { id: 'html', position: { x: 200, y: 100 }, prerequisites: [], name: 'HTML', desc: 'Markup language for web pages', benefit: 'Creates web page structure' },
+        'css': { id: 'css', position: { x: 400, y: 100 }, prerequisites: ['html'], name: 'CSS', desc: 'Styling language for web pages', benefit: 'Controls visual presentation' },
+        'javascript': { id: 'javascript', position: { x: 600, y: 100 }, prerequisites: ['css'], name: 'JavaScript', desc: 'Programming language for web interactivity', benefit: 'Adds dynamic behavior to web pages' },
+        'react': { id: 'react', position: { x: 300, y: 250 }, prerequisites: ['javascript'], name: 'React', desc: 'JavaScript library for building UIs', benefit: 'Simplifies complex UI development' },
+        'vue': { id: 'vue', position: { x: 500, y: 250 }, prerequisites: ['javascript'], name: 'Vue.js', desc: 'Progressive JavaScript framework', benefit: 'Provides flexible UI development' },
+        'responsive_design': { id: 'responsive_design', position: { x: 700, y: 250 }, prerequisites: ['css'], name: 'Responsive Design', desc: 'Creating mobile-friendly layouts', benefit: 'Ensures cross-device compatibility' },
+        'webpack': { id: 'webpack', position: { x: 400, y: 400 }, prerequisites: ['react', 'vue'], name: 'Webpack', desc: 'Module bundler for JavaScript', benefit: 'Optimizes application performance' },
+        'testing': { id: 'testing', position: { x: 600, y: 400 }, prerequisites: ['react', 'vue'], name: 'Testing', desc: 'Frontend testing frameworks', benefit: 'Ensures UI reliability' }
+    },
+    'devops': {
+        'linux': { id: 'linux', position: { x: 200, y: 100 }, prerequisites: [], name: 'Linux', desc: 'Operating system fundamentals', benefit: 'Provides server management skills' },
+        'bash': { id: 'bash', position: { x: 400, y: 100 }, prerequisites: ['linux'], name: 'Bash Scripting', desc: 'Shell scripting for automation', benefit: 'Automates repetitive tasks' },
+        'docker': { id: 'docker', position: { x: 600, y: 100 }, prerequisites: ['linux'], name: 'Docker', desc: 'Containerization platform', benefit: 'Ensures consistent deployments' },
+        'kubernetes': { id: 'kubernetes', position: { x: 800, y: 100 }, prerequisites: ['docker'], name: 'Kubernetes', desc: 'Container orchestration platform', benefit: 'Manages containerized applications at scale' },
+        'aws': { id: 'aws', position: { x: 300, y: 250 }, prerequisites: ['bash'], name: 'AWS', desc: 'Amazon Web Services cloud platform', benefit: 'Provides scalable cloud infrastructure' },
+        'terraform': { id: 'terraform', position: { x: 500, y: 250 }, prerequisites: ['aws'], name: 'Terraform', desc: 'Infrastructure as Code tool', benefit: 'Automates infrastructure provisioning' },
+        'monitoring': { id: 'monitoring', position: { x: 700, y: 250 }, prerequisites: ['kubernetes'], name: 'Monitoring', desc: 'System monitoring and alerting', benefit: 'Ensures system reliability' },
+        'ci_cd': { id: 'ci_cd', position: { x: 400, y: 400 }, prerequisites: ['terraform'], name: 'CI/CD', desc: 'Continuous integration and deployment', benefit: 'Automates software delivery' }
+    }
+};
+
+let currentSkillTreeData = {};
+let skillTreeState = {
+    softSkills: {
+        mastered: [],
+        selected: []
+    },
+    hardSkills: {
+        mastered: [],
+        selected: []
+    },
+    competencyArea: 'backend'
+};
+
 function checkAuth() {
     const token = localStorage.getItem('auth_token');
     const user = localStorage.getItem('user_info');
@@ -294,10 +465,62 @@ function displayDiscPersonality(discType, discData) {
 function displayDevelopmentPlan(plan) {
     const container = document.getElementById('developmentContent');
     
-    if (!plan || plan.length === 0) {
+    if (!plan || (!plan.softSkills && !plan.hardSkills && plan.length === 0)) {
         container.innerHTML = `
             <div class="text-gray-500 text-center py-8" data-translate="employee.no_development_plan">
                 План развития не создан
+            </div>
+        `;
+        return;
+    }
+
+    if (plan.softSkills || plan.hardSkills) {
+        const softSkills = plan.softSkills || {};
+        const hardSkills = plan.hardSkills || {};
+        
+        container.innerHTML = `
+            <div class="space-y-6">
+                ${softSkills.selected && softSkills.selected.length > 0 ? `
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h4 class="font-medium text-gray-900 mb-3" data-translate="soft_skills">Софт скиллы</h4>
+                        <div class="space-y-2">
+                            ${softSkills.selected.map(skillId => {
+                                const skill = SOFT_SKILLS_DATA[skillId];
+                                const skillName = skill ? (window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey) : skillId;
+                                const isMastered = softSkills.mastered && softSkills.mastered.includes(skillId);
+                                return `
+                                    <div class="flex items-center justify-between p-2 bg-blue-50 rounded">
+                                        <span class="text-sm font-medium text-blue-900">${skillName}</span>
+                                        <span class="text-xs px-2 py-1 rounded-full ${isMastered ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
+                                            ${isMastered ? 'Освоен' : 'В развитии'}
+                                        </span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                ${hardSkills.selected && hardSkills.selected.length > 0 ? `
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h4 class="font-medium text-gray-900 mb-3" data-translate="hard_skills">Хард скиллы</h4>
+                        <div class="space-y-2">
+                            ${hardSkills.selected.map(skillId => {
+                                const competencyArea = hardSkills.competencyArea || 'backend';
+                                const skill = HARD_SKILLS_DATA[competencyArea] && HARD_SKILLS_DATA[competencyArea][skillId];
+                                const skillName = skill ? skill.name : skillId;
+                                const isMastered = hardSkills.mastered && hardSkills.mastered.includes(skillId);
+                                return `
+                                    <div class="flex items-center justify-between p-2 bg-purple-50 rounded">
+                                        <span class="text-sm font-medium text-purple-900">${skillName}</span>
+                                        <span class="text-xs px-2 py-1 rounded-full ${isMastered ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'}">
+                                            ${isMastered ? 'Освоен' : 'В развитии'}
+                                        </span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                ` : ''}
             </div>
         `;
         return;
@@ -439,8 +662,18 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('setDiscBtn').addEventListener('click', openDiscModal);
     
     document.getElementById('addDevelopmentBtn').addEventListener('click', () => {
-        showToast('Функция добавления плана развития будет добавлена позже');
+        openSkillTreeModal();
     });
+
+    document.getElementById('closeSkillTreeModal').addEventListener('click', closeSkillTreeModal);
+    document.getElementById('cancelSkillTree').addEventListener('click', closeSkillTreeModal);
+    document.getElementById('saveSkillTree').addEventListener('click', saveSkillTreeData);
+    document.getElementById('resetSkillSelection').addEventListener('click', resetSkillSelection);
+    
+    document.getElementById('softSkillsTab').addEventListener('click', () => switchSkillTreeTab('soft'));
+    document.getElementById('hardSkillsTab').addEventListener('click', () => switchSkillTreeTab('hard'));
+
+    initializeSkillTreeModal();
 
     document.getElementById('shareModal').addEventListener('click', (e) => {
         if (e.target.id === 'shareModal') {
@@ -461,6 +694,364 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeTagInputs();
     initializeDiscModal();
 });
+
+function initializeSkillTreeModal() {
+    if (currentEmployee && currentEmployee.development_plan) {
+        const plan = currentEmployee.development_plan;
+        if (plan.softSkills || plan.hardSkills) {
+            skillTreeState = {
+                softSkills: plan.softSkills || { mastered: [], selected: [] },
+                hardSkills: plan.hardSkills || { mastered: [], selected: [] },
+                competencyArea: plan.hardSkills?.competencyArea || getCompetencyAreaFromDomains()
+            };
+        }
+    }
+}
+
+function getCompetencyAreaFromDomains() {
+    if (!currentEmployee || !currentEmployee.domains) return 'backend';
+    
+    const domains = currentEmployee.domains.toLowerCase();
+    if (domains.includes('frontend') || domains.includes('фронтенд')) return 'frontend';
+    if (domains.includes('devops') || domains.includes('девопс')) return 'devops';
+    if (domains.includes('backend') || domains.includes('бэкенд')) return 'backend';
+    if (domains.includes('qa') || domains.includes('тестирование')) return 'qa';
+    if (domains.includes('data') || domains.includes('данные')) return 'data-analyst';
+    if (domains.includes('ios')) return 'ios';
+    if (domains.includes('android')) return 'android';
+    if (domains.includes('ux') || domains.includes('дизайн')) return 'ux-design';
+    
+    return 'backend';
+}
+
+function openSkillTreeModal() {
+    document.getElementById('skillTreeModal').classList.remove('hidden');
+    initializeSkillTreeModal();
+    renderSkillTree('soft');
+    updateSkillCounters();
+    updateCompetencyAreaDisplay();
+}
+
+function closeSkillTreeModal() {
+    document.getElementById('skillTreeModal').classList.add('hidden');
+    document.getElementById('skillDetailsPanel').classList.add('hidden');
+}
+
+function switchSkillTreeTab(type) {
+    document.querySelectorAll('.skill-tree-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    if (type === 'soft') {
+        document.getElementById('softSkillsTab').classList.add('active');
+        document.getElementById('softSkillsTree').classList.remove('hidden');
+        document.getElementById('hardSkillsTree').classList.add('hidden');
+        renderSkillTree('soft');
+    } else {
+        document.getElementById('hardSkillsTab').classList.add('active');
+        document.getElementById('softSkillsTree').classList.add('hidden');
+        document.getElementById('hardSkillsTree').classList.remove('hidden');
+        renderSkillTree('hard');
+    }
+}
+
+function renderSkillTree(type) {
+    const svgId = type === 'soft' ? 'softSkillsTreeSvg' : 'hardSkillsTreeSvg';
+    const svg = document.getElementById(svgId);
+    
+    if (!svg) return;
+    
+    svg.innerHTML = '';
+    
+    let skillsData;
+    if (type === 'soft') {
+        skillsData = SOFT_SKILLS_DATA;
+    } else {
+        const competencyArea = skillTreeState.competencyArea;
+        skillsData = HARD_SKILLS_DATA[competencyArea] || HARD_SKILLS_DATA.backend;
+    }
+    
+    currentSkillTreeData = skillsData;
+    
+    Object.values(skillsData).forEach(skill => {
+        skill.prerequisites.forEach(prereqId => {
+            const prereq = skillsData[prereqId];
+            if (prereq) {
+                drawConnection(svg, prereq.position, skill.position, isConnectionActive(prereqId, skill.id, type));
+            }
+        });
+    });
+    
+    Object.values(skillsData).forEach(skill => {
+        drawSkillNode(svg, skill, type);
+    });
+    
+    addSkillLegend(svg);
+}
+
+function drawConnection(svg, fromPos, toPos, isActive) {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', fromPos.x);
+    line.setAttribute('y1', fromPos.y);
+    line.setAttribute('x2', toPos.x);
+    line.setAttribute('y2', toPos.y);
+    line.setAttribute('class', `skill-connection ${isActive ? 'active' : ''}`);
+    svg.appendChild(line);
+}
+
+function drawSkillNode(svg, skill, type) {
+    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    group.setAttribute('class', `skill-node ${getSkillState(skill.id, type)}`);
+    group.setAttribute('data-skill-id', skill.id);
+    group.setAttribute('data-skill-type', type);
+    
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', skill.position.x);
+    circle.setAttribute('cy', skill.position.y);
+    circle.setAttribute('class', 'skill-node-circle');
+    group.appendChild(circle);
+    
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', skill.position.x);
+    text.setAttribute('y', skill.position.y);
+    text.setAttribute('class', 'skill-node-text');
+    
+    let skillName;
+    if (type === 'soft') {
+        skillName = window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey;
+    } else {
+        skillName = skill.name;
+    }
+    
+    const words = skillName.split(' ');
+    if (words.length > 2) {
+        const tspan1 = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+        tspan1.setAttribute('x', skill.position.x);
+        tspan1.setAttribute('dy', '-0.3em');
+        tspan1.textContent = words.slice(0, Math.ceil(words.length / 2)).join(' ');
+        text.appendChild(tspan1);
+        
+        const tspan2 = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+        tspan2.setAttribute('x', skill.position.x);
+        tspan2.setAttribute('dy', '1em');
+        tspan2.textContent = words.slice(Math.ceil(words.length / 2)).join(' ');
+        text.appendChild(tspan2);
+    } else {
+        text.textContent = skillName;
+    }
+    
+    group.appendChild(text);
+    
+    group.addEventListener('click', () => handleSkillClick(skill.id, type));
+    group.addEventListener('mouseenter', () => showSkillDetails(skill, type));
+    group.addEventListener('mouseleave', () => hideSkillDetails());
+    
+    svg.appendChild(group);
+}
+
+function getSkillState(skillId, type) {
+    const skills = skillTreeState[type === 'soft' ? 'softSkills' : 'hardSkills'];
+    
+    if (skills.mastered.includes(skillId)) {
+        return 'mastered';
+    }
+    
+    if (skills.selected.includes(skillId)) {
+        return 'selected';
+    }
+    
+    if (isSkillUnlocked(skillId, type)) {
+        return 'available';
+    }
+    
+    return 'locked';
+}
+
+function isSkillUnlocked(skillId, type) {
+    const skill = currentSkillTreeData[skillId];
+    if (!skill) return false;
+    
+    const skills = skillTreeState[type === 'soft' ? 'softSkills' : 'hardSkills'];
+    
+    return skill.prerequisites.every(prereqId => skills.mastered.includes(prereqId));
+}
+
+function isConnectionActive(fromSkillId, toSkillId, type) {
+    const skills = skillTreeState[type === 'soft' ? 'softSkills' : 'hardSkills'];
+    return skills.mastered.includes(fromSkillId) && (skills.mastered.includes(toSkillId) || skills.selected.includes(toSkillId));
+}
+
+function handleSkillClick(skillId, type) {
+    const state = getSkillState(skillId, type);
+    const skills = skillTreeState[type === 'soft' ? 'softSkills' : 'hardSkills'];
+    
+    if (state === 'locked') {
+        showToast(window.translationManager ? window.translationManager.t('prerequisite_required') : 'Требуется изучить предварительные навыки');
+        return;
+    }
+    
+    if (state === 'mastered') {
+        const index = skills.mastered.indexOf(skillId);
+        if (index > -1) {
+            skills.mastered.splice(index, 1);
+        }
+    } else if (state === 'selected') {
+        const index = skills.selected.indexOf(skillId);
+        if (index > -1) {
+            skills.selected.splice(index, 1);
+        }
+    } else if (state === 'available') {
+        if (skills.selected.length >= 3) {
+            showToast('Максимум 3 навыка для развития в каждой категории');
+            return;
+        }
+        
+        skills.selected.push(skillId);
+    }
+    
+    renderSkillTree(type);
+    updateSkillCounters();
+}
+
+function showSkillDetails(skill, type) {
+    const panel = document.getElementById('skillDetailsPanel');
+    const title = document.getElementById('skillDetailTitle');
+    const description = document.getElementById('skillDetailDescription');
+    const benefit = document.getElementById('skillDetailBenefit');
+    
+    if (type === 'soft') {
+        title.textContent = window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey;
+        description.textContent = window.translationManager ? window.translationManager.t(skill.descKey) : skill.descKey;
+        benefit.textContent = window.translationManager ? window.translationManager.t(skill.benefitKey) : skill.benefitKey;
+    } else {
+        title.textContent = skill.name;
+        description.textContent = skill.desc;
+        benefit.textContent = skill.benefit;
+    }
+    
+    panel.classList.remove('hidden');
+}
+
+function hideSkillDetails() {
+    setTimeout(() => {
+        if (!document.getElementById('skillDetailsPanel').matches(':hover')) {
+            document.getElementById('skillDetailsPanel').classList.add('hidden');
+        }
+    }, 100);
+}
+
+function updateSkillCounters() {
+    const softCounter = document.getElementById('softSkillsCounter');
+    const hardCounter = document.getElementById('hardSkillsCounter');
+    
+    softCounter.textContent = `${skillTreeState.softSkills.selected.length}/3`;
+    hardCounter.textContent = `${skillTreeState.hardSkills.selected.length}/3`;
+}
+
+function updateCompetencyAreaDisplay() {
+    const display = document.getElementById('currentCompetencyArea');
+    const competencyArea = skillTreeState.competencyArea;
+    
+    const areaNames = {
+        'backend': 'Backend Development',
+        'frontend': 'Frontend Development',
+        'devops': 'DevOps',
+        'qa': 'QA Testing',
+        'data-analyst': 'Data Analysis',
+        'ios': 'iOS Development',
+        'android': 'Android Development',
+        'ux-design': 'UX Design'
+    };
+    
+    display.textContent = areaNames[competencyArea] || competencyArea;
+}
+
+function addSkillLegend(svg) {
+    const legend = document.createElement('div');
+    legend.className = 'skill-legend';
+    legend.innerHTML = `
+        <div class="skill-legend-item">
+            <div class="skill-legend-circle skill-legend-available"></div>
+            <span>Доступен</span>
+        </div>
+        <div class="skill-legend-item">
+            <div class="skill-legend-circle skill-legend-selected"></div>
+            <span>Выбран</span>
+        </div>
+        <div class="skill-legend-item">
+            <div class="skill-legend-circle skill-legend-mastered"></div>
+            <span>Освоен</span>
+        </div>
+        <div class="skill-legend-item">
+            <div class="skill-legend-circle skill-legend-locked"></div>
+            <span>Заблокирован</span>
+        </div>
+    `;
+    
+    svg.parentElement.style.position = 'relative';
+    svg.parentElement.appendChild(legend);
+}
+
+function resetSkillSelection() {
+    skillTreeState.softSkills.selected = [];
+    skillTreeState.hardSkills.selected = [];
+    
+    const currentTab = document.querySelector('.skill-tree-tab.active');
+    const type = currentTab.id === 'softSkillsTab' ? 'soft' : 'hard';
+    renderSkillTree(type);
+    updateSkillCounters();
+    
+    showToast('Выбор навыков сброшен');
+}
+
+async function saveSkillTreeData() {
+    const token = checkAuth();
+    if (!token || !employeeId) return;
+    
+    try {
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        let endpoint;
+        if (token.startsWith('Bearer ')) {
+            headers['Authorization'] = token;
+            endpoint = `/api/employee/${employeeId}/profile`;
+        } else {
+            endpoint = `/api/employee/${employeeId}/profile?token=${token}`;
+        }
+        
+        const response = await fetch(endpoint, {
+            method: 'PUT',
+            headers: headers,
+            body: JSON.stringify({
+                developmentPlan: {
+                    softSkills: skillTreeState.softSkills,
+                    hardSkills: {
+                        ...skillTreeState.hardSkills,
+                        competencyArea: skillTreeState.competencyArea
+                    }
+                }
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to save skill tree');
+        }
+        
+        const updatedEmployee = await response.json();
+        currentEmployee = updatedEmployee;
+        
+        displayDevelopmentPlan(updatedEmployee.development_plan);
+        
+        closeSkillTreeModal();
+        showToast('Карта навыков сохранена');
+        
+    } catch (error) {
+        console.error('Error saving skill tree:', error);
+        showToast('Ошибка при сохранении карты навыков');
+    }
+}
 
 const DISC_QUESTIONS = [
     {

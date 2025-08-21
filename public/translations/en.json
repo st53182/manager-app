@@ -220,6 +220,85 @@
     "power": "Power: ability to influence decisions and outcomes.",
     "freedom": "Freedom: autonomy in how and in what order to work.",
     "relatedness": "Relatedness: working with people, trust and teamwork.",
+    
+    "skill_tree_title": "Skill Development Map",
+    "skill_tree_subtitle": "RPG-style employee development",
+    "soft_skills": "Soft Skills",
+    "hard_skills": "Hard Skills",
+    "mastered_skills": "Mastered Skills",
+    "selected_for_development": "Selected for Development",
+    "quarterly_goals": "Quarterly Goals",
+    "skill_benefits": "What this skill provides",
+    "select_skills_instruction": "Select up to 3 skills for development in each category",
+    "skills_selected": "selected",
+    "skills_mastered": "mastered",
+    "save_skill_tree": "Save Skill Tree",
+    "reset_selection": "Reset Selection",
+    "skill_locked": "Skill locked",
+    "skill_unlocked": "Skill available",
+    "skill_selected": "Skill selected for development",
+    "skill_mastered": "Skill mastered",
+    "prerequisite_required": "Prerequisites required",
+    
+    "soft_skill_business_communication": "Business Communication",
+    "soft_skill_business_communication_desc": "Effective interaction in professional environment",
+    "soft_skill_business_communication_benefit": "Improves communication quality with colleagues and clients",
+    
+    "soft_skill_client_centricity": "Client Centricity",
+    "soft_skill_client_centricity_desc": "Focus on client needs and satisfaction",
+    "soft_skill_client_centricity_benefit": "Increases client loyalty and product quality",
+    
+    "soft_skill_cognitive_flexibility": "Cognitive Flexibility",
+    "soft_skill_cognitive_flexibility_desc": "Ability to adapt to new situations and change approaches",
+    "soft_skill_cognitive_flexibility_benefit": "Improves adaptability and innovative thinking",
+    
+    "soft_skill_communication": "Communication",
+    "soft_skill_communication_desc": "Clear information transfer and active listening",
+    "soft_skill_communication_benefit": "Reduces misunderstandings and conflicts",
+    
+    "soft_skill_management": "Team, Project, Process Management",
+    "soft_skill_management_desc": "Coordinating resources and people to achieve goals",
+    "soft_skill_management_benefit": "Increases team efficiency and result quality",
+    
+    "soft_skill_creative_thinking": "Creative Thinking",
+    "soft_skill_creative_thinking_desc": "Generating new ideas and unconventional solutions",
+    "soft_skill_creative_thinking_benefit": "Promotes innovation and complex problem solving",
+    
+    "soft_skill_critical_thinking": "Critical Thinking",
+    "soft_skill_critical_thinking_desc": "Information analysis and informed decision making",
+    "soft_skill_critical_thinking_benefit": "Improves decision quality",
+    
+    "soft_skill_mentoring": "Mentoring",
+    "soft_skill_mentoring_desc": "Developing and supporting other employees",
+    "soft_skill_mentoring_benefit": "Raises overall team level and leadership qualities",
+    
+    "soft_skill_presentation": "Presentation and Public Speaking",
+    "soft_skill_presentation_desc": "Effective information delivery to audience",
+    "soft_skill_presentation_benefit": "Improves influence and persuasion ability",
+    
+    "soft_skill_problem_solving": "Problem Solving and Decision Making",
+    "soft_skill_problem_solving_desc": "Systematic approach to solving complex tasks",
+    "soft_skill_problem_solving_benefit": "Increases work efficiency and result quality",
+    
+    "soft_skill_systems_thinking": "Systems Thinking",
+    "soft_skill_systems_thinking_desc": "Understanding interconnections and system-wide impact",
+    "soft_skill_systems_thinking_benefit": "Improves strategic planning and consequence prediction",
+    
+    "soft_skill_stress_management": "Stress Management",
+    "soft_skill_stress_management_desc": "Managing stress and maintaining productivity",
+    "soft_skill_stress_management_benefit": "Increases resilience and work quality under pressure",
+    
+    "soft_skill_resource_management": "Resource Management",
+    "soft_skill_resource_management_desc": "Effective allocation of time, money and materials",
+    "soft_skill_resource_management_benefit": "Optimizes costs and increases project efficiency",
+    
+    "soft_skill_goal_setting": "Goal Setting",
+    "soft_skill_goal_setting_desc": "Setting and achieving clear, measurable goals",
+    "soft_skill_goal_setting_benefit": "Increases motivation and work effectiveness",
+    
+    "soft_skill_emotional_intelligence": "Emotional Intelligence",
+    "soft_skill_emotional_intelligence_desc": "Understanding and managing emotions of self and others",
+    "soft_skill_emotional_intelligence_benefit": "Improves interpersonal relationships and leadership qualities",
     "order": "Order: clear processes, rules and predictability.",
     "goal": "Goal: clear, measurable targets and progress toward them.",
     "status": "Status: role/title and visibility of expertise and results."
