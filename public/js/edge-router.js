@@ -30,7 +30,8 @@ function routeEdge(a, b, allNodes, opts = {}) {
 }
 
 function guessBounds(nodes, cell) {
-  const xs = nodes.map(n => n.position.x), ys = nodes.map(n => n.position.y);
+  const list = Array.isArray(nodes) ? nodes : Object.values(nodes || {});
+  const xs = list.map(n => n.position.x), ys = list.map(n => n.position.y);
   const minX = Math.min(...xs) - 200, maxX = Math.max(...xs) + 200;
   const minY = Math.min(...ys) - 200, maxY = Math.max(...ys) + 200;
   const w = Math.ceil((maxX - minX) / cell) * cell;
@@ -38,12 +39,13 @@ function guessBounds(nodes, cell) {
   return { x: Math.floor(minX / cell) * cell, y: Math.floor(minY / cell) * cell, w, h };
 }
 
+
 function buildGrid(bounds, cell, nodes, margin) {
+  const list = Array.isArray(nodes) ? nodes : Object.values(nodes || {});
   const cols = Math.floor(bounds.w / cell);
   const rows = Math.floor(bounds.h / cell);
-  const grid = Array.from({ length: rows }, () => Array(cols).fill(0)); // 0=free,1=wall
-
-  for (const n of nodes) {
+  const grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+  for (const n of list) {
     const R = n.r + margin;
     const minC = Math.max(0, Math.floor((n.position.x - R - bounds.x) / cell));
     const maxC = Math.min(cols - 1, Math.ceil ((n.position.x + R - bounds.x) / cell));
