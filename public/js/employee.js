@@ -1063,6 +1063,9 @@ function closeSkillTreeModal() {
 function switchSkillTreeTab(type) {
     document.querySelectorAll('.skill-tree-tab').forEach(tab => {
         tab.classList.remove('active');
+        const svg = document.getElementById('softSkillsTreeSvg'); // и/или hard
+    initZoomPan(svg)
+
     });
     
     if (type === 'soft') {
@@ -1389,6 +1392,8 @@ function handleSkillClick(skillId, type, clickType = 'left') {
             }
             skills.selected.push(skillId);
         }
+        const svg = document.getElementById('softSkillsTreeSvg'); // и/или hard
+    initZoomPan(svg)
     }
     
     renderSkillTree(type);
@@ -1468,13 +1473,13 @@ function showSkillTooltip(skill, type, event) {
   let y = (nodeRect.y);
 
   // если не влезает справа — покажем слева
-  //const maxX = hostRect.width - tW - pad;
-  //if (x > maxX) x = (nodeRect.left - hostRect.left) - tW - pad;
+  const maxX = hostRect.width - tW - pad;
+  if (x > maxX) x = (nodeRect.left - hostRect.left) - tW - pad;
 
-  // вертикальные границы
-  //const maxY = hostRect.height - tH - pad;
-  //if (y > maxY) y = maxY;
-  //if (y < pad) y = pad;
+
+  const maxY = hostRect.height - tH - pad;
+  if (y > maxY) y = maxY;
+  if (y < pad) y = pad;
 
   // 5) Применяем позицию и делаем видимым
   tooltip.style.left = `${x}px`;
