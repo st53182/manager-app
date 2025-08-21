@@ -246,5 +246,84 @@
     "success": "Успешно",
     "confirm": "Подтвердить",
     "back": "Назад"
-  }
+  },
+  
+  "skill_tree_title": "Карта развития навыков",
+  "skill_tree_subtitle": "RPG-стиль развития сотрудника",
+  "soft_skills": "Софт скиллы",
+  "hard_skills": "Хард скиллы",
+  "mastered_skills": "Освоенные навыки",
+  "selected_for_development": "Выбрано для развития",
+  "quarterly_goals": "Цели на квартал",
+  "skill_benefits": "Что дает этот навык",
+  "select_skills_instruction": "Выберите до 3 навыков для развития в каждой категории",
+  "skills_selected": "выбрано",
+  "skills_mastered": "освоено",
+  "save_skill_tree": "Сохранить карту навыков",
+  "reset_selection": "Сбросить выбор",
+  "skill_locked": "Навык заблокирован",
+  "skill_unlocked": "Навык доступен",
+  "skill_selected": "Навык выбран для развития",
+  "skill_mastered": "Навык освоен",
+  "prerequisite_required": "Требуется изучить предварительные навыки",
+  
+  "soft_skill_business_communication": "Деловое общение",
+  "soft_skill_business_communication_desc": "Эффективное взаимодействие в профессиональной среде",
+  "soft_skill_business_communication_benefit": "Улучшает качество коммуникации с коллегами и клиентами",
+  
+  "soft_skill_client_centricity": "Клиентоцентричность",
+  "soft_skill_client_centricity_desc": "Фокус на потребностях и удовлетворенности клиентов",
+  "soft_skill_client_centricity_benefit": "Повышает лояльность клиентов и качество продукта",
+  
+  "soft_skill_cognitive_flexibility": "Когнитивная гибкость",
+  "soft_skill_cognitive_flexibility_desc": "Способность адаптироваться к новым ситуациям и менять подходы",
+  "soft_skill_cognitive_flexibility_benefit": "Улучшает адаптивность и инновационное мышление",
+  
+  "soft_skill_communication": "Коммуникация",
+  "soft_skill_communication_desc": "Ясная передача информации и активное слушание",
+  "soft_skill_communication_benefit": "Снижает количество недопониманий и конфликтов",
+  
+  "soft_skill_management": "Управление командой, проектом, процессом",
+  "soft_skill_management_desc": "Координация ресурсов и людей для достижения целей",
+  "soft_skill_management_benefit": "Повышает эффективность команды и качество результатов",
+  
+  "soft_skill_creative_thinking": "Креативное мышление",
+  "soft_skill_creative_thinking_desc": "Генерация новых идей и нестандартных решений",
+  "soft_skill_creative_thinking_benefit": "Способствует инновациям и решению сложных задач",
+  
+  "soft_skill_critical_thinking": "Критическое мышление",
+  "soft_skill_critical_thinking_desc": "Анализ информации и принятие обоснованных решений",
+  "soft_skill_critical_thinking_benefit": "Улучшает качество принимаемых решений",
+  
+  "soft_skill_mentoring": "Наставничество/менторинг",
+  "soft_skill_mentoring_desc": "Развитие и поддержка других сотрудников",
+  "soft_skill_mentoring_benefit": "Повышает общий уровень команды и лидерские качества",
+  
+  "soft_skill_presentation": "Презентация и ораторское искусство",
+  "soft_skill_presentation_desc": "Эффективная подача информации аудитории",
+  "soft_skill_presentation_benefit": "Улучшает влияние и способность убеждать",
+  
+  "soft_skill_problem_solving": "Решение проблем и принятие решений",
+  "soft_skill_problem_solving_desc": "Систематический подход к решению сложных задач",
+  "soft_skill_problem_solving_benefit": "Повышает эффективность работы и качество результатов",
+  
+  "soft_skill_systems_thinking": "Системное мышление",
+  "soft_skill_systems_thinking_desc": "Понимание взаимосвязей и влияния на систему в целом",
+  "soft_skill_systems_thinking_benefit": "Улучшает стратегическое планирование и предвидение последствий",
+  
+  "soft_skill_stress_management": "Стресс-менеджмент",
+  "soft_skill_stress_management_desc": "Управление стрессом и поддержание продуктивности",
+  "soft_skill_stress_management_benefit": "Повышает устойчивость и качество работы под давлением",
+  
+  "soft_skill_resource_management": "Управление ресурсами",
+  "soft_skill_resource_management_desc": "Эффективное распределение времени, денег и материалов",
+  "soft_skill_resource_management_benefit": "Оптимизирует затраты и повышает эффективность проектов",
+  
+  "soft_skill_goal_setting": "Целеполагание",
+  "soft_skill_goal_setting_desc": "Постановка и достижение четких, измеримых целей",
+  "soft_skill_goal_setting_benefit": "Повышает мотивацию и результативность работы",
+  
+  "soft_skill_emotional_intelligence": "Эмоциональный интеллект",
+  "soft_skill_emotional_intelligence_desc": "Понимание и управление эмоциями себя и других",
+  "soft_skill_emotional_intelligence_benefit": "Улучшает межличностные отношения и лидерские качества"
 }
