@@ -1360,7 +1360,8 @@ function initZoomPan(svg) {
 function handleSkillClick(skillId, type, clickType = 'left') {
     const state = getSkillState(skillId, type);
     const skills = skillTreeState[type === 'soft' ? 'softSkills' : 'hardSkills'];
-    
+    const svg = document.getElementById('softSkillsTreeSvg'); // и/или hard
+    initZoomPan(svg)
     if (clickType === 'right') {
         if (state === 'mastered') {
             const index = skills.mastered.indexOf(skillId);
