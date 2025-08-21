@@ -1423,60 +1423,76 @@ function hideSkillDetails() {
 }
 
 function showSkillTooltip(skill, type, event) {
-    const tooltip = document.getElementById('skillTooltip');
-    const title = document.getElementById('tooltipTitle');
-    const description = document.getElementById('tooltipDescription');
-    const benefit = document.getElementById('tooltipBenefit');
-    
-    if (type === 'soft') {
-        title.textContent = window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey;
-        description.textContent = window.translationManager ? window.translationManager.t(skill.descKey) : skill.descKey;
-        benefit.textContent = window.translationManager ? window.translationManager.t(skill.benefitKey) : skill.benefitKey;
-    } else {
-        title.textContent = skill.name;
-        description.textContent = skill.desc;
-        benefit.textContent = skill.benefit;
-    }
-    
-    const clickedElement = event.target.closest('.skill-node');
-    const elementRect = clickedElement.getBoundingClientRect();
-    
-    const tooltipX = elementRect.right + 10;
-    const tooltipY = elementRect.top;
-    
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const tooltipWidth = 300; // max-w-xs is approximately 300px
-    const tooltipHeight = 150; // estimated height
-    
-    let finalX = tooltipX;
-    let finalY = tooltipY;
-    
-    if (tooltipX + tooltipWidth > viewportWidth) {
-        finalX = elementRect.left - tooltipWidth - 10;
-    }
-    
-    if (tooltipY + tooltipHeight > viewportHeight) {
-        finalY = viewportHeight - tooltipHeight - 10;
-    }
-    
-    if (finalY < 10) {
-        finalY = 10;
-    }
-    
-    tooltip.style.left = `${finalX}px`;
-    tooltip.style.top = `${finalY}px`;
-    tooltip.classList.remove('hidden');
-    
-    setTimeout(() => {
-        tooltip.classList.add('hidden');
-    }, 3000);
+  const tooltip = document.getElementById('skillTooltip');
+  const title = document.getElementById('tooltipTitle');
+  const description = document.getElementById('tooltipDescription');
+  const benefit = document.getElementById('tooltipBenefit');
+
+  // 1) Наполнение текста
+  if (type === 'soft') {
+    title.textContent = window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey;
+    description.textContent = window.translationManager ? window.translationManager.t(skill.descKey) : (skill.descKey || '');
+    benefit.textContent = window.translationManager ? window.translationManager.t(skill.benefitKey) : (skill.benefitKey || '');
+  } else {
+    title.textContent = skill.name || '';
+    description.textContent = skill.desc || '';
+    benefit.textContent = skill.benefit || '';
+  }
+
+  // 2) Базовые элементы
+  const nodeEl = event.target.closest('.skill-node');
+  if (!nodeEl) return;
+
+  // контейнер, относительно которого позиционируем тултип
+  const host = document.getElementById('skillTreeHost') ||
+               document.querySelector('#skillTreeModal .p-6') ||
+               tooltip.parentElement;
+
+  const hostRect = host.getBoundingClientRect();
+  const nodeRect = nodeEl.getBoundingClientRect();
+
+  // 3) Временно показать tooltip невидимым, чтобы померить размеры
+  tooltip.classList.remove('hidden');
+  const prevVis = tooltip.style.visibility;
+  tooltip.style.visibility = 'hidden';
+
+  // принудительный рефлоу
+  void tooltip.offsetWidth;
+
+  const tW = tooltip.offsetWidth || 300;
+  const tH = tooltip.offsetHeight || 140;
+
+  // 4) Координаты относительно host
+  const pad = 10;
+  let x = (nodeRect.right - hostRect.left) + pad;
+  let y = (nodeRect.top   - hostRect.top);
+
+  // если не влезает справа — покажем слева
+  const maxX = hostRect.width - tW - pad;
+  if (x > maxX) x = (nodeRect.left - hostRect.left) - tW - pad;
+
+  // вертикальные границы
+  const maxY = hostRect.height - tH - pad;
+  if (y > maxY) y = maxY;
+  if (y < pad) y = pad;
+
+  // 5) Применяем позицию и делаем видимым
+  tooltip.style.left = `${x}px`;
+  tooltip.style.top  = `${y}px`;
+  tooltip.style.visibility = prevVis || 'visible';
+
+  // автоскрытие (по желанию)
+  clearTimeout(tooltip.__hideT);
+  tooltip.__hideT = setTimeout(() => {
+    tooltip.classList.add('hidden');
+  }, 3000);
 }
 
 function hideSkillTooltip() {
-    const tooltip = document.getElementById('skillTooltip');
-    tooltip.classList.add('hidden');
+  const tooltip = document.getElementById('skillTooltip');
+  if (tooltip) tooltip.classList.add('hidden');
 }
+
 
 function updateSkillCounters() {
     const softCounter = document.getElementById('softSkillsCounter');

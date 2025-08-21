@@ -509,16 +509,17 @@
                 </div>
             </div>
 
-            <div class="p-6">
+            <div class="p-6 relative">
                 <!-- Skill Tooltip -->
-                <div id="skillTooltip" class="fixed bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-[60] hidden max-w-xs">
-                    <h4 id="tooltipTitle" class="font-medium text-gray-900 mb-1 text-sm"></h4>
-                    <p id="tooltipDescription" class="text-xs text-gray-600 mb-2"></p>
-                    <div class="bg-green-50 p-2 rounded">
-                        <p class="text-xs font-medium text-green-800 mb-1" data-translate="skill_benefits">Что дает этот навык</p>
-                        <p id="tooltipBenefit" class="text-xs text-green-700"></p>
-                    </div>
-                </div>
+               <div id="skillTooltip"
+     class="absolute pointer-events-none bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-[60] hidden max-w-xs">
+  <h4 id="tooltipTitle" class="font-medium text-gray-900 mb-1 text-sm"></h4>
+  <p id="tooltipDescription" class="text-xs text-gray-600 mb-2"></p>
+  <div class="bg-green-50 p-2 rounded">
+    <p class="text-xs font-medium text-green-800 mb-1" data-translate="skill_benefits">Что дает этот навык</p>
+    <p id="tooltipBenefit" class="text-xs text-green-700"></p>
+  </div>
+</div>
 
                 <!-- Instructions -->
                 <div class="bg-blue-50 rounded-lg p-4 mb-6">
