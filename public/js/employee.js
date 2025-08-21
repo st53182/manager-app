@@ -1416,7 +1416,8 @@ function showSkillDetails(skill, type) {
         description.textContent = skill.desc;
         benefit.textContent = skill.benefit;
     }
-    
+    const svg = document.getElementById('softSkillsTreeSvg'); // и/или hard
+    initZoomPan(svg)
     panel.classList.remove('hidden');
 }
 
