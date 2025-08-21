@@ -1114,9 +1114,7 @@ function renderSkillTree(type) {
 function drawConnection(svg, fromSkill, toSkill, isActive, allSkills) {
   const nodes = Array.isArray(allSkills) ? allSkills : Object.values(allSkills || {});
   const res = routeEdge(fromSkill, toSkill, nodes, { cell: 24, margin: 12 });
-
-  // res может быть строкой или объектом { d }
-  const d = typeof res === 'string' ? res : res.d;
+  const d = typeof res === 'string' ? res : res?.d || '';
 
   const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   pathElement.setAttribute('d', d);
@@ -1134,6 +1132,7 @@ function drawConnection(svg, fromSkill, toSkill, isActive, allSkills) {
 
 function drawSkillNode(svg, skill, type) {
   const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  if (!Number.isFinite(skill.r)) skill.r = 50;
   group.setAttribute('class', `skill-node ${getSkillState(skill.id, type)}`);
   group.setAttribute('data-skill-id', skill.id);
   group.setAttribute('data-skill-type', type);
@@ -1211,7 +1210,7 @@ function drawSkillNode(svg, skill, type) {
   // КЛЮЧЕВОЕ изменение: не используем локальную переменную vp,
   // берём контейнер из svg (или сам svg как запасной вариант)
   const container = svg.querySelector('#skillTreeViewport') || svg;
-  container.appendChild(group);
+container.appendChild(group);
 }
 
 
