@@ -112,7 +112,8 @@ const SOFT_SKILLS_DATA = {
     }
 
 };
-autoLayoutDAG(SOFT_SKILLS_DATA, { gapX: 260, gapY: 200, r: 50 });
+autoLayoutCompactDAG(SOFT_SKILLS_DATA, { r: 50, minSep: 120, layerGap: 160 });
+
 
 
 const HARD_SKILLS_DATA = {
@@ -477,7 +478,7 @@ const HARD_SKILLS_DATA = {
 };
 
 Object.keys(HARD_SKILLS_DATA).forEach(area => {
-  autoLayoutDAG(HARD_SKILLS_DATA[area], { gapX: 260, gapY: 200, r: 50 });
+  autoLayoutCompactDAG(HARD_SKILLS_DATA[area], { r: 50, minSep: 120, layerGap: 160 });
 });
 
 let currentSkillTreeData = {};
@@ -3103,6 +3104,116 @@ function initializeEditMotivationalTriggers() {
         loadTriggerPositions(currentEmployee.motivational_triggers, true);
     }
      attachHelpToAllTriggers();
+}
+// Компактная слойная раскладка: минимизируем длину связей и держим минимальные отступы
+function autoLayoutCompactDAG(skills, opts = {}) {
+  const ids = Object.keys(skills);
+  if (!ids.length) return;
+
+  const r = opts.r ?? 50;                // радиус ноды (впишем его же в данные)
+  const minSep = opts.minSep ?? (2*r + 24); // минимальная горизонтальная дистанция между центрами соседей
+  const layerGap = opts.layerGap ?? 160;    // вертикальный шаг между уровнями
+  const left = opts.left ?? 120;            // левый отступ
+  const top  = opts.top  ?? 80;             // верхний отступ
+  const iters = opts.iters ?? 3;            // число проходов сглаживания
+
+  // --- граф ---
+  const parents = new Map(ids.map(id => [id, []]));
+  const children = new Map(ids.map(id => [id, []]));
+  const indeg = new Map(ids.map(id => [id, 0]));
+
+  for (const id of ids) {
+    const prs = (skills[id].prerequisites || []).filter(p => skills[p]);
+    parents.set(id, prs);
+    for (const p of prs) {
+      children.get(p).push(id);
+      indeg.set(id, (indeg.get(id) || 0) + 1);
+    }
+  }
+
+  // --- уровни (Kahn) ---
+  const levels = [];
+  let L = ids.filter(id => (indeg.get(id) || 0) === 0);
+  const seen = new Set(L);
+  while (L.length) {
+    levels.push(L);
+    const next = [];
+    for (const u of L) {
+      for (const v of children.get(u)) {
+        indeg.set(v, indeg.get(v) - 1);
+        if (indeg.get(v) === 0 && !seen.has(v)) { seen.add(v); next.push(v); }
+      }
+    }
+    L = next;
+  }
+  const rest = ids.filter(id => !seen.has(id)); // на случай циклов
+  if (rest.length) levels.push(rest);
+
+  // --- начальные x: просто по порядку в уровне ---
+  const x = new Map();
+  for (const lvl of levels) {
+    lvl.forEach((id, i) => x.set(id, i * minSep));
+  }
+
+  const median = (arr) => {
+    if (!arr.length) return null;
+    const a = [...arr].sort((a,b)=>a-b);
+    const m = Math.floor(a.length/2);
+    return a.length % 2 ? a[m] : (a[m-1] + a[m]) / 2;
+  };
+
+  // раздвинуть вправо, затем подтянуть влево — компактно и без наложений
+  const resolveCollisions = (lvl) => {
+    const order = [...lvl].sort((a,b) => x.get(a) - x.get(b));
+    let cursor = -Infinity;
+    for (const id of order) {
+      const nx = Math.max(x.get(id), cursor + minSep);
+      x.set(id, nx);
+      cursor = nx;
+    }
+    // обратный проход — чуть «собрать» к центру
+    let prev = Infinity;
+    for (let i = order.length - 1; i >= 0; i--) {
+      const id = order[i];
+      const nx = Math.min(x.get(id), prev - minSep);
+      x.set(id, nx);
+      prev = nx;
+    }
+  };
+
+  // несколько «протяжек» к родителям/детям
+  for (let it = 0; it < iters; it++) {
+    // сверху вниз — тянем к родителям
+    for (let li = 1; li < levels.length; li++) {
+      const lvl = levels[li];
+      for (const id of lvl) {
+        const m = median(parents.get(id).map(p => x.get(p)));
+        if (m != null) x.set(id, 0.7*m + 0.3*x.get(id));
+      }
+      resolveCollisions(lvl);
+    }
+    // снизу вверх — тянем к детям
+    for (let li = levels.length - 2; li >= 0; li--) {
+      const lvl = levels[li];
+      for (const id of lvl) {
+        const m = median(children.get(id).map(c => x.get(c)));
+        if (m != null) x.set(id, 0.7*m + 0.3*x.get(id));
+      }
+      resolveCollisions(lvl);
+    }
+  }
+
+  // нормализуем, чтобы минимум был у левого отступа
+  const minX = Math.min(...[...x.values()]);
+  for (let li = 0; li < levels.length; li++) {
+    for (const id of levels[li]) {
+      const sx = left + (x.get(id) - minX);
+      const sy = top + li * layerGap;
+      const node = skills[id];
+      node.position = { x: sx, y: sy };
+      node.r = node.r ?? r;
+    }
+  }
 }
 
 function createTriggerCard(trigger, isEdit) {
