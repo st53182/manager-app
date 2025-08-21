@@ -1150,7 +1150,7 @@ function drawSkillNode(svg, skill, type) {
     }
     
     const words = skillName.split(' ');
-    const maxCharsPerLine = 12; // Adjusted for larger circles
+    const maxCharsPerLine = 14; // Increased for larger circles
     
     if (skillName.length > maxCharsPerLine || words.length > 2) {
         const lines = [];
@@ -1162,6 +1162,9 @@ function drawSkillNode(svg, skill, type) {
             } else {
                 if (currentLine) lines.push(currentLine);
                 currentLine = word;
+                if (word.length > maxCharsPerLine) {
+                    currentLine = word.substring(0, maxCharsPerLine - 1) + '...';
+                }
             }
         }
         if (currentLine) lines.push(currentLine);
@@ -1171,7 +1174,7 @@ function drawSkillNode(svg, skill, type) {
         displayLines.forEach((line, index) => {
             const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
             tspan.setAttribute('x', skill.position.x);
-            tspan.setAttribute('dy', index === 0 ? `-${(displayLines.length - 1) * 0.4}em` : '0.8em');
+            tspan.setAttribute('dy', index === 0 ? `-${(displayLines.length - 1) * 0.5}em` : '1em');
             tspan.textContent = line;
             text.appendChild(tspan);
         });
@@ -1182,7 +1185,12 @@ function drawSkillNode(svg, skill, type) {
     group.appendChild(text);
     
     group.addEventListener('click', (event) => {
-        handleSkillClick(skill.id, type);
+        handleSkillClick(skill.id, type, 'left');
+        showSkillTooltip(skill, type, event);
+    });
+    group.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        handleSkillClick(skill.id, type, 'right');
         showSkillTooltip(skill, type, event);
     });
     group.addEventListener('mouseenter', () => showSkillDetails(skill, type));
@@ -1218,27 +1226,36 @@ function isConnectionActive(fromSkillId, toSkillId, type) {
     return skills.mastered.includes(fromSkillId) && (skills.mastered.includes(toSkillId) || skills.selected.includes(toSkillId));
 }
 
-function handleSkillClick(skillId, type) {
+function handleSkillClick(skillId, type, clickType = 'left') {
     const state = getSkillState(skillId, type);
     const skills = skillTreeState[type === 'soft' ? 'softSkills' : 'hardSkills'];
     
-    if (state === 'mastered') {
-        const index = skills.mastered.indexOf(skillId);
-        if (index > -1) {
-            skills.mastered.splice(index, 1);
+    if (clickType === 'right') {
+        if (state === 'mastered') {
+            const index = skills.mastered.indexOf(skillId);
+            if (index > -1) {
+                skills.mastered.splice(index, 1);
+            }
+        } else {
+            const selectedIndex = skills.selected.indexOf(skillId);
+            if (selectedIndex > -1) {
+                skills.selected.splice(selectedIndex, 1);
+            }
+            skills.mastered.push(skillId);
         }
-    } else if (state === 'selected') {
-        const index = skills.selected.indexOf(skillId);
-        if (index > -1) {
-            skills.selected.splice(index, 1);
+    } else {
+        if (state === 'selected') {
+            const index = skills.selected.indexOf(skillId);
+            if (index > -1) {
+                skills.selected.splice(index, 1);
+            }
+        } else if (state === 'available') {
+            if (skills.selected.length >= 3) {
+                showToast('Максимум 3 навыка для развития в каждой категории');
+                return;
+            }
+            skills.selected.push(skillId);
         }
-    } else if (state === 'available') {
-        if (skills.selected.length >= 3) {
-            showToast('Максимум 3 навыка для развития в каждой категории');
-            return;
-        }
-        
-        skills.selected.push(skillId);
     }
     
     renderSkillTree(type);
@@ -1288,13 +1305,12 @@ function showSkillTooltip(skill, type, event) {
         benefit.textContent = skill.benefit;
     }
     
-    const rect = event.target.closest('.skill-tree-container').getBoundingClientRect();
     const svgRect = event.target.closest('svg').getBoundingClientRect();
     const nodeX = skill.position.x;
     const nodeY = skill.position.y;
     
-    const tooltipX = (nodeX / 1200) * svgRect.width + 50;
-    const tooltipY = (nodeY / 1000) * svgRect.height - 20;
+    const tooltipX = svgRect.left + (nodeX / 1200) * svgRect.width + 50;
+    const tooltipY = svgRect.top + (nodeY / 1000) * svgRect.height - 20;
     
     tooltip.style.left = `${tooltipX}px`;
     tooltip.style.top = `${tooltipY}px`;
