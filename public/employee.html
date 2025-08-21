@@ -14,7 +14,6 @@
             color: white;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-
         .info-card {
             background: white;
             border-radius: 8px;
@@ -23,7 +22,6 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             border-left: 4px solid #3b82f6;
         }
-
         .section-header {
             background: linear-gradient(90deg, #3b82f6, #1d4ed8);
             color: white;
@@ -32,7 +30,6 @@
             font-weight: 600;
             margin-bottom: 0;
         }
-
         .section-content {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -40,7 +37,6 @@
             border-radius: 0 0 8px 8px;
             padding: 1.5rem;
         }
-
         .avatar-placeholder {
             width: 120px;
             height: 120px;
@@ -57,1200 +53,1075 @@
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-<!-- Navigation -->
-<nav class="bg-white shadow-sm border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16">
-            <div class="flex items-center">
-                <h1 class="text-xl font-semibold text-gray-900" data-translate="nav.title">Менеджер Команд</h1>
-            </div>
-            <div class="flex items-center space-x-4">
-                <div class="flex space-x-2">
-                    <button id="langRu" class="px-2 py-1 text-sm bg-blue-600 text-white rounded">RU</button>
-                    <button id="langEn" class="px-2 py-1 text-sm bg-gray-300 text-gray-700 rounded">EN</button>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-semibold text-gray-900" data-translate="nav.title">Менеджер Команд</h1>
                 </div>
-                <span id="userName" class="text-gray-700"></span>
-                <button onclick="window.location.href='/dashboard'" class="text-blue-600 hover:text-blue-800"
-                        data-translate="employee.back_to_dashboard">
-                    Назад к панели
-                </button>
-                <button onclick="logout()" class="text-red-600 hover:text-red-800" data-translate="nav.logout">Выйти
-                </button>
+                <div class="flex items-center space-x-4">
+                    <div class="flex space-x-2">
+                        <button id="langRu" class="px-2 py-1 text-sm bg-blue-600 text-white rounded">RU</button>
+                        <button id="langEn" class="px-2 py-1 text-sm bg-gray-300 text-gray-700 rounded">EN</button>
+                    </div>
+                    <span id="userName" class="text-gray-700"></span>
+                    <button onclick="window.location.href='/dashboard'" class="text-blue-600 hover:text-blue-800" data-translate="employee.back_to_dashboard">
+                        Назад к панели
+                    </button>
+                    <button onclick="logout()" class="text-red-600 hover:text-red-800" data-translate="nav.logout">Выйти</button>
+                </div>
             </div>
         </div>
-    </div>
-</nav>
+    </nav>
 
-<!-- Loading indicator -->
-<div id="loadingIndicator" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white p-6 rounded-lg shadow-lg">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        <p class="mt-2 text-gray-600" data-translate="common.loading">Загрузка...</p>
+    <!-- Loading indicator -->
+    <div id="loadingIndicator" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-2 text-gray-600" data-translate="common.loading">Загрузка...</p>
+        </div>
     </div>
-</div>
 
-<!-- Main Content -->
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Employee Header -->
-    <div class="profile-section">
-        <div class="flex items-center space-x-6">
-            <div class="avatar-placeholder" id="employeeAvatar">
-                <span id="employeeInitials">??</span>
-            </div>
-            <div class="flex-1">
-                <h1 id="employeeName" class="text-3xl font-bold mb-2">Имя сотрудника</h1>
-                <p id="employeePosition" class="text-xl opacity-90 mb-1">Должность</p>
-                <p id="employeeTeam" class="text-lg opacity-80">Команда</p>
-                <div class="flex items-center space-x-4 mt-3">
-                    <span id="employeeEmail" class="text-sm opacity-75"></span>
-                    <span id="employeePhone" class="text-sm opacity-75"></span>
-                    <span id="employeeHireDate" class="text-sm opacity-75"></span>
+    <!-- Main Content -->
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Employee Header -->
+        <div class="profile-section">
+            <div class="flex items-center space-x-6">
+                <div class="avatar-placeholder" id="employeeAvatar">
+                    <span id="employeeInitials">??</span>
+                </div>
+                <div class="flex-1">
+                    <h1 id="employeeName" class="text-3xl font-bold mb-2">Имя сотрудника</h1>
+                    <p id="employeePosition" class="text-xl opacity-90 mb-1">Должность</p>
+                    <p id="employeeTeam" class="text-lg opacity-80">Команда</p>
+                    <div class="flex items-center space-x-4 mt-3">
+                        <span id="employeeEmail" class="text-sm opacity-75"></span>
+                        <span id="employeePhone" class="text-sm opacity-75"></span>
+                        <span id="employeeHireDate" class="text-sm opacity-75"></span>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <button id="editProfileBtn" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors" data-translate="employee.edit_profile">
+                        Редактировать профиль
+                    </button>
+                    <div class="mt-2">
+                        <button id="shareProfileBtn" class="text-white text-sm underline hover:no-underline" data-translate="employee.share_profile">
+                            Поделиться профилем
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="text-right">
-                <button id="editProfileBtn"
-                        class="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors"
-                        data-translate="employee.edit_profile">
-                    Редактировать профиль
-                </button>
-                <div class="mt-2">
-                    <button id="shareProfileBtn" class="text-white text-sm underline hover:no-underline"
-                            data-translate="employee.share_profile">
-                        Поделиться профилем
+        </div>
+
+        <!-- Profile Sections -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Basic Information -->
+            <div class="info-card">
+                <div class="section-header" data-translate="employee.basic_info">
+                    Основная информация
+                </div>
+                <div class="section-content">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.full_name">Полное имя</label>
+                            <p id="basicName" class="text-gray-900">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.email">Email</label>
+                            <p id="basicEmail" class="text-gray-900">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.position">Должность</label>
+                            <p id="basicPosition" class="text-gray-900">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.team">Команда</label>
+                            <p id="basicTeamName" class="text-gray-900">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.phone">Телефон</label>
+                            <p id="basicPhone" class="text-gray-900">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.hire_date">Дата найма</label>
+                            <p id="basicHireDate" class="text-gray-900">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="info-card">
+                <div class="section-header" data-translate="employee.disc_personality">
+                    Тип личности по DISC
+                </div>
+                <div class="section-content">
+                    <div id="discContent" class="space-y-4">
+                        <div class="text-center">
+                            <div id="discType" class="text-4xl font-bold text-blue-600 mb-2">?</div>
+                            <p id="discDescription" class="text-gray-600 mb-4" data-translate="employee.no_disc_type">
+                                Тип личности не определен
+                            </p>
+                            <div id="discDetails" class="text-sm text-gray-500 space-y-2 hidden">
+                                <div><strong data-translate="employee.disc_strengths">Сильные стороны:</strong> <span id="discStrengths">-</span></div>
+                                <div><strong data-translate="employee.disc_challenges">Области развития:</strong> <span id="discChallenges">-</span></div>
+                                <div><strong data-translate="employee.disc_communication">Стиль общения:</strong> <span id="discCommunication">-</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="setDiscBtn" class="mt-4 w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors" data-translate="employee.set_disc_type">
+                        Установить тип DISC
                     </button>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Profile Sections -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Basic Information -->
-        <div class="info-card">
-            <div class="section-header" data-translate="employee.basic_info">
-                Основная информация
-            </div>
-            <div class="section-content">
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.full_name">Полное
-                            имя</label>
-                        <p id="basicName" class="text-gray-900">-</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.email">Email</label>
-                        <p id="basicEmail" class="text-gray-900">-</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.position">Должность</label>
-                        <p id="basicPosition" class="text-gray-900">-</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.team">Команда</label>
-                        <p id="basicTeamName" class="text-gray-900">-</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.phone">Телефон</label>
-                        <p id="basicPhone" class="text-gray-900">-</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.hire_date">Дата
-                            найма</label>
-                        <p id="basicHireDate" class="text-gray-900">-</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="info-card">
-            <div class="section-header" data-translate="employee.disc_personality">
-                Тип личности по DISC
-            </div>
-            <div class="section-content">
-                <div id="discContent" class="space-y-4">
-                    <div class="text-center">
-                        <div id="discType" class="text-4xl font-bold text-blue-600 mb-2">?</div>
-                        <p id="discDescription" class="text-gray-600 mb-4" data-translate="employee.no_disc_type">
-                            Тип личности не определен
-                        </p>
-                        <div id="discDetails" class="text-sm text-gray-500 space-y-2 hidden">
-                            <div><strong data-translate="employee.disc_strengths">Сильные стороны:</strong> <span
-                                    id="discStrengths">-</span></div>
-                            <div><strong data-translate="employee.disc_challenges">Области развития:</strong> <span
-                                    id="discChallenges">-</span></div>
-                            <div><strong data-translate="employee.disc_communication">Стиль общения:</strong> <span
-                                    id="discCommunication">-</span></div>
+            <!-- OKR Goals -->
+            <div class="info-card lg:col-span-2">
+  <div class="section-header" data-translate="employee.okr_goals">
+    OKR цели на квартал
+  </div>
+                <div class="section-content">
+                    <div id="okrContent" class="space-y-4">
+                        <div class="text-gray-500 text-center py-8" data-translate="employee.no_okr_goals">
+                            OKR цели не установлены
                         </div>
                     </div>
+                    <button id="addOkrBtn" class="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors" data-translate="employee.add_okr_goal">
+                        Добавить OKR цель
+                    </button>
                 </div>
-                <button id="setDiscBtn"
-                        class="mt-4 w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
-                        data-translate="employee.set_disc_type">
-                    Установить тип DISC
-                </button>
             </div>
-        </div>
+  <!-- Motivational Triggers Workspace -->
+            <div class="info-card lg:col-span-2">
+                <div class="section-header" data-translate="motivational_triggers.title">
+                    Мотивационные триггеры
+                </div>
+                <div class="section-content">
+                    <div class="text-sm text-gray-600 mb-3" data-translate="motivational_triggers.description">
+                        Перетащите карточки для позиционирования по важности (1-10) и производительности (выше/ниже линии)
+                    </div>
+                    <div class="triggers-workspace" id="triggersWorkspace">
+                        <div class="workspace-instructions">
+                            <div class="instruction-left" data-translate="motivational_triggers.instructions.less_important">Менее важные</div>
+                            <div class="instruction-right" data-translate="motivational_triggers.instructions.more_important">Более важные</div>
+                            <div class="instruction-top" data-translate="motivational_triggers.instructions.works_well">Работает хорошо</div>
+                            <div class="instruction-bottom" data-translate="motivational_triggers.instructions.needs_improvement">Требует улучшения</div>
+                        </div>
+                        <div class="horizontal-line"></div>
 
-        <!-- OKR Goals -->
-        <div class="info-card lg:col-span-2">
-            <div class="section-header" data-translate="employee.okr_goals">
-                OKR цели на квартал
-            </div>
-            <div class="section-content">
-                <div id="okrContent" class="space-y-4">
-                    <div class="text-gray-500 text-center py-8" data-translate="employee.no_okr_goals">
-                        OKR цели не установлены
                     </div>
                 </div>
-                <button id="addOkrBtn"
-                        class="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                        data-translate="employee.add_okr_goal">
-                    Добавить OKR цель
-                </button>
-            </div>
-        </div>
-        <!-- Motivational Triggers Workspace -->
-        <div class="info-card lg:col-span-2">
-            <div class="section-header" data-translate="motivational_triggers.title">
-                Мотивационные триггеры
-            </div>
-            <div class="section-content">
-                <div class="text-sm text-gray-600 mb-3" data-translate="motivational_triggers.description">
-                    Перетащите карточки для позиционирования по важности (1-10) и производительности (выше/ниже линии)
-                </div>
-                <div class="triggers-workspace" id="triggersWorkspace">
-                    <div class="workspace-instructions">
-                        <div class="instruction-left"
-                             data-translate="motivational_triggers.instructions.less_important">Менее важные
-                        </div>
-                        <div class="instruction-right"
-                             data-translate="motivational_triggers.instructions.more_important">Более важные
-                        </div>
-                        <div class="instruction-top" data-translate="motivational_triggers.instructions.works_well">
-                            Работает хорошо
-                        </div>
-                        <div class="instruction-bottom"
-                             data-translate="motivational_triggers.instructions.needs_improvement">Требует улучшения
-                        </div>
-                    </div>
-                    <div class="horizontal-line"></div>
-
-                </div>
-            </div>
 
 
             <!-- Motivational Triggers Palette -->
 
-            <div class="section-header" data-translate="motivational_triggers.palette_title">
-                Карточки триггеров
-            </div>
-            <div class="section-content">
-                <div class="triggers-palette" id="triggersPalette">
-                    <!-- Cards will be populated by JavaScript -->
+                <div class="section-header" data-translate="motivational_triggers.palette_title">
+                    Карточки триггеров
+                </div>
+                <div class="section-content">
+                    <div class="triggers-palette" id="triggersPalette">
+                        <!-- Cards will be populated by JavaScript -->
+                    </div>
                 </div>
             </div>
-        </div>
-        <!-- DISC Personality Type -->
+            <!-- DISC Personality Type -->
 
 
-        <!-- Development Plan -->
-        <div class="info-card lg:col-span-2">
-            <div class="section-header" data-translate="employee.development_plan">
-                План развития на квартал
-            </div>
-            <div class="section-content">
-                <div id="developmentContent" class="space-y-4">
-                    <div class="text-gray-500 text-center py-8" data-translate="employee.no_development_plan">
-                        План развития не создан
-                    </div>
+            <!-- Development Plan -->
+            <div class="info-card lg:col-span-2">
+                <div class="section-header" data-translate="employee.development_plan">
+                    План развития на квартал
                 </div>
-                <button id="addDevelopmentBtn"
-                        class="mt-4 w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors"
-                        data-translate="employee.add_development_item">
-                    Добавить пункт развития
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Management 3.0 Personal Collab Card Sections -->
-    <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Roles -->
-        <div class="info-card">
-            <div class="section-header" data-translate="employee.roles">
-                Роли
-            </div>
-            <div class="section-content">
-                <p id="roles" class="text-gray-900">-</p>
-            </div>
-        </div>
-
-        <!-- Home Base -->
-
-
-        <!-- Time Zone -->
-        <div class="info-card">
-            <div class="section-header" data-translate="employee.time_zone">
-                Часовой пояс
-            </div>
-            <div class="section-content">
-                <p id="timeZone" class="text-gray-900">-</p>
-            </div>
-        </div>
-
-        <!-- Domains -->
-        <div class="info-card">
-            <div class="section-header" data-translate="employee.domains">
-                Области компетенции
-            </div>
-            <div class="section-content">
-                <p class="text-sm text-gray-600 mb-3" data-translate="employee.domains_description">Темы/области
-                    решений, по которым следует консультироваться</p>
-                <p id="domains" class="text-gray-900">-</p>
-            </div>
-        </div>
-
-        <!-- Expertise -->
-        <div class="info-card">
-            <div class="section-header" data-translate="employee.expertise">
-                Экспертиза
-            </div>
-            <div class="section-content">
-                <p class="text-sm text-gray-600 mb-3" data-translate="employee.expertise_description">Темы, по которым
-                    можно обратиться за советом</p>
-                <p id="expertise" class="text-gray-900">-</p>
-            </div>
-        </div>
-
-        <!-- Personal Interests -->
-        <div class="info-card">
-            <div class="section-header" data-translate="employee.personal_interests">
-                Личные интересы
-            </div>
-            <div class="section-content">
-                <p class="text-sm text-gray-600 mb-3" data-translate="employee.personal_interests_description">Темы для
-                    личного общения</p>
-                <p id="personalInterests" class="text-gray-900">-</p>
-            </div>
-        </div>
-
-        <!-- Stakeholders -->
-        <div class="info-card">
-            <div class="section-header" data-translate="employee.stakeholders">
-                Заинтересованные стороны
-            </div>
-            <div class="section-content">
-                <p class="text-sm text-gray-600 mb-3" data-translate="employee.stakeholders_description">Люди, с
-                    которыми регулярно работает</p>
-                <p id="stakeholders" class="text-gray-900">-</p>
-            </div>
-        </div>
-
-        <!-- Important Traits -->
-        <div class="info-card">
-            <div class="section-header" data-translate="employee.important_traits">
-                Важно знать
-            </div>
-            <div class="section-content">
-                <p class="text-sm text-gray-600 mb-3" data-translate="employee.important_traits_description">Ключевые
-                    черты личности/стиля работы</p>
-                <p id="importantTraits" class="text-gray-900">-</p>
-            </div>
-        </div>
-
-        <!-- Communication Preferences -->
-        <div class="info-card">
-            <div class="section-header" data-translate="employee.communication_prefs">
-                Предпочтения в общении
-            </div>
-            <div class="section-content">
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1"
-                               data-translate="employee.preferred_channels">Предпочитаемые каналы</label>
-                        <p id="commChannels" class="text-gray-900">-</p>
+                <div class="section-content">
+                    <div id="developmentContent" class="space-y-4">
+                        <div class="text-gray-500 text-center py-8" data-translate="employee.no_development_plan">
+                            План развития не создан
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1"
-                               data-translate="employee.meeting_times">Удобное время для встреч</label>
-                        <p id="meetingTimes" class="text-gray-900">-</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1"
-                               data-translate="employee.communication_style">Стиль общения</label>
-                        <p id="commStyle" class="text-gray-900">-</p>
-                    </div>
+                    <button id="addDevelopmentBtn" class="mt-4 w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors" data-translate="employee.add_development_item">
+                        Добавить пункт развития
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Work Preferences -->
-        <div class="info-card">
-            <div class="section-header" data-translate="employee.work_prefs">
-                Рабочие предпочтения
-            </div>
-            <div class="section-content">
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1"
-                               data-translate="employee.work_style">Стиль работы</label>
-                        <p id="workStyle" class="text-gray-900">-</p>
-                    </div>
+        <!-- Management 3.0 Personal Collab Card Sections -->
+        <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Roles -->
+            <div class="info-card">
+                <div class="section-header" data-translate="employee.roles">
+                    Роли
+                </div>
+                <div class="section-content">
+                    <p id="roles" class="text-gray-900">-</p>
                 </div>
             </div>
-        </div>
+
+            <!-- Home Base -->
 
 
-        <!-- Motivators/Demotivators -->
-        <div class="info-card lg:col-span-2">
-            <div class="section-header">
-                Мотиваторы и демотиваторы
-            </div>
-            <div class="section-content">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1"
-                               data-translate="employee.motivators">Мотиваторы</label>
-                        <p id="motivators" class="text-gray-900">-</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1"
-                               data-translate="employee.demotivators">Демотиваторы</label>
-                        <p id="demotivators" class="text-gray-900">-</p>
-                    </div>
+            <!-- Time Zone -->
+            <div class="info-card">
+                <div class="section-header" data-translate="employee.time_zone">
+                    Часовой пояс
+                </div>
+                <div class="section-content">
+                    <p id="timeZone" class="text-gray-900">-</p>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
 
-<!-- OKR Modal -->
-<div id="okrModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900" data-translate="employee.okr_modal_title">
-                    Управление OKR целями
-                </h3>
-                <button id="closeOkrModal" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
+            <!-- Domains -->
+            <div class="info-card">
+                <div class="section-header" data-translate="employee.domains">
+                    Области компетенции
+                </div>
+                <div class="section-content">
+                    <p class="text-sm text-gray-600 mb-3" data-translate="employee.domains_description">Темы/области решений, по которым следует консультироваться</p>
+                    <p id="domains" class="text-gray-900">-</p>
+                </div>
             </div>
 
-            <div id="okrContent">
-                <!-- AI Generation Section -->
-                <div id="okrAiSection" class="mb-6 p-4 bg-blue-50 rounded-lg">
-                    <h4 class="font-medium text-gray-900 mb-3" data-translate="employee.okr_generate_ai">Сгенерировать с
-                        ИИ</h4>
+            <!-- Expertise -->
+            <div class="info-card">
+                <div class="section-header" data-translate="employee.expertise">
+                    Экспертиза
+                </div>
+                <div class="section-content">
+                    <p class="text-sm text-gray-600 mb-3" data-translate="employee.expertise_description">Темы, по которым можно обратиться за советом</p>
+                    <p id="expertise" class="text-gray-900">-</p>
+                </div>
+            </div>
+
+            <!-- Personal Interests -->
+            <div class="info-card">
+                <div class="section-header" data-translate="employee.personal_interests">
+                    Личные интересы
+                </div>
+                <div class="section-content">
+                    <p class="text-sm text-gray-600 mb-3" data-translate="employee.personal_interests_description">Темы для личного общения</p>
+                    <p id="personalInterests" class="text-gray-900">-</p>
+                </div>
+            </div>
+
+            <!-- Stakeholders -->
+            <div class="info-card">
+                <div class="section-header" data-translate="employee.stakeholders">
+                    Заинтересованные стороны
+                </div>
+                <div class="section-content">
+                    <p class="text-sm text-gray-600 mb-3" data-translate="employee.stakeholders_description">Люди, с которыми регулярно работает</p>
+                    <p id="stakeholders" class="text-gray-900">-</p>
+                </div>
+            </div>
+
+            <!-- Important Traits -->
+            <div class="info-card">
+                <div class="section-header" data-translate="employee.important_traits">
+                    Важно знать
+                </div>
+                <div class="section-content">
+                    <p class="text-sm text-gray-600 mb-3" data-translate="employee.important_traits_description">Ключевые черты личности/стиля работы</p>
+                    <p id="importantTraits" class="text-gray-900">-</p>
+                </div>
+            </div>
+
+            <!-- Communication Preferences -->
+            <div class="info-card">
+                <div class="section-header" data-translate="employee.communication_prefs">
+                    Предпочтения в общении
+                </div>
+                <div class="section-content">
                     <div class="space-y-3">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1"
-                                   data-translate="employee.okr_context">Контекст</label>
-                            <textarea id="okrContext"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      rows="2" data-translate-placeholder="employee.okr_context_placeholder"></textarea>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.preferred_channels">Предпочитаемые каналы</label>
+                            <p id="commChannels" class="text-gray-900">-</p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1"
-                                   data-translate="employee.okr_additional_goals">Дополнительные цели</label>
-                            <textarea id="okrAdditionalGoals"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      rows="2"
-                                      data-translate-placeholder="employee.okr_additional_goals_placeholder"></textarea>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.meeting_times">Удобное время для встреч</label>
+                            <p id="meetingTimes" class="text-gray-900">-</p>
                         </div>
-                        <div class="flex space-x-3">
-                            <button id="generateOkrBtn"
-                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                    data-translate="employee.okr_generate_ai">
-                                Сгенерировать с ИИ
-                            </button>
-                            <button id="improveOkrBtn"
-                                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 hidden"
-                                    data-translate="employee.okr_improve_ai">
-                                Улучшить с ИИ
-                            </button>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.communication_style">Стиль общения</label>
+                            <p id="commStyle" class="text-gray-900">-</p>
                         </div>
                     </div>
-
-                    <div id="okrImprovementSection" class="mt-4 hidden">
-                        <label class="block text-sm font-medium text-gray-700 mb-1"
-                               data-translate="employee.okr_feedback">Обратная связь для улучшения</label>
-                        <textarea id="okrFeedback"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                                  rows="2" data-translate-placeholder="employee.okr_feedback_placeholder"></textarea>
-                    </div>
-                </div>
-
-                <!-- OKR Form -->
-                <form id="okrForm">
-                    <div id="okrObjectives" class="space-y-6">
-                        <!-- OKR objectives will be dynamically added here -->
-                    </div>
-
-                    <div class="flex justify-between mt-6">
-                        <button type="button" id="addObjectiveBtn"
-                                class="px-4 py-2 text-blue-600 hover:text-blue-800 border border-blue-600 rounded-lg hover:bg-blue-50">
-                            + Добавить цель
-                        </button>
-                        <div class="space-x-3">
-                            <button type="button" id="cancelOkrBtn" class="px-4 py-2 text-gray-600 hover:text-gray-800"
-                                    data-translate="common.cancel">
-                                Отмена
-                            </button>
-                            <button type="submit" id="saveOkrBtn"
-                                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                    data-translate="employee.okr_save">
-                                Сохранить OKR
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Share Profile Modal -->
-<div id="shareModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900" data-translate="employee.share_profile_title">
-                    Поделиться профилем
-                </h3>
-                <button id="closeShareModal" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.secure_link">
-                        Защищенная ссылка для сотрудника
-                    </label>
-                    <div class="flex">
-                        <input id="shareLink" type="text" readonly
-                               class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md bg-gray-50 text-sm">
-                        <button id="copyLinkBtn"
-                                class="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 transition-colors text-sm">
-                            <span data-translate="employee.copy">Копировать</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="text-sm text-gray-600" data-translate="employee.share_note">
-                    Эта ссылка позволит сотруднику просматривать и редактировать свой профиль
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- DISC Test Modal -->
-<div id="discModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <!-- Modal Header -->
-        <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-50 relative edit-modal-header">
-
-            <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-gray-900">
-                    DISC Тест личности
-                </h3>
-                <button id="closeDiscModal" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-
-        <!-- Modal Content -->
-        <div class="p-6">
-            <!-- Introduction Screen -->
-            <div id="discIntro" class="text-center">
-                <div class="mb-6">
-                    <h2 class="text-xl font-semibold text-gray-900 mb-4">О тестировании</h2>
-                    <p class="text-gray-600 mb-4">Этот опросник поможет вам:</p>
-                    <ul class="text-left max-w-md mx-auto text-gray-600 space-y-2">
-                        <li>• Определить ваш тип личности по системе DISC</li>
-                        <li>• Понять ваши сильные стороны как сотрудника</li>
-                        <li>• Получить рекомендации по развитию</li>
-                        <li>• Улучшить коммуникацию с коллегами</li>
-                    </ul>
-                    <div class="mt-4 text-sm text-gray-500">
-                        <p><strong>Время прохождения:</strong> 7-10 минут</p>
-                        <p><strong>Количество вопросов:</strong> 15</p>
-                    </div>
-                </div>
-                <button id="startDiscTest"
-                        class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                    Начать тестирование
-                </button>
-            </div>
-
-            <!-- Question Screen -->
-            <div id="discQuestion" class="hidden">
-                <!-- Progress Bar -->
-                <div class="mb-4">
-                    <div class="flex justify-between text-sm text-gray-600 mb-2">
-                        <span>Вопрос <span id="currentQuestionNum">1</span> из <span
-                                id="totalQuestions">15</span></span>
-                        <span id="progressPercent">7%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                             style="width: 7%"></div>
-                    </div>
-                </div>
-
-                <!-- Question Content -->
-                <div class="bg-gray-50 rounded-lg p-6 mb-6">
-                    <h3 id="questionText" class="text-lg font-medium text-gray-900 mb-4"></h3>
-                    <div id="questionOptions" class="space-y-3"></div>
-                </div>
-
-                <!-- Navigation -->
-                <div class="flex justify-between">
-                    <button id="prevQuestion" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
-                        Назад
-                    </button>
-                    <button id="nextQuestion"
-                            class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled>
-                        Далее
-                    </button>
                 </div>
             </div>
 
-            <!-- Results Screen -->
-            <div id="discResults" class="hidden">
-                <div class="text-center mb-6">
-                    <h2 class="text-xl font-semibold text-gray-900 mb-2">Результаты тестирования</h2>
-                    <div class="bg-blue-50 rounded-lg p-4 mb-4">
-                        <p class="text-sm text-gray-600 mb-2">Ваш тип личности:</p>
-                        <div class="text-2xl font-bold text-blue-600" id="resultPersonalityType"></div>
-                    </div>
+            <!-- Work Preferences -->
+            <div class="info-card">
+                <div class="section-header" data-translate="employee.work_prefs">
+                    Рабочие предпочтения
                 </div>
-
-                <!-- Scores -->
-                <div class="mb-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Баллы по категориям</h3>
+                <div class="section-content">
                     <div class="space-y-3">
-                        <div class="flex items-center">
-                            <div class="w-32 text-sm font-medium text-gray-700">Доминирование (D)</div>
-                            <div class="flex-1 mx-3">
-                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div id="scoreD"
-                                         class="bg-red-500 h-2 rounded-full transition-all duration-500"></div>
-                                </div>
-                            </div>
-                            <div class="w-12 text-sm text-gray-600" id="scoreDText">0/45</div>
-                        </div>
-                        <div class="flex items-center">
-                            <div class="w-32 text-sm font-medium text-gray-700">Влияние (I)</div>
-                            <div class="flex-1 mx-3">
-                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div id="scoreI"
-                                         class="bg-yellow-500 h-2 rounded-full transition-all duration-500"></div>
-                                </div>
-                            </div>
-                            <div class="w-12 text-sm text-gray-600" id="scoreIText">0/45</div>
-                        </div>
-                        <div class="flex items-center">
-                            <div class="w-32 text-sm font-medium text-gray-700">Стабильность (S)</div>
-                            <div class="flex-1 mx-3">
-                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div id="scoreS"
-                                         class="bg-green-500 h-2 rounded-full transition-all duration-500"></div>
-                                </div>
-                            </div>
-                            <div class="w-12 text-sm text-gray-600" id="scoreSText">0/45</div>
-                        </div>
-                        <div class="flex items-center">
-                            <div class="w-32 text-sm font-medium text-gray-700">Добросовестность (C)</div>
-                            <div class="flex-1 mx-3">
-                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div id="scoreC"
-                                         class="bg-blue-500 h-2 rounded-full transition-all duration-500"></div>
-                                </div>
-                            </div>
-                            <div class="w-12 text-sm text-gray-600" id="scoreCText">0/45</div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.work_style">Стиль работы</label>
+                            <p id="workStyle" class="text-gray-900">-</p>
                         </div>
                     </div>
                 </div>
-
-                <!-- Actions -->
-                <div class="flex justify-center space-x-4">
-                    <button id="retakeDiscTest" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
-                        Пройти заново
-                    </button>
-                    <button id="closeDiscResults"
-                            class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                        Закрыть
-                    </button>
-                </div>
             </div>
 
-            <!-- Loading State -->
-            <div id="discLoading" class="hidden text-center py-8">
-                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-                <p class="text-gray-600">Обработка результатов...</p>
+
+
+            <!-- Motivators/Demotivators -->
+            <div class="info-card lg:col-span-2">
+                <div class="section-header">
+                    Мотиваторы и демотиваторы
+                </div>
+                <div class="section-content">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.motivators">Мотиваторы</label>
+                            <p id="motivators" class="text-gray-900">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.demotivators">Демотиваторы</label>
+                            <p id="demotivators" class="text-gray-900">-</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Edit Profile Modal -->
-<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-51">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-gray-900" data-translate="employee.edit_profile">
-                        Редактировать профиль
+    <!-- OKR Modal -->
+    <div id="okrModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900" data-translate="employee.okr_modal_title">
+                        Управление OKR целями
                     </h3>
-                    <button id="closeEditModal" class="text-gray-400 hover:text-gray-600">
+                    <button id="closeOkrModal" class="text-gray-400 hover:text-gray-600">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M6 18L18 6M6 6l12 12"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div id="okrContent">
+                    <!-- AI Generation Section -->
+                    <div id="okrAiSection" class="mb-6 p-4 bg-blue-50 rounded-lg">
+                        <h4 class="font-medium text-gray-900 mb-3" data-translate="employee.okr_generate_ai">Сгенерировать с ИИ</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.okr_context">Контекст</label>
+                                <textarea id="okrContext" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" data-translate-placeholder="employee.okr_context_placeholder"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.okr_additional_goals">Дополнительные цели</label>
+                                <textarea id="okrAdditionalGoals" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" data-translate-placeholder="employee.okr_additional_goals_placeholder"></textarea>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button id="generateOkrBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" data-translate="employee.okr_generate_ai">
+                                    Сгенерировать с ИИ
+                                </button>
+                                <button id="improveOkrBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 hidden" data-translate="employee.okr_improve_ai">
+                                    Улучшить с ИИ
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="okrImprovementSection" class="mt-4 hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="employee.okr_feedback">Обратная связь для улучшения</label>
+                            <textarea id="okrFeedback" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" rows="2" data-translate-placeholder="employee.okr_feedback_placeholder"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- OKR Form -->
+                    <form id="okrForm">
+                        <div id="okrObjectives" class="space-y-6">
+                            <!-- OKR objectives will be dynamically added here -->
+                        </div>
+
+                        <div class="flex justify-between mt-6">
+                            <button type="button" id="addObjectiveBtn" class="px-4 py-2 text-blue-600 hover:text-blue-800 border border-blue-600 rounded-lg hover:bg-blue-50">
+                                + Добавить цель
+                            </button>
+                            <div class="space-x-3">
+                                <button type="button" id="cancelOkrBtn" class="px-4 py-2 text-gray-600 hover:text-gray-800" data-translate="common.cancel">
+                                    Отмена
+                                </button>
+                                <button type="submit" id="saveOkrBtn" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" data-translate="employee.okr_save">
+                                    Сохранить OKR
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Profile Modal -->
+    <div id="shareModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900" data-translate="employee.share_profile_title">
+                        Поделиться профилем
+                    </h3>
+                    <button id="closeShareModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.secure_link">
+                            Защищенная ссылка для сотрудника
+                        </label>
+                        <div class="flex">
+                            <input id="shareLink" type="text" readonly class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md bg-gray-50 text-sm">
+                            <button id="copyLinkBtn" class="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 transition-colors text-sm">
+                                <span data-translate="employee.copy">Копировать</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-600" data-translate="employee.share_note">
+                        Эта ссылка позволит сотруднику просматривать и редактировать свой профиль
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DISC Test Modal -->
+    <div id="discModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-50 relative edit-modal-header">
+
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        DISC Тест личности
+                    </h3>
+                    <button id="closeDiscModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
             </div>
 
-            <form id="editProfileForm" class="p-6 space-y-8">
-                <!-- Basic Information -->
-                <div class="bg-gray-50 rounded-lg p-6">
-                    <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.basic_info">
-                        Основная информация
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2"
-                                   data-translate="employee.full_name">
-                                Полное имя
-                            </label>
-                            <input type="text" id="editName"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <!-- Modal Content -->
+            <div class="p-6">
+                <!-- Introduction Screen -->
+                <div id="discIntro" class="text-center">
+                    <div class="mb-6">
+                        <h2 class="text-xl font-semibold text-gray-900 mb-4">О тестировании</h2>
+                        <p class="text-gray-600 mb-4">Этот опросник поможет вам:</p>
+                        <ul class="text-left max-w-md mx-auto text-gray-600 space-y-2">
+                            <li>• Определить ваш тип личности по системе DISC</li>
+                            <li>• Понять ваши сильные стороны как сотрудника</li>
+                            <li>• Получить рекомендации по развитию</li>
+                            <li>• Улучшить коммуникацию с коллегами</li>
+                        </ul>
+                        <div class="mt-4 text-sm text-gray-500">
+                            <p><strong>Время прохождения:</strong> 7-10 минут</p>
+                            <p><strong>Количество вопросов:</strong> 15</p>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.email">
-                                Email
-                            </label>
-                            <input type="email" id="editEmail"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button id="startDiscTest" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                        Начать тестирование
+                    </button>
+                </div>
+
+                <!-- Question Screen -->
+                <div id="discQuestion" class="hidden">
+                    <!-- Progress Bar -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                            <span>Вопрос <span id="currentQuestionNum">1</span> из <span id="totalQuestions">15</span></span>
+                            <span id="progressPercent">7%</span>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2"
-                                   data-translate="employee.position">
-                                Должность
-                            </label>
-                            <input type="text" id="editPosition"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 7%"></div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.phone">
-                                Телефон
-                            </label>
-                            <input type="text" id="editPhone"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
+                    </div>
+
+                    <!-- Question Content -->
+                    <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                        <h3 id="questionText" class="text-lg font-medium text-gray-900 mb-4"></h3>
+                        <div id="questionOptions" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="flex justify-between">
+                        <button id="prevQuestion" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
+                            Назад
+                        </button>
+                        <button id="nextQuestion" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            Далее
+                        </button>
                     </div>
                 </div>
 
-                <!-- Roles -->
-                <div class="bg-gray-50 rounded-lg p-6">
-                    <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.roles">
-                        Роли
-                    </h4>
-                    <div class="tag-input-container" data-field="roles">
-                        <div class="tag-input-wrapper">
-                            <div class="tag-display" id="rolesDisplay"></div>
-                            <input type="text" class="tag-input" placeholder="Добавить роль...">
-                            <div class="tag-suggestions hidden">
-                                <div class="tag-option" data-value="Manager">Менеджер</div>
-                                <div class="tag-option" data-value="Developer">Разработчик</div>
-                                <div class="tag-option" data-value="Designer">Дизайнер</div>
-                                <div class="tag-option" data-value="Analyst">Аналитик</div>
-                                <div class="tag-option" data-value="QA Engineer">QA Инженер</div>
-                                <div class="tag-option" data-value="DevOps">DevOps</div>
-                                <div class="tag-option" data-value="Product Owner">Product Owner</div>
-                                <div class="tag-option" data-value="Scrum Master">Scrum Master</div>
-                            </div>
+                <!-- Results Screen -->
+                <div id="discResults" class="hidden">
+                    <div class="text-center mb-6">
+                        <h2 class="text-xl font-semibold text-gray-900 mb-2">Результаты тестирования</h2>
+                        <div class="bg-blue-50 rounded-lg p-4 mb-4">
+                            <p class="text-sm text-gray-600 mb-2">Ваш тип личности:</p>
+                            <div class="text-2xl font-bold text-blue-600" id="resultPersonalityType"></div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Domains -->
-                <div class="bg-gray-50 rounded-lg p-6">
-                    <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.domains">
-                        Области компетенции
-                    </h4>
-                    <div class="tag-input-container" data-field="domains">
-                        <div class="tag-input-wrapper">
-                            <div class="tag-display" id="domainsDisplay"></div>
-                            <input type="text" class="tag-input" placeholder="Добавить область...">
-                            <div class="tag-suggestions hidden">
-                                <div class="tag-option" data-value="Frontend">Frontend</div>
-                                <div class="tag-option" data-value="Backend">Backend</div>
-                                <div class="tag-option" data-value="Mobile">Mobile</div>
-                                <div class="tag-option" data-value="DevOps">DevOps</div>
-                                <div class="tag-option" data-value="UI/UX">UI/UX</div>
-                                <div class="tag-option" data-value="Marketing">Маркетинг</div>
-                                <div class="tag-option" data-value="Sales">Продажи</div>
-                                <div class="tag-option" data-value="Analytics">Аналитика</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Expertise -->
-                <div class="bg-gray-50 rounded-lg p-6">
-                    <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.expertise">
-                        Экспертиза
-                    </h4>
-                    <div class="tag-input-container" data-field="expertise">
-                        <div class="tag-input-wrapper">
-                            <div class="tag-display" id="expertiseDisplay"></div>
-                            <input type="text" class="tag-input" placeholder="Добавить экспертизу...">
-                            <div class="tag-suggestions hidden">
-                                <div class="tag-option" data-value="JavaScript">JavaScript</div>
-                                <div class="tag-option" data-value="Python">Python</div>
-                                <div class="tag-option" data-value="React">React</div>
-                                <div class="tag-option" data-value="Node.js">Node.js</div>
-                                <div class="tag-option" data-value="Design Systems">Design Systems</div>
-                                <div class="tag-option" data-value="Data Analysis">Анализ данных</div>
-                                <div class="tag-option" data-value="Project Management">Управление проектами</div>
-                                <div class="tag-option" data-value="Team Leadership">Руководство командой</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Time Zone -->
-                <div class="bg-gray-50 rounded-lg p-6">
-                    <h4 class="text-lg font-medium text-gray-900 mb-4">
-                        Часовой пояс
-                    </h4>
-                    <input id="editTimeZone" type="text"
-                           class="block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                           placeholder="Europe/Moscow">
-                </div>
-
-                <!-- Stakeholders -->
-                <div class="bg-gray-50 rounded-lg p-6" data-field="stakeholders">
-                    <h4 class="text-lg font-medium text-gray-900 mb-4">
-                        Заинтересованные стороны
-                    </h4>
-                    <div class="tag-input-container">
-                        <div class="tag-input-wrapper">
-                            <div class="tag-display" id="stakeholdersDisplay"></div>
-                            <input type="text" class="tag-input" placeholder="Введите и нажмите Enter">
-                            <div class="tag-suggestions hidden"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Important Traits -->
-                <div class="bg-gray-50 rounded-lg p-6" data-field="important_traits">
-                    <h4 class="text-lg font-medium text-gray-900 mb-4">
-                        Важно знать
-                    </h4>
-                    <div class="tag-input-container">
-                        <div class="tag-input-wrapper">
-                            <div class="tag-display" id="traitsDisplay"></div>
-                            <input type="text" class="tag-input" placeholder="Введите и нажмите Enter">
-                            <div class="tag-suggestions hidden"></div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Personal Interests -->
-                <div class="bg-gray-50 rounded-lg p-6">
-                    <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.personal_interests">
-                        Личные интересы
-                    </h4>
-                    <div class="tag-input-container" data-field="personal_interests">
-                        <div class="tag-input-wrapper">
-                            <div class="tag-display" id="personalInterestsDisplay"></div>
-                            <input type="text" class="tag-input" placeholder="Добавить интерес...">
-                            <div class="tag-suggestions hidden">
-                                <div class="tag-option" data-value="Sports">Спорт</div>
-                                <div class="tag-option" data-value="Music">Музыка</div>
-                                <div class="tag-option" data-value="Travel">Путешествия</div>
-                                <div class="tag-option" data-value="Reading">Чтение</div>
-                                <div class="tag-option" data-value="Photography">Фотография</div>
-                                <div class="tag-option" data-value="Cooking">Кулинария</div>
-                                <div class="tag-option" data-value="Gaming">Игры</div>
-                                <div class="tag-option" data-value="Art">Искусство</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Communication Preferences -->
-                <div class="bg-gray-50 rounded-lg p-6">
-                    <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.communication_prefs">
-                        Предпочтения в общении
-                    </h4>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2"
-                                   data-translate="employee.preferred_channels">
-                                Предпочитаемые каналы
-                            </label>
-                            <div class="tag-input-container" data-field="comm_channels">
-                                <div class="tag-input-wrapper">
-                                    <div class="tag-display" id="commChannelsDisplay"></div>
-                                    <input type="text" class="tag-input" placeholder="Добавить канал...">
-                                    <div class="tag-suggestions hidden">
-                                        <div class="tag-option" data-value="Slack">Slack</div>
-                                        <div class="tag-option" data-value="Email">Email</div>
-                                        <div class="tag-option" data-value="Teams">Teams</div>
-                                        <div class="tag-option" data-value="Phone">Телефон</div>
-                                        <div class="tag-option" data-value="Video Call">Видеозвонок</div>
-                                        <div class="tag-option" data-value="In Person">Лично</div>
+                    <!-- Scores -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Баллы по категориям</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center">
+                                <div class="w-32 text-sm font-medium text-gray-700">Доминирование (D)</div>
+                                <div class="flex-1 mx-3">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div id="scoreD" class="bg-red-500 h-2 rounded-full transition-all duration-500"></div>
                                     </div>
+                                </div>
+                                <div class="w-12 text-sm text-gray-600" id="scoreDText">0/45</div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-32 text-sm font-medium text-gray-700">Влияние (I)</div>
+                                <div class="flex-1 mx-3">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div id="scoreI" class="bg-yellow-500 h-2 rounded-full transition-all duration-500"></div>
+                                    </div>
+                                </div>
+                                <div class="w-12 text-sm text-gray-600" id="scoreIText">0/45</div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-32 text-sm font-medium text-gray-700">Стабильность (S)</div>
+                                <div class="flex-1 mx-3">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div id="scoreS" class="bg-green-500 h-2 rounded-full transition-all duration-500"></div>
+                                    </div>
+                                </div>
+                                <div class="w-12 text-sm text-gray-600" id="scoreSText">0/45</div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-32 text-sm font-medium text-gray-700">Добросовестность (C)</div>
+                                <div class="flex-1 mx-3">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div id="scoreC" class="bg-blue-500 h-2 rounded-full transition-all duration-500"></div>
+                                    </div>
+                                </div>
+                                <div class="w-12 text-sm text-gray-600" id="scoreCText">0/45</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex justify-center space-x-4">
+                        <button id="retakeDiscTest" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
+                            Пройти заново
+                        </button>
+                        <button id="closeDiscResults" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            Закрыть
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="discLoading" class="hidden text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                    <p class="text-gray-600">Обработка результатов...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-51">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900" data-translate="employee.edit_profile">
+                            Редактировать профиль
+                        </h3>
+                        <button id="closeEditModal" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <form id="editProfileForm" class="p-6 space-y-8">
+                    <!-- Basic Information -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.basic_info">
+                            Основная информация
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.full_name">
+                                    Полное имя
+                                </label>
+                                <input type="text" id="editName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.email">
+                                    Email
+                                </label>
+                                <input type="email" id="editEmail" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.position">
+                                    Должность
+                                </label>
+                                <input type="text" id="editPosition" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.phone">
+                                    Телефон
+                                </label>
+                                <input type="text" id="editPhone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Roles -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.roles">
+                            Роли
+                        </h4>
+                        <div class="tag-input-container" data-field="roles">
+                            <div class="tag-input-wrapper">
+                                <div class="tag-display" id="rolesDisplay"></div>
+                                <input type="text" class="tag-input" placeholder="Добавить роль...">
+                                <div class="tag-suggestions hidden">
+                                    <div class="tag-option" data-value="Manager">Менеджер</div>
+                                    <div class="tag-option" data-value="Developer">Разработчик</div>
+                                    <div class="tag-option" data-value="Designer">Дизайнер</div>
+                                    <div class="tag-option" data-value="Analyst">Аналитик</div>
+                                    <div class="tag-option" data-value="QA Engineer">QA Инженер</div>
+                                    <div class="tag-option" data-value="DevOps">DevOps</div>
+                                    <div class="tag-option" data-value="Product Owner">Product Owner</div>
+                                    <div class="tag-option" data-value="Scrum Master">Scrum Master</div>
                                 </div>
                             </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2"
-                                   data-translate="employee.meeting_times_pref">
-                                Удобное время для встреч
-                            </label>
-                            <input type="text" id="editMeetingTimes"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                   placeholder="Например: 9:00-17:00 UTC+3">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2"
-                                   data-translate="employee.communication_style">
-                                Стиль общения
-                            </label>
-                            <input type="text" id="editCommStyle"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                   placeholder="Например: Прямой, дружелюбный">
+                    </div>
+
+                    <!-- Domains -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.domains">
+                            Области компетенции
+                        </h4>
+                        <div class="tag-input-container" data-field="domains">
+                            <div class="tag-input-wrapper">
+                                <div class="tag-display" id="domainsDisplay"></div>
+                                <input type="text" class="tag-input" placeholder="Добавить область...">
+                                <div class="tag-suggestions hidden">
+                                    <div class="tag-option" data-value="Frontend">Frontend</div>
+                                    <div class="tag-option" data-value="Backend">Backend</div>
+                                    <div class="tag-option" data-value="Mobile">Mobile</div>
+                                    <div class="tag-option" data-value="DevOps">DevOps</div>
+                                    <div class="tag-option" data-value="UI/UX">UI/UX</div>
+                                    <div class="tag-option" data-value="Marketing">Маркетинг</div>
+                                    <div class="tag-option" data-value="Sales">Продажи</div>
+                                    <div class="tag-option" data-value="Analytics">Аналитика</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Work Preferences -->
-                <div class="bg-gray-50 rounded-lg p-6">
-                    <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.work_prefs">
-                        Рабочие предпочтения
-                    </h4>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2"
-                                   data-translate="employee.work_style">
-                                Стиль работы
-                            </label>
-                            <input type="text" id="editWorkStyle"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                   placeholder="Например: Самостоятельный, командный">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2"
-                                   data-translate="employee.motivators">
-                                Мотиваторы
-                            </label>
-                            <textarea id="editMotivators" rows="3"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      placeholder="Что вас мотивирует в работе?"></textarea>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2"
-                                   data-translate="employee.demotivators">
-                                Демотиваторы
-                            </label>
-                            <textarea id="editDemotivators" rows="3"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      placeholder="Что демотивирует вас в работе?"></textarea>
+                    <!-- Expertise -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.expertise">
+                            Экспертиза
+                        </h4>
+                        <div class="tag-input-container" data-field="expertise">
+                            <div class="tag-input-wrapper">
+                                <div class="tag-display" id="expertiseDisplay"></div>
+                                <input type="text" class="tag-input" placeholder="Добавить экспертизу...">
+                                <div class="tag-suggestions hidden">
+                                    <div class="tag-option" data-value="JavaScript">JavaScript</div>
+                                    <div class="tag-option" data-value="Python">Python</div>
+                                    <div class="tag-option" data-value="React">React</div>
+                                    <div class="tag-option" data-value="Node.js">Node.js</div>
+                                    <div class="tag-option" data-value="Design Systems">Design Systems</div>
+                                    <div class="tag-option" data-value="Data Analysis">Анализ данных</div>
+                                    <div class="tag-option" data-value="Project Management">Управление проектами</div>
+                                    <div class="tag-option" data-value="Team Leadership">Руководство командой</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                    <!-- Time Zone -->
+<div class="bg-gray-50 rounded-lg p-6">
+    <h4 class="text-lg font-medium text-gray-900 mb-4">
+        Часовой пояс
+    </h4>
+    <input id="editTimeZone" type="text"
+        class="block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+        placeholder="Europe/Moscow">
+</div>
 
-                <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-                    <button type="button" id="cancelEditBtn"
-                            class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                            data-translate="common.cancel">
-                        Отмена
-                    </button>
-                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                            data-translate="common.save">
-                        Сохранить
-                    </button>
-                </div>
-            </form>
+<!-- Stakeholders -->
+<div class="bg-gray-50 rounded-lg p-6" data-field="stakeholders">
+    <h4 class="text-lg font-medium text-gray-900 mb-4">
+        Заинтересованные стороны
+    </h4>
+    <div class="tag-input-container">
+        <div class="tag-input-wrapper">
+            <div class="tag-display" id="stakeholdersDisplay"></div>
+            <input type="text" class="tag-input" placeholder="Введите и нажмите Enter">
+            <div class="tag-suggestions hidden"></div>
         </div>
     </div>
 </div>
 
-<style>
-    .tag-input-container {
-        width: 100%;
-        text-align: center;
-        z-index: 0;
-    }
+<!-- Important Traits -->
+<div class="bg-gray-50 rounded-lg p-6" data-field="important_traits">
+    <h4 class="text-lg font-medium text-gray-900 mb-4">
+        Важно знать
+    </h4>
+    <div class="tag-input-container">
+        <div class="tag-input-wrapper">
+            <div class="tag-display" id="traitsDisplay"></div>
+            <input type="text" class="tag-input" placeholder="Введите и нажмите Enter">
+            <div class="tag-suggestions hidden"></div>
+        </div>
+    </div>
+</div>
+                    <!-- Personal Interests -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.personal_interests">
+                            Личные интересы
+                        </h4>
+                        <div class="tag-input-container" data-field="personal_interests">
+                            <div class="tag-input-wrapper">
+                                <div class="tag-display" id="personalInterestsDisplay"></div>
+                                <input type="text" class="tag-input" placeholder="Добавить интерес...">
+                                <div class="tag-suggestions hidden">
+                                    <div class="tag-option" data-value="Sports">Спорт</div>
+                                    <div class="tag-option" data-value="Music">Музыка</div>
+                                    <div class="tag-option" data-value="Travel">Путешествия</div>
+                                    <div class="tag-option" data-value="Reading">Чтение</div>
+                                    <div class="tag-option" data-value="Photography">Фотография</div>
+                                    <div class="tag-option" data-value="Cooking">Кулинария</div>
+                                    <div class="tag-option" data-value="Gaming">Игры</div>
+                                    <div class="tag-option" data-value="Art">Искусство</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-    .tag-input-wrapper {
-        position: relative;
-        border: 1px solid #d1d5db;
-        border-radius: 0.375rem;
-        padding: 0.5rem;
-        background-color: #fff;
-        min-height: 2.5rem;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.25rem;
-        align-items: center;
-        z-index: 0;
-          transition: box-shadow .2s ease, border-color .2s ease, background-color .2s ease;
-    }
+                    <!-- Communication Preferences -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.communication_prefs">
+                            Предпочтения в общении
+                        </h4>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.preferred_channels">
+                                    Предпочитаемые каналы
+                                </label>
+                                <div class="tag-input-container" data-field="comm_channels">
+                                    <div class="tag-input-wrapper">
+                                        <div class="tag-display" id="commChannelsDisplay"></div>
+                                        <input type="text" class="tag-input" placeholder="Добавить канал...">
+                                        <div class="tag-suggestions hidden">
+                                            <div class="tag-option" data-value="Slack">Slack</div>
+                                            <div class="tag-option" data-value="Email">Email</div>
+                                            <div class="tag-option" data-value="Teams">Teams</div>
+                                            <div class="tag-option" data-value="Phone">Телефон</div>
+                                            <div class="tag-option" data-value="Video Call">Видеозвонок</div>
+                                            <div class="tag-option" data-value="In Person">Лично</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.meeting_times_pref">
+                                    Удобное время для встреч
+                                </label>
+                                <input type="text" id="editMeetingTimes" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Например: 9:00-17:00 UTC+3">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.communication_style">
+                                    Стиль общения
+                                </label>
+                                <input type="text" id="editCommStyle" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Например: Прямой, дружелюбный">
+                            </div>
+                        </div>
+                    </div>
 
-    .tag-input-wrapper:focus-within {
-        border-color: #3b82f6; /* indigo-500 */
-  box-shadow:
-    inset 0 0 0 2px #3b82f6,
-    0 0 0 0 rgba(59,130,246,0); /* для анимации */
-  background-color: #ffffff;
-    }
-    .tag-input-wrapper:focus-within {
-  animation: glowpulse 1.2s ease-out 1;
-}
-@keyframes glowpulse {
-  0%   { box-shadow: inset 0 0 0 3px #93c5fd; }  /* indigo-300 */
-  60%  { box-shadow: inset 0 0 0 2px #3b82f6; }
-  100% { box-shadow: inset 0 0 0 2px #3b82f6; }
-}
-    .tag-display {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.25rem;
-        flex: 0 1 auto;
-        min-width: 0;
-    }
+                    <!-- Work Preferences -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4" data-translate="employee.work_prefs">
+                            Рабочие предпочтения
+                        </h4>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.work_style">
+                                    Стиль работы
+                                </label>
+                                <input type="text" id="editWorkStyle" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Например: Самостоятельный, командный">
+                            </div>
 
-    .edit-modal-header::after {
-        content: "";
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: -1px; /* наезжаем на контент чуть-чуть */
-        height: 8px; /* ширина перекрытия (можно 10–12px) */
-        background: #fff; /* цвет шапки */
-        pointer-events: none;
-        z-index: 1;
-    }
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.motivators">
+                                    Мотиваторы
+                                </label>
+                                <textarea id="editMotivators" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Что вас мотивирует в работе?"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="employee.demotivators">
+                                    Демотиваторы
+                                </label>
+                                <textarea id="editDemotivators" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Что демотивирует вас в работе?"></textarea>
+                            </div>
+                        </div>
+                    </div>
 
-    .edit-modal-header, .sticky.top-0 {
-        z-index: 50;
-        position: sticky;
-        top: 0;
-        background: #fff;
-    }
+                    <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                        <button type="button" id="cancelEditBtn" class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50" data-translate="common.cancel">
+                            Отмена
+                        </button>
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" data-translate="common.save">
+                            Сохранить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
-    .tag-item {
-        display: inline-flex;
-        align-items: center;
-        background-color: #eff6ff;
-        color: #1e40af;
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.25rem;
-        font-size: 0.875rem;
-        gap: 0.25rem;
-    }
+    <style>
+        .tag-input-container {
+            width: 100%;
+            text-align: center;
+        }
 
-    .tag-remove {
-        cursor: pointer;
-        color: #6b7280;
-        font-weight: bold;
-    }
+        .tag-input-wrapper {
+            position: relative;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            background-color: white;
+            min-height: 2.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            align-items: center;
+            text-align: center;
+            z-index: 0;
+        }
 
-    .tag-remove:hover {
-        color: #ef4444;
-    }
+        .tag-input-wrapper:focus-within {
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
 
-    .tag-input {
-        border: none;
-        outline: none;
-        flex: 1;
-        min-width: 120px;
-        padding: 0.25rem;
-    }
+        .tag-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            flex: 0 1 auto;
+            min-width: 0;
+        }
 
-    .tag-suggestions {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        border: 1px solid #d1d5db;
-        border-radius: 0.375rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        z-index: 1000;
-        max-height: 200px;
-        overflow-y: auto;
-    }
+        .tag-item {
+            display: inline-flex;
+            align-items: center;
+            background-color: #eff6ff;
+            color: #1e40af;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            gap: 0.25rem;
+        }
 
-    .tag-option {
-        padding: 0.5rem;
-        cursor: pointer;
-        border-bottom: 1px solid #f3f4f6;
-    }
+        .tag-remove {
+            cursor: pointer;
+            color: #6b7280;
+            font-weight: bold;
+        }
 
-    .tag-option:hover {
-        background-color: #f3f4f6;
-    }
+        .tag-remove:hover {
+            color: #ef4444;
+        }
 
-    .tag-option:last-child {
-        border-bottom: none;
-    }
+        .tag-input {
+            border: none;
+            outline: none;
+            flex: 1;
+            min-width: 120px;
+            padding: 0.25rem;
+        }
 
-    /* Motivational Triggers Styles */
-    .motivational-triggers-container {
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 1rem;
-        background: #f8fafc;
-    }
+        .tag-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            max-height: 200px;
+            overflow-y: auto;
+        }
 
-    .triggers-workspace {
-        position: relative;
-        height: 300px;
-        background: white;
-        border: 2px dashed #cbd5e1;
-        border-radius: 8px;
-        margin-bottom: 1rem;
-    }
+        .tag-option {
+            padding: 0.5rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+        }
 
-    .workspace-instructions {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        pointer-events: none;
-        z-index: 1;
-    }
+        .tag-option:hover {
+            background-color: #f3f4f6;
+        }
 
-    .instruction-left {
-        position: absolute;
-        left: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 12px;
-        color: #6b7280;
-        font-weight: 500;
-    }
+        .tag-option:last-child {
+            border-bottom: none;
+        }
 
-    .instruction-right {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 12px;
-        color: #6b7280;
-        font-weight: 500;
-    }
+        /* Motivational Triggers Styles */
+        .motivational-triggers-container {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f8fafc;
+        }
 
-    .instruction-top {
-        position: absolute;
-        top: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 12px;
-        color: #6b7280;
-        font-weight: 500;
-    }
+        .triggers-workspace {
+            position: relative;
+            height: 300px;
+            background: white;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
 
-    .instruction-bottom {
-        position: absolute;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 12px;
-        color: #6b7280;
-        font-weight: 500;
-    }
+        .workspace-instructions {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
 
-    .horizontal-line {
-        position: absolute;
-        top: 50%;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background: #3b82f6;
-        transform: translateY(-1px);
-    }
+        .instruction-left {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 500;
+        }
 
-    .scale-markers {
-        position: absolute;
-        bottom: 10px;
-        left: 0;
-        right: 0;
-        display: flex;
-        justify-content: space-between;
-        padding: 0 20px;
-        font-size: 12px;
-        color: #6b7280;
-    }
+        .instruction-right {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 500;
+        }
 
-    .triggers-palette {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        padding: 1rem;
-        background: white;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-    }
+        .instruction-top {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 500;
+        }
 
-    .trigger-card {
-        width: 80px;
-        height: 80px;
-        border-radius: 8px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        cursor: grab;
-        transition: all 0.2s;
-        font-size: 10px;
-        text-align: center;
-        position: relative;
-        border: 2px solid transparent;
-    }
+        .instruction-bottom {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 500;
+        }
 
-    .trigger-card:hover {
-        transform: scale(1.05);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
+        .horizontal-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #3b82f6;
+            transform: translateY(-1px);
+        }
 
-    .trigger-card.dragging {
-        cursor: grabbing;
-        opacity: 0.8;
-        z-index: 1000;
-    }
+        .scale-markers {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-size: 12px;
+            color: #6b7280;
+        }
 
-    .trigger-card.positioned {
-        position: absolute;
-    }
+        .triggers-palette {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
 
-    .trigger-card.in-workspace {
-        cursor: grab;
-    }
+        .trigger-card {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            transition: all 0.2s;
+            font-size: 10px;
+            text-align: center;
+            position: relative;
+            border: 2px solid transparent;
+        }
 
-    .trigger-card.in-workspace:hover {
-        transform: scale(1.1);
-    }
-</style>
+        .trigger-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
 
-<script src="/js/employee.js"></script>
-<script src="/js/translations.js"></script>
+        .trigger-card.dragging {
+            cursor: grabbing;
+            opacity: 0.8;
+            z-index: 1000;
+        }
+
+        .trigger-card.positioned {
+            position: absolute;
+        }
+
+        .trigger-card.in-workspace {
+            cursor: grab;
+        }
+
+        .trigger-card.in-workspace:hover {
+            transform: scale(1.1);
+        }
+    </style>
+
+    <script src="/js/employee.js"></script>
+    <script src="/js/translations.js"></script>
 </body>
 </html>
