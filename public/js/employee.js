@@ -127,36 +127,362 @@ const SOFT_SKILLS_DATA = {
 
 const HARD_SKILLS_DATA = {
     'backend': {
-        'javascript': { id: 'javascript', position: { x: 200, y: 100 }, prerequisites: [], name: 'JavaScript', desc: 'Programming language for web development', benefit: 'Enables dynamic web applications' },
-        'nodejs': { id: 'nodejs', position: { x: 400, y: 100 }, prerequisites: ['javascript'], name: 'Node.js', desc: 'JavaScript runtime for server-side development', benefit: 'Allows full-stack JavaScript development' },
-        'express': { id: 'express', position: { x: 600, y: 100 }, prerequisites: ['nodejs'], name: 'Express.js', desc: 'Web framework for Node.js', benefit: 'Simplifies API and web server development' },
-        'databases': { id: 'databases', position: { x: 200, y: 250 }, prerequisites: [], name: 'Databases', desc: 'Data storage and retrieval systems', benefit: 'Enables persistent data management' },
-        'sql': { id: 'sql', position: { x: 400, y: 250 }, prerequisites: ['databases'], name: 'SQL', desc: 'Language for relational database queries', benefit: 'Allows complex data operations' },
-        'mongodb': { id: 'mongodb', position: { x: 600, y: 250 }, prerequisites: ['databases'], name: 'MongoDB', desc: 'NoSQL document database', benefit: 'Provides flexible data modeling' },
-        'api_design': { id: 'api_design', position: { x: 800, y: 200 }, prerequisites: ['express'], name: 'API Design', desc: 'Creating well-structured APIs', benefit: 'Improves system integration' },
-        'docker': { id: 'docker', position: { x: 300, y: 400 }, prerequisites: ['nodejs'], name: 'Docker', desc: 'Containerization platform', benefit: 'Ensures consistent deployment environments' },
-        'testing': { id: 'testing', position: { x: 500, y: 400 }, prerequisites: ['express'], name: 'Testing', desc: 'Automated testing frameworks', benefit: 'Improves code quality and reliability' },
-        'security': { id: 'security', position: { x: 700, y: 400 }, prerequisites: ['api_design'], name: 'Security', desc: 'Application security practices', benefit: 'Protects against vulnerabilities' }
+        'internet': { id: 'internet', position: { x: 400, y: 50 }, prerequisites: [], name: 'Internet', desc: 'How the internet works', benefit: 'Understanding of web fundamentals' },
+        'http': { id: 'http', position: { x: 500, y: 120 }, prerequisites: ['internet'], name: 'HTTP/HTTPS', desc: 'Web communication protocols', benefit: 'Secure web communication' },
+        'domain_names': { id: 'domain_names', position: { x: 300, y: 120 }, prerequisites: ['internet'], name: 'Domain Names', desc: 'DNS and domain system', benefit: 'Web addressing knowledge' },
+        'hosting': { id: 'hosting', position: { x: 400, y: 180 }, prerequisites: ['http', 'domain_names'], name: 'Hosting', desc: 'Web hosting concepts', benefit: 'Application deployment knowledge' },
+        
+        'javascript': { id: 'javascript', position: { x: 150, y: 250 }, prerequisites: [], name: 'JavaScript', desc: 'Programming language for web development', benefit: 'Dynamic web applications' },
+        'python': { id: 'python', position: { x: 300, y: 250 }, prerequisites: [], name: 'Python', desc: 'Versatile programming language', benefit: 'Rapid development capabilities' },
+        'java': { id: 'java', position: { x: 450, y: 250 }, prerequisites: [], name: 'Java', desc: 'Enterprise programming language', benefit: 'Scalable applications' },
+        'go': { id: 'go', position: { x: 600, y: 250 }, prerequisites: [], name: 'Go', desc: 'Modern systems programming', benefit: 'High-performance services' },
+        'rust': { id: 'rust', position: { x: 750, y: 250 }, prerequisites: [], name: 'Rust', desc: 'Systems programming language', benefit: 'Memory-safe performance' },
+        
+        'git': { id: 'git', position: { x: 100, y: 350 }, prerequisites: [], name: 'Git', desc: 'Version control system', benefit: 'Code collaboration and history' },
+        'github': { id: 'github', position: { x: 200, y: 400 }, prerequisites: ['git'], name: 'GitHub', desc: 'Git hosting platform', benefit: 'Team collaboration' },
+        'gitlab': { id: 'gitlab', position: { x: 300, y: 400 }, prerequisites: ['git'], name: 'GitLab', desc: 'DevOps platform', benefit: 'Integrated development workflow' },
+        
+        'relational_databases': { id: 'relational_databases', position: { x: 500, y: 350 }, prerequisites: [], name: 'Relational Databases', desc: 'SQL-based data storage', benefit: 'Structured data management' },
+        'postgresql': { id: 'postgresql', position: { x: 450, y: 420 }, prerequisites: ['relational_databases'], name: 'PostgreSQL', desc: 'Advanced relational database', benefit: 'Enterprise data solutions' },
+        'mysql': { id: 'mysql', position: { x: 550, y: 420 }, prerequisites: ['relational_databases'], name: 'MySQL', desc: 'Popular relational database', benefit: 'Web application data storage' },
+        'mongodb': { id: 'mongodb', position: { x: 650, y: 350 }, prerequisites: [], name: 'MongoDB', desc: 'NoSQL document database', benefit: 'Flexible data modeling' },
+        'redis': { id: 'redis', position: { x: 750, y: 350 }, prerequisites: [], name: 'Redis', desc: 'In-memory data store', benefit: 'High-performance caching' },
+        
+        'rest_apis': { id: 'rest_apis', position: { x: 300, y: 500 }, prerequisites: ['http'], name: 'REST APIs', desc: 'RESTful web services', benefit: 'Standardized API design' },
+        'graphql': { id: 'graphql', position: { x: 450, y: 500 }, prerequisites: ['rest_apis'], name: 'GraphQL', desc: 'Query language for APIs', benefit: 'Efficient data fetching' },
+        'soap': { id: 'soap', position: { x: 600, y: 500 }, prerequisites: ['rest_apis'], name: 'SOAP', desc: 'Protocol for web services', benefit: 'Enterprise integration' },
+        
+        'nodejs': { id: 'nodejs', position: { x: 150, y: 580 }, prerequisites: ['javascript'], name: 'Node.js', desc: 'JavaScript runtime for servers', benefit: 'Full-stack JavaScript development' },
+        'express': { id: 'express', position: { x: 150, y: 650 }, prerequisites: ['nodejs'], name: 'Express.js', desc: 'Web framework for Node.js', benefit: 'Rapid API development' },
+        'nestjs': { id: 'nestjs', position: { x: 250, y: 650 }, prerequisites: ['nodejs'], name: 'NestJS', desc: 'Progressive Node.js framework', benefit: 'Scalable server applications' },
+        
+        'django': { id: 'django', position: { x: 300, y: 580 }, prerequisites: ['python'], name: 'Django', desc: 'Python web framework', benefit: 'Rapid web development' },
+        'flask': { id: 'flask', position: { x: 400, y: 580 }, prerequisites: ['python'], name: 'Flask', desc: 'Lightweight Python framework', benefit: 'Flexible web applications' },
+        'fastapi': { id: 'fastapi', position: { x: 350, y: 650 }, prerequisites: ['python'], name: 'FastAPI', desc: 'Modern Python API framework', benefit: 'High-performance APIs' },
+        
+        'spring': { id: 'spring', position: { x: 500, y: 580 }, prerequisites: ['java'], name: 'Spring', desc: 'Java application framework', benefit: 'Enterprise Java development' },
+        'spring_boot': { id: 'spring_boot', position: { x: 500, y: 650 }, prerequisites: ['spring'], name: 'Spring Boot', desc: 'Rapid Spring development', benefit: 'Microservices architecture' },
+        
+        'docker': { id: 'docker', position: { x: 100, y: 750 }, prerequisites: [], name: 'Docker', desc: 'Containerization platform', benefit: 'Consistent deployment environments' },
+        'kubernetes': { id: 'kubernetes', position: { x: 200, y: 800 }, prerequisites: ['docker'], name: 'Kubernetes', desc: 'Container orchestration', benefit: 'Scalable container management' },
+        'aws': { id: 'aws', position: { x: 350, y: 750 }, prerequisites: [], name: 'AWS', desc: 'Amazon cloud services', benefit: 'Scalable cloud infrastructure' },
+        'azure': { id: 'azure', position: { x: 500, y: 750 }, prerequisites: [], name: 'Azure', desc: 'Microsoft cloud platform', benefit: 'Enterprise cloud solutions' },
+        'gcp': { id: 'gcp', position: { x: 650, y: 750 }, prerequisites: [], name: 'Google Cloud', desc: 'Google cloud platform', benefit: 'Modern cloud infrastructure' },
+        
+        'testing': { id: 'testing', position: { x: 800, y: 580 }, prerequisites: [], name: 'Testing', desc: 'Automated testing frameworks', benefit: 'Code quality assurance' },
+        'unit_testing': { id: 'unit_testing', position: { x: 750, y: 650 }, prerequisites: ['testing'], name: 'Unit Testing', desc: 'Component-level testing', benefit: 'Reliable code components' },
+        'integration_testing': { id: 'integration_testing', position: { x: 850, y: 650 }, prerequisites: ['testing'], name: 'Integration Testing', desc: 'System integration testing', benefit: 'End-to-end reliability' },
+        'e2e_testing': { id: 'e2e_testing', position: { x: 800, y: 720 }, prerequisites: ['integration_testing'], name: 'E2E Testing', desc: 'End-to-end testing', benefit: 'Complete user flow validation' }
     },
     'frontend': {
-        'html': { id: 'html', position: { x: 200, y: 100 }, prerequisites: [], name: 'HTML', desc: 'Markup language for web pages', benefit: 'Creates web page structure' },
-        'css': { id: 'css', position: { x: 400, y: 100 }, prerequisites: ['html'], name: 'CSS', desc: 'Styling language for web pages', benefit: 'Controls visual presentation' },
-        'javascript': { id: 'javascript', position: { x: 600, y: 100 }, prerequisites: ['css'], name: 'JavaScript', desc: 'Programming language for web interactivity', benefit: 'Adds dynamic behavior to web pages' },
-        'react': { id: 'react', position: { x: 300, y: 250 }, prerequisites: ['javascript'], name: 'React', desc: 'JavaScript library for building UIs', benefit: 'Simplifies complex UI development' },
-        'vue': { id: 'vue', position: { x: 500, y: 250 }, prerequisites: ['javascript'], name: 'Vue.js', desc: 'Progressive JavaScript framework', benefit: 'Provides flexible UI development' },
-        'responsive_design': { id: 'responsive_design', position: { x: 700, y: 250 }, prerequisites: ['css'], name: 'Responsive Design', desc: 'Creating mobile-friendly layouts', benefit: 'Ensures cross-device compatibility' },
-        'webpack': { id: 'webpack', position: { x: 400, y: 400 }, prerequisites: ['react', 'vue'], name: 'Webpack', desc: 'Module bundler for JavaScript', benefit: 'Optimizes application performance' },
-        'testing': { id: 'testing', position: { x: 600, y: 400 }, prerequisites: ['react', 'vue'], name: 'Testing', desc: 'Frontend testing frameworks', benefit: 'Ensures UI reliability' }
+        'html': { id: 'html', position: { x: 200, y: 100 }, prerequisites: [], name: 'HTML', desc: 'Markup language for web pages', benefit: 'Web page structure' },
+        'css': { id: 'css', position: { x: 400, y: 100 }, prerequisites: ['html'], name: 'CSS', desc: 'Styling language for web pages', benefit: 'Visual presentation control' },
+        'javascript': { id: 'javascript', position: { x: 600, y: 100 }, prerequisites: ['css'], name: 'JavaScript', desc: 'Programming language for web interactivity', benefit: 'Dynamic user interfaces' },
+        
+        'semantic_html': { id: 'semantic_html', position: { x: 150, y: 180 }, prerequisites: ['html'], name: 'Semantic HTML', desc: 'Meaningful HTML structure', benefit: 'Accessibility and SEO' },
+        'forms': { id: 'forms', position: { x: 250, y: 180 }, prerequisites: ['html'], name: 'Forms & Validations', desc: 'User input handling', benefit: 'Interactive web forms' },
+        'accessibility': { id: 'accessibility', position: { x: 200, y: 250 }, prerequisites: ['semantic_html'], name: 'Accessibility', desc: 'Web accessibility standards', benefit: 'Inclusive user experiences' },
+        'seo': { id: 'seo', position: { x: 300, y: 250 }, prerequisites: ['semantic_html'], name: 'SEO Basics', desc: 'Search engine optimization', benefit: 'Better search visibility' },
+        
+        'css_grid': { id: 'css_grid', position: { x: 350, y: 180 }, prerequisites: ['css'], name: 'CSS Grid', desc: 'Two-dimensional layout system', benefit: 'Complex layout control' },
+        'flexbox': { id: 'flexbox', position: { x: 450, y: 180 }, prerequisites: ['css'], name: 'Flexbox', desc: 'One-dimensional layout method', benefit: 'Flexible component layouts' },
+        'responsive_design': { id: 'responsive_design', position: { x: 400, y: 250 }, prerequisites: ['css_grid', 'flexbox'], name: 'Responsive Design', desc: 'Multi-device compatibility', benefit: 'Universal device support' },
+        
+        'sass': { id: 'sass', position: { x: 300, y: 320 }, prerequisites: ['css'], name: 'Sass/SCSS', desc: 'CSS preprocessor', benefit: 'Enhanced CSS capabilities' },
+        'less': { id: 'less', position: { x: 400, y: 320 }, prerequisites: ['css'], name: 'Less', desc: 'CSS preprocessor', benefit: 'Dynamic stylesheet language' },
+        'postcss': { id: 'postcss', position: { x: 500, y: 320 }, prerequisites: ['css'], name: 'PostCSS', desc: 'CSS transformation tool', benefit: 'Modern CSS features' },
+        
+        'tailwind': { id: 'tailwind', position: { x: 350, y: 390 }, prerequisites: ['responsive_design'], name: 'Tailwind CSS', desc: 'Utility-first CSS framework', benefit: 'Rapid UI development' },
+        'bootstrap': { id: 'bootstrap', position: { x: 450, y: 390 }, prerequisites: ['responsive_design'], name: 'Bootstrap', desc: 'CSS component framework', benefit: 'Quick responsive layouts' },
+        
+        'dom_manipulation': { id: 'dom_manipulation', position: { x: 550, y: 180 }, prerequisites: ['javascript'], name: 'DOM Manipulation', desc: 'Dynamic HTML modification', benefit: 'Interactive web pages' },
+        'fetch_api': { id: 'fetch_api', position: { x: 650, y: 180 }, prerequisites: ['javascript'], name: 'Fetch API / Ajax', desc: 'Asynchronous data fetching', benefit: 'Dynamic content loading' },
+        'es6_modules': { id: 'es6_modules', position: { x: 750, y: 180 }, prerequisites: ['javascript'], name: 'ES6+ & Modules', desc: 'Modern JavaScript features', benefit: 'Modular code organization' },
+        
+        'typescript': { id: 'typescript', position: { x: 600, y: 250 }, prerequisites: ['es6_modules'], name: 'TypeScript', desc: 'Typed JavaScript superset', benefit: 'Type-safe development' },
+        
+        'react': { id: 'react', position: { x: 500, y: 460 }, prerequisites: ['javascript'], name: 'React', desc: 'JavaScript library for building UIs', benefit: 'Component-based development' },
+        'vue': { id: 'vue', position: { x: 700, y: 460 }, prerequisites: ['javascript'], name: 'Vue.js', desc: 'Progressive JavaScript framework', benefit: 'Flexible UI development' },
+        'angular': { id: 'angular', position: { x: 600, y: 530 }, prerequisites: ['typescript'], name: 'Angular', desc: 'Full-featured frontend framework', benefit: 'Enterprise application development' },
+        'svelte': { id: 'svelte', position: { x: 800, y: 460 }, prerequisites: ['javascript'], name: 'Svelte', desc: 'Compile-time framework', benefit: 'Optimized runtime performance' },
+        
+        'redux': { id: 'redux', position: { x: 400, y: 530 }, prerequisites: ['react'], name: 'Redux', desc: 'State management for React', benefit: 'Predictable state updates' },
+        'context_api': { id: 'context_api', position: { x: 500, y: 600 }, prerequisites: ['react'], name: 'Context API', desc: 'React state management', benefit: 'Component state sharing' },
+        'react_router': { id: 'react_router', position: { x: 600, y: 600 }, prerequisites: ['react'], name: 'React Router', desc: 'Client-side routing', benefit: 'Single-page applications' },
+        
+        'vuex': { id: 'vuex', position: { x: 800, y: 530 }, prerequisites: ['vue'], name: 'Vuex', desc: 'State management for Vue', benefit: 'Centralized state management' },
+        'vue_router': { id: 'vue_router', position: { x: 700, y: 600 }, prerequisites: ['vue'], name: 'Vue Router', desc: 'Vue.js routing', benefit: 'Navigation management' },
+        
+        'webpack': { id: 'webpack', position: { x: 300, y: 670 }, prerequisites: ['es6_modules'], name: 'Webpack', desc: 'Module bundler', benefit: 'Optimized application builds' },
+        'vite': { id: 'vite', position: { x: 500, y: 670 }, prerequisites: ['es6_modules'], name: 'Vite', desc: 'Fast build tool', benefit: 'Lightning-fast development' },
+        'parcel': { id: 'parcel', position: { x: 700, y: 670 }, prerequisites: ['es6_modules'], name: 'Parcel', desc: 'Zero-config bundler', benefit: 'Simple build process' },
+        
+        'jest': { id: 'jest', position: { x: 200, y: 740 }, prerequisites: ['javascript'], name: 'Jest', desc: 'JavaScript testing framework', benefit: 'Reliable code testing' },
+        'cypress': { id: 'cypress', position: { x: 350, y: 740 }, prerequisites: ['jest'], name: 'Cypress', desc: 'End-to-end testing', benefit: 'Complete user flow testing' },
+        'testing_library': { id: 'testing_library', position: { x: 500, y: 740 }, prerequisites: ['react'], name: 'Testing Library', desc: 'Component testing utilities', benefit: 'User-focused testing' },
+        
+        'pwa': { id: 'pwa', position: { x: 650, y: 740 }, prerequisites: ['fetch_api'], name: 'Progressive Web Apps', desc: 'App-like web experiences', benefit: 'Native app features' },
+        'web_components': { id: 'web_components', position: { x: 800, y: 740 }, prerequisites: ['dom_manipulation'], name: 'Web Components', desc: 'Reusable custom elements', benefit: 'Framework-agnostic components' }
     },
     'devops': {
-        'linux': { id: 'linux', position: { x: 200, y: 100 }, prerequisites: [], name: 'Linux', desc: 'Operating system fundamentals', benefit: 'Provides server management skills' },
-        'bash': { id: 'bash', position: { x: 400, y: 100 }, prerequisites: ['linux'], name: 'Bash Scripting', desc: 'Shell scripting for automation', benefit: 'Automates repetitive tasks' },
-        'docker': { id: 'docker', position: { x: 600, y: 100 }, prerequisites: ['linux'], name: 'Docker', desc: 'Containerization platform', benefit: 'Ensures consistent deployments' },
-        'kubernetes': { id: 'kubernetes', position: { x: 800, y: 100 }, prerequisites: ['docker'], name: 'Kubernetes', desc: 'Container orchestration platform', benefit: 'Manages containerized applications at scale' },
-        'aws': { id: 'aws', position: { x: 300, y: 250 }, prerequisites: ['bash'], name: 'AWS', desc: 'Amazon Web Services cloud platform', benefit: 'Provides scalable cloud infrastructure' },
-        'terraform': { id: 'terraform', position: { x: 500, y: 250 }, prerequisites: ['aws'], name: 'Terraform', desc: 'Infrastructure as Code tool', benefit: 'Automates infrastructure provisioning' },
-        'monitoring': { id: 'monitoring', position: { x: 700, y: 250 }, prerequisites: ['kubernetes'], name: 'Monitoring', desc: 'System monitoring and alerting', benefit: 'Ensures system reliability' },
-        'ci_cd': { id: 'ci_cd', position: { x: 400, y: 400 }, prerequisites: ['terraform'], name: 'CI/CD', desc: 'Continuous integration and deployment', benefit: 'Automates software delivery' }
+        'linux': { id: 'linux', position: { x: 200, y: 100 }, prerequisites: [], name: 'Linux', desc: 'Operating system fundamentals', benefit: 'Server management skills' },
+        'terminal': { id: 'terminal', position: { x: 350, y: 100 }, prerequisites: ['linux'], name: 'Terminal Usage', desc: 'Command line proficiency', benefit: 'Efficient system operations' },
+        'bash_scripting': { id: 'bash_scripting', position: { x: 500, y: 100 }, prerequisites: ['terminal'], name: 'Bash Scripting', desc: 'Shell script automation', benefit: 'Task automation' },
+        
+        'networking': { id: 'networking', position: { x: 150, y: 200 }, prerequisites: ['linux'], name: 'Networking', desc: 'Network protocols and concepts', benefit: 'Infrastructure connectivity' },
+        'security': { id: 'security', position: { x: 300, y: 200 }, prerequisites: ['networking'], name: 'Security', desc: 'System and network security', benefit: 'Secure infrastructure' },
+        'protocols': { id: 'protocols', position: { x: 450, y: 200 }, prerequisites: ['networking'], name: 'Protocols', desc: 'HTTP, HTTPS, FTP, SSH', benefit: 'Communication standards' },
+        
+        'git': { id: 'git', position: { x: 600, y: 150 }, prerequisites: [], name: 'Git', desc: 'Version control system', benefit: 'Code collaboration' },
+        'github_actions': { id: 'github_actions', position: { x: 750, y: 150 }, prerequisites: ['git'], name: 'GitHub Actions', desc: 'CI/CD automation', benefit: 'Automated workflows' },
+        
+        'docker': { id: 'docker', position: { x: 200, y: 300 }, prerequisites: ['linux'], name: 'Docker', desc: 'Containerization platform', benefit: 'Consistent environments' },
+        'docker_compose': { id: 'docker_compose', position: { x: 350, y: 350 }, prerequisites: ['docker'], name: 'Docker Compose', desc: 'Multi-container applications', benefit: 'Complex application orchestration' },
+        'kubernetes': { id: 'kubernetes', position: { x: 500, y: 300 }, prerequisites: ['docker'], name: 'Kubernetes', desc: 'Container orchestration', benefit: 'Scalable deployments' },
+        'helm': { id: 'helm', position: { x: 650, y: 350 }, prerequisites: ['kubernetes'], name: 'Helm', desc: 'Kubernetes package manager', benefit: 'Application deployment management' },
+        
+        'aws': { id: 'aws', position: { x: 150, y: 450 }, prerequisites: [], name: 'AWS', desc: 'Amazon Web Services', benefit: 'Cloud infrastructure' },
+        'ec2': { id: 'ec2', position: { x: 100, y: 520 }, prerequisites: ['aws'], name: 'EC2', desc: 'Virtual servers', benefit: 'Scalable compute resources' },
+        's3': { id: 's3', position: { x: 200, y: 520 }, prerequisites: ['aws'], name: 'S3', desc: 'Object storage service', benefit: 'Reliable data storage' },
+        'rds': { id: 'rds', position: { x: 150, y: 590 }, prerequisites: ['aws'], name: 'RDS', desc: 'Managed database service', benefit: 'Database management' },
+        
+        'azure': { id: 'azure', position: { x: 350, y: 450 }, prerequisites: [], name: 'Azure', desc: 'Microsoft cloud platform', benefit: 'Enterprise cloud solutions' },
+        'gcp': { id: 'gcp', position: { x: 550, y: 450 }, prerequisites: [], name: 'Google Cloud', desc: 'Google cloud platform', benefit: 'Modern cloud services' },
+        
+        'terraform': { id: 'terraform', position: { x: 400, y: 550 }, prerequisites: ['aws', 'azure'], name: 'Terraform', desc: 'Infrastructure as Code', benefit: 'Automated infrastructure' },
+        'ansible': { id: 'ansible', position: { x: 550, y: 550 }, prerequisites: ['linux'], name: 'Ansible', desc: 'Configuration management', benefit: 'Automated configuration' },
+        'puppet': { id: 'puppet', position: { x: 700, y: 550 }, prerequisites: ['linux'], name: 'Puppet', desc: 'Configuration management', benefit: 'Infrastructure automation' },
+        
+        'jenkins': { id: 'jenkins', position: { x: 300, y: 650 }, prerequisites: ['git'], name: 'Jenkins', desc: 'CI/CD automation server', benefit: 'Continuous integration' },
+        'gitlab_ci': { id: 'gitlab_ci', position: { x: 450, y: 650 }, prerequisites: ['git'], name: 'GitLab CI', desc: 'Integrated CI/CD', benefit: 'Streamlined pipelines' },
+        'circleci': { id: 'circleci', position: { x: 600, y: 650 }, prerequisites: ['git'], name: 'CircleCI', desc: 'Cloud CI/CD platform', benefit: 'Fast automated testing' },
+        
+        'prometheus': { id: 'prometheus', position: { x: 200, y: 750 }, prerequisites: ['kubernetes'], name: 'Prometheus', desc: 'Monitoring system', benefit: 'System observability' },
+        'grafana': { id: 'grafana', position: { x: 350, y: 750 }, prerequisites: ['prometheus'], name: 'Grafana', desc: 'Visualization platform', benefit: 'Monitoring dashboards' },
+        'elk_stack': { id: 'elk_stack', position: { x: 500, y: 750 }, prerequisites: ['linux'], name: 'ELK Stack', desc: 'Log management', benefit: 'Centralized logging' },
+        'datadog': { id: 'datadog', position: { x: 650, y: 750 }, prerequisites: ['aws'], name: 'Datadog', desc: 'Monitoring platform', benefit: 'Application performance monitoring' }
+    },
+    'qa': {
+        'testing_fundamentals': { id: 'testing_fundamentals', position: { x: 300, y: 100 }, prerequisites: [], name: 'Testing Fundamentals', desc: 'Basic testing principles', benefit: 'Quality assurance foundation' },
+        'test_planning': { id: 'test_planning', position: { x: 500, y: 100 }, prerequisites: ['testing_fundamentals'], name: 'Test Planning', desc: 'Test strategy and planning', benefit: 'Systematic testing approach' },
+        'test_design': { id: 'test_design', position: { x: 700, y: 100 }, prerequisites: ['test_planning'], name: 'Test Design', desc: 'Test case design techniques', benefit: 'Effective test coverage' },
+        
+        'manual_testing': { id: 'manual_testing', position: { x: 200, y: 200 }, prerequisites: ['testing_fundamentals'], name: 'Manual Testing', desc: 'Human-executed testing', benefit: 'Exploratory testing capabilities' },
+        'exploratory_testing': { id: 'exploratory_testing', position: { x: 100, y: 280 }, prerequisites: ['manual_testing'], name: 'Exploratory Testing', desc: 'Unscripted testing approach', benefit: 'Discovery of unexpected issues' },
+        'usability_testing': { id: 'usability_testing', position: { x: 300, y: 280 }, prerequisites: ['manual_testing'], name: 'Usability Testing', desc: 'User experience validation', benefit: 'Improved user satisfaction' },
+        
+        'test_automation': { id: 'test_automation', position: { x: 500, y: 200 }, prerequisites: ['test_design'], name: 'Test Automation', desc: 'Automated testing concepts', benefit: 'Efficient regression testing' },
+        'selenium': { id: 'selenium', position: { x: 400, y: 300 }, prerequisites: ['test_automation'], name: 'Selenium', desc: 'Web automation framework', benefit: 'Browser automation' },
+        'cypress': { id: 'cypress', position: { x: 600, y: 300 }, prerequisites: ['test_automation'], name: 'Cypress', desc: 'Modern testing framework', benefit: 'Fast end-to-end testing' },
+        'playwright': { id: 'playwright', position: { x: 500, y: 380 }, prerequisites: ['selenium'], name: 'Playwright', desc: 'Cross-browser automation', benefit: 'Multi-browser testing' },
+        
+        'api_testing': { id: 'api_testing', position: { x: 800, y: 200 }, prerequisites: ['test_design'], name: 'API Testing', desc: 'Service layer testing', benefit: 'Backend validation' },
+        'postman': { id: 'postman', position: { x: 750, y: 280 }, prerequisites: ['api_testing'], name: 'Postman', desc: 'API testing tool', benefit: 'API development workflow' },
+        'rest_assured': { id: 'rest_assured', position: { x: 850, y: 280 }, prerequisites: ['api_testing'], name: 'REST Assured', desc: 'Java API testing', benefit: 'Automated API validation' },
+        
+        'performance_testing': { id: 'performance_testing', position: { x: 200, y: 450 }, prerequisites: ['test_automation'], name: 'Performance Testing', desc: 'System performance validation', benefit: 'Scalability assurance' },
+        'jmeter': { id: 'jmeter', position: { x: 100, y: 530 }, prerequisites: ['performance_testing'], name: 'JMeter', desc: 'Load testing tool', benefit: 'Performance bottleneck identification' },
+        'k6': { id: 'k6', position: { x: 300, y: 530 }, prerequisites: ['performance_testing'], name: 'K6', desc: 'Modern load testing', benefit: 'Developer-friendly performance testing' },
+        
+        'security_testing': { id: 'security_testing', position: { x: 500, y: 450 }, prerequisites: ['api_testing'], name: 'Security Testing', desc: 'Application security validation', benefit: 'Vulnerability identification' },
+        'owasp': { id: 'owasp', position: { x: 450, y: 530 }, prerequisites: ['security_testing'], name: 'OWASP', desc: 'Security testing standards', benefit: 'Security best practices' },
+        'burp_suite': { id: 'burp_suite', position: { x: 550, y: 530 }, prerequisites: ['security_testing'], name: 'Burp Suite', desc: 'Security testing platform', benefit: 'Web application security testing' },
+        
+        'mobile_testing': { id: 'mobile_testing', position: { x: 800, y: 450 }, prerequisites: ['test_automation'], name: 'Mobile Testing', desc: 'Mobile application testing', benefit: 'Mobile quality assurance' },
+        'appium': { id: 'appium', position: { x: 750, y: 530 }, prerequisites: ['mobile_testing'], name: 'Appium', desc: 'Mobile automation framework', benefit: 'Cross-platform mobile testing' },
+        'espresso': { id: 'espresso', position: { x: 850, y: 530 }, prerequisites: ['mobile_testing'], name: 'Espresso', desc: 'Android testing framework', benefit: 'Native Android testing' },
+        
+        'ci_cd_testing': { id: 'ci_cd_testing', position: { x: 300, y: 620 }, prerequisites: ['test_automation'], name: 'CI/CD Testing', desc: 'Continuous testing integration', benefit: 'Automated quality gates' },
+        'jenkins': { id: 'jenkins', position: { x: 200, y: 700 }, prerequisites: ['ci_cd_testing'], name: 'Jenkins', desc: 'CI/CD automation', benefit: 'Continuous integration' },
+        'github_actions': { id: 'github_actions', position: { x: 400, y: 700 }, prerequisites: ['ci_cd_testing'], name: 'GitHub Actions', desc: 'GitHub CI/CD', benefit: 'Integrated testing workflows' },
+        
+        'test_management': { id: 'test_management', position: { x: 600, y: 620 }, prerequisites: ['test_planning'], name: 'Test Management', desc: 'Test process management', benefit: 'Organized testing lifecycle' },
+        'jira': { id: 'jira', position: { x: 550, y: 700 }, prerequisites: ['test_management'], name: 'Jira', desc: 'Project management tool', benefit: 'Test case management' },
+        'testlink': { id: 'testlink', position: { x: 650, y: 700 }, prerequisites: ['test_management'], name: 'TestLink', desc: 'Test management system', benefit: 'Test execution tracking' },
+        
+        'bug_tracking': { id: 'bug_tracking', position: { x: 800, y: 620 }, prerequisites: ['manual_testing'], name: 'Bug Tracking', desc: 'Defect management', benefit: 'Issue resolution workflow' },
+        'bugzilla': { id: 'bugzilla', position: { x: 750, y: 700 }, prerequisites: ['bug_tracking'], name: 'Bugzilla', desc: 'Bug tracking system', benefit: 'Defect lifecycle management' },
+        'mantis': { id: 'mantis', position: { x: 850, y: 700 }, prerequisites: ['bug_tracking'], name: 'Mantis', desc: 'Issue tracking tool', benefit: 'Bug reporting and tracking' }
+    },
+    'data-analyst': {
+        'statistics': { id: 'statistics', position: { x: 300, y: 100 }, prerequisites: [], name: 'Statistics', desc: 'Statistical analysis fundamentals', benefit: 'Data interpretation skills' },
+        'probability': { id: 'probability', position: { x: 500, y: 100 }, prerequisites: ['statistics'], name: 'Probability', desc: 'Probability theory', benefit: 'Uncertainty quantification' },
+        'descriptive_stats': { id: 'descriptive_stats', position: { x: 200, y: 180 }, prerequisites: ['statistics'], name: 'Descriptive Statistics', desc: 'Data summarization techniques', benefit: 'Data understanding' },
+        'inferential_stats': { id: 'inferential_stats', position: { x: 400, y: 180 }, prerequisites: ['probability'], name: 'Inferential Statistics', desc: 'Population inference from samples', benefit: 'Statistical conclusions' },
+        'hypothesis_testing': { id: 'hypothesis_testing', position: { x: 600, y: 180 }, prerequisites: ['inferential_stats'], name: 'Hypothesis Testing', desc: 'Statistical hypothesis validation', benefit: 'Evidence-based decisions' },
+        
+        'excel': { id: 'excel', position: { x: 150, y: 280 }, prerequisites: [], name: 'Excel', desc: 'Spreadsheet analysis tool', benefit: 'Basic data manipulation' },
+        'pivot_tables': { id: 'pivot_tables', position: { x: 100, y: 360 }, prerequisites: ['excel'], name: 'Pivot Tables', desc: 'Data summarization in Excel', benefit: 'Quick data insights' },
+        'vlookup': { id: 'vlookup', position: { x: 200, y: 360 }, prerequisites: ['excel'], name: 'VLOOKUP/HLOOKUP', desc: 'Data lookup functions', benefit: 'Data relationship analysis' },
+        
+        'sql': { id: 'sql', position: { x: 400, y: 280 }, prerequisites: [], name: 'SQL', desc: 'Database query language', benefit: 'Data extraction and manipulation' },
+        'joins': { id: 'joins', position: { x: 350, y: 360 }, prerequisites: ['sql'], name: 'SQL Joins', desc: 'Table relationship queries', benefit: 'Complex data retrieval' },
+        'window_functions': { id: 'window_functions', position: { x: 450, y: 360 }, prerequisites: ['joins'], name: 'Window Functions', desc: 'Advanced SQL analytics', benefit: 'Sophisticated data analysis' },
+        'stored_procedures': { id: 'stored_procedures', position: { x: 400, y: 440 }, prerequisites: ['window_functions'], name: 'Stored Procedures', desc: 'Reusable SQL code', benefit: 'Automated data processing' },
+        
+        'python': { id: 'python', position: { x: 650, y: 280 }, prerequisites: [], name: 'Python', desc: 'Programming language for data analysis', benefit: 'Flexible data manipulation' },
+        'pandas': { id: 'pandas', position: { x: 600, y: 360 }, prerequisites: ['python'], name: 'Pandas', desc: 'Data manipulation library', benefit: 'Efficient data processing' },
+        'numpy': { id: 'numpy', position: { x: 700, y: 360 }, prerequisites: ['python'], name: 'NumPy', desc: 'Numerical computing library', benefit: 'Mathematical operations' },
+        'matplotlib': { id: 'matplotlib', position: { x: 550, y: 440 }, prerequisites: ['pandas'], name: 'Matplotlib', desc: 'Data visualization library', benefit: 'Statistical plotting' },
+        'seaborn': { id: 'seaborn', position: { x: 650, y: 440 }, prerequisites: ['matplotlib'], name: 'Seaborn', desc: 'Statistical visualization', benefit: 'Beautiful statistical plots' },
+        'plotly': { id: 'plotly', position: { x: 750, y: 440 }, prerequisites: ['matplotlib'], name: 'Plotly', desc: 'Interactive visualizations', benefit: 'Dynamic data exploration' },
+        
+        'r': { id: 'r', position: { x: 850, y: 280 }, prerequisites: [], name: 'R', desc: 'Statistical programming language', benefit: 'Advanced statistical analysis' },
+        'ggplot2': { id: 'ggplot2', position: { x: 800, y: 360 }, prerequisites: ['r'], name: 'ggplot2', desc: 'Grammar of graphics', benefit: 'Elegant data visualization' },
+        'dplyr': { id: 'dplyr', position: { x: 900, y: 360 }, prerequisites: ['r'], name: 'dplyr', desc: 'Data manipulation in R', benefit: 'Efficient data transformation' },
+        
+        'tableau': { id: 'tableau', position: { x: 200, y: 540 }, prerequisites: [], name: 'Tableau', desc: 'Business intelligence tool', benefit: 'Interactive dashboards' },
+        'power_bi': { id: 'power_bi', position: { x: 400, y: 540 }, prerequisites: [], name: 'Power BI', desc: 'Microsoft BI platform', benefit: 'Business analytics' },
+        'looker': { id: 'looker', position: { x: 600, y: 540 }, prerequisites: [], name: 'Looker', desc: 'Modern BI platform', benefit: 'Self-service analytics' },
+        'qlik': { id: 'qlik', position: { x: 800, y: 540 }, prerequisites: [], name: 'QlikView/Sense', desc: 'Associative analytics', benefit: 'Exploratory data analysis' },
+        
+        'data_cleaning': { id: 'data_cleaning', position: { x: 150, y: 640 }, prerequisites: ['pandas'], name: 'Data Cleaning', desc: 'Data quality improvement', benefit: 'Reliable analysis foundation' },
+        'data_transformation': { id: 'data_transformation', position: { x: 350, y: 640 }, prerequisites: ['data_cleaning'], name: 'Data Transformation', desc: 'Data structure modification', benefit: 'Analysis-ready datasets' },
+        'feature_engineering': { id: 'feature_engineering', position: { x: 550, y: 640 }, prerequisites: ['data_transformation'], name: 'Feature Engineering', desc: 'Variable creation and selection', benefit: 'Enhanced model performance' },
+        
+        'regression_analysis': { id: 'regression_analysis', position: { x: 250, y: 740 }, prerequisites: ['hypothesis_testing'], name: 'Regression Analysis', desc: 'Relationship modeling', benefit: 'Predictive insights' },
+        'time_series': { id: 'time_series', position: { x: 450, y: 740 }, prerequisites: ['regression_analysis'], name: 'Time Series Analysis', desc: 'Temporal data analysis', benefit: 'Trend and seasonality insights' },
+        'clustering': { id: 'clustering', position: { x: 650, y: 740 }, prerequisites: ['feature_engineering'], name: 'Clustering', desc: 'Unsupervised grouping', benefit: 'Pattern discovery' },
+        'machine_learning': { id: 'machine_learning', position: { x: 450, y: 820 }, prerequisites: ['time_series', 'clustering'], name: 'Machine Learning', desc: 'Predictive modeling', benefit: 'Automated insights' }
+    },
+    'ios': {
+        'swift': { id: 'swift', position: { x: 300, y: 100 }, prerequisites: [], name: 'Swift', desc: 'iOS programming language', benefit: 'Native iOS development' },
+        'objective_c': { id: 'objective_c', position: { x: 500, y: 100 }, prerequisites: [], name: 'Objective-C', desc: 'Legacy iOS language', benefit: 'Legacy code maintenance' },
+        'xcode': { id: 'xcode', position: { x: 400, y: 180 }, prerequisites: ['swift'], name: 'Xcode', desc: 'iOS development environment', benefit: 'Integrated development workflow' },
+        
+        'ios_fundamentals': { id: 'ios_fundamentals', position: { x: 200, y: 260 }, prerequisites: ['xcode'], name: 'iOS Fundamentals', desc: 'Core iOS concepts', benefit: 'Platform understanding' },
+        'app_lifecycle': { id: 'app_lifecycle', position: { x: 100, y: 340 }, prerequisites: ['ios_fundamentals'], name: 'App Lifecycle', desc: 'Application state management', benefit: 'Proper app behavior' },
+        'view_controller': { id: 'view_controller', position: { x: 300, y: 340 }, prerequisites: ['ios_fundamentals'], name: 'View Controllers', desc: 'Screen management', benefit: 'UI flow control' },
+        
+        'uikit': { id: 'uikit', position: { x: 500, y: 260 }, prerequisites: ['xcode'], name: 'UIKit', desc: 'iOS UI framework', benefit: 'Native user interfaces' },
+        'auto_layout': { id: 'auto_layout', position: { x: 450, y: 340 }, prerequisites: ['uikit'], name: 'Auto Layout', desc: 'Responsive UI design', benefit: 'Multi-device compatibility' },
+        'storyboards': { id: 'storyboards', position: { x: 600, y: 340 }, prerequisites: ['uikit'], name: 'Storyboards', desc: 'Visual UI design', benefit: 'Rapid prototyping' },
+        'xibs': { id: 'xibs', position: { x: 550, y: 420 }, prerequisites: ['storyboards'], name: 'XIBs', desc: 'Interface Builder files', benefit: 'Reusable UI components' },
+        
+        'swiftui': { id: 'swiftui', position: { x: 750, y: 260 }, prerequisites: ['swift'], name: 'SwiftUI', desc: 'Declarative UI framework', benefit: 'Modern UI development' },
+        'combine': { id: 'combine', position: { x: 800, y: 340 }, prerequisites: ['swiftui'], name: 'Combine', desc: 'Reactive programming', benefit: 'Asynchronous data handling' },
+        
+        'navigation': { id: 'navigation', position: { x: 200, y: 500 }, prerequisites: ['view_controller'], name: 'Navigation', desc: 'App navigation patterns', benefit: 'User flow management' },
+        'tab_bar': { id: 'tab_bar', position: { x: 100, y: 580 }, prerequisites: ['navigation'], name: 'Tab Bar Controller', desc: 'Tab-based navigation', benefit: 'Multi-section apps' },
+        'navigation_controller': { id: 'navigation_controller', position: { x: 300, y: 580 }, prerequisites: ['navigation'], name: 'Navigation Controller', desc: 'Hierarchical navigation', benefit: 'Drill-down interfaces' },
+        
+        'table_views': { id: 'table_views', position: { x: 500, y: 500 }, prerequisites: ['auto_layout'], name: 'Table Views', desc: 'List-based interfaces', benefit: 'Data presentation' },
+        'collection_views': { id: 'collection_views', position: { x: 650, y: 500 }, prerequisites: ['table_views'], name: 'Collection Views', desc: 'Grid-based layouts', benefit: 'Flexible data display' },
+        'custom_cells': { id: 'custom_cells', position: { x: 575, y: 580 }, prerequisites: ['collection_views'], name: 'Custom Cells', desc: 'Custom table/collection cells', benefit: 'Tailored data presentation' },
+        
+        'core_data': { id: 'core_data', position: { x: 150, y: 680 }, prerequisites: ['ios_fundamentals'], name: 'Core Data', desc: 'Data persistence framework', benefit: 'Local data storage' },
+        'user_defaults': { id: 'user_defaults', position: { x: 300, y: 680 }, prerequisites: ['ios_fundamentals'], name: 'UserDefaults', desc: 'Simple data storage', benefit: 'Settings persistence' },
+        'keychain': { id: 'keychain', position: { x: 450, y: 680 }, prerequisites: ['ios_fundamentals'], name: 'Keychain', desc: 'Secure data storage', benefit: 'Credential security' },
+        
+        'networking': { id: 'networking', position: { x: 600, y: 680 }, prerequisites: ['ios_fundamentals'], name: 'Networking', desc: 'HTTP communication', benefit: 'Server integration' },
+        'urlsession': { id: 'urlsession', position: { x: 550, y: 760 }, prerequisites: ['networking'], name: 'URLSession', desc: 'Network request handling', benefit: 'API communication' },
+        'alamofire': { id: 'alamofire', position: { x: 650, y: 760 }, prerequisites: ['networking'], name: 'Alamofire', desc: 'HTTP networking library', benefit: 'Simplified networking' },
+        
+        'json_parsing': { id: 'json_parsing', position: { x: 750, y: 680 }, prerequisites: ['networking'], name: 'JSON Parsing', desc: 'Data serialization', benefit: 'API data handling' },
+        'codable': { id: 'codable', position: { x: 750, y: 760 }, prerequisites: ['json_parsing'], name: 'Codable', desc: 'Swift serialization protocol', benefit: 'Type-safe data parsing' },
+        
+        'testing': { id: 'testing', position: { x: 850, y: 580 }, prerequisites: ['swiftui'], name: 'Testing', desc: 'Unit and UI testing', benefit: 'Code quality assurance' },
+        'xctest': { id: 'xctest', position: { x: 800, y: 660 }, prerequisites: ['testing'], name: 'XCTest', desc: 'Testing framework', benefit: 'Automated testing' },
+        'ui_testing': { id: 'ui_testing', position: { x: 900, y: 660 }, prerequisites: ['testing'], name: 'UI Testing', desc: 'User interface testing', benefit: 'End-to-end validation' },
+        
+        'app_store': { id: 'app_store', position: { x: 400, y: 840 }, prerequisites: ['testing'], name: 'App Store', desc: 'App distribution', benefit: 'App publishing' },
+        'provisioning': { id: 'provisioning', position: { x: 300, y: 920 }, prerequisites: ['app_store'], name: 'Provisioning', desc: 'Code signing and certificates', benefit: 'App deployment' },
+        'testflight': { id: 'testflight', position: { x: 500, y: 920 }, prerequisites: ['app_store'], name: 'TestFlight', desc: 'Beta testing platform', benefit: 'Pre-release testing' }
+    },
+    'android': {
+        'kotlin': { id: 'kotlin', position: { x: 300, y: 100 }, prerequisites: [], name: 'Kotlin', desc: 'Modern Android language', benefit: 'Concise Android development' },
+        'java': { id: 'java', position: { x: 500, y: 100 }, prerequisites: [], name: 'Java', desc: 'Traditional Android language', benefit: 'Legacy Android development' },
+        'android_studio': { id: 'android_studio', position: { x: 400, y: 180 }, prerequisites: ['kotlin'], name: 'Android Studio', desc: 'Android development IDE', benefit: 'Integrated development environment' },
+        
+        'android_fundamentals': { id: 'android_fundamentals', position: { x: 200, y: 260 }, prerequisites: ['android_studio'], name: 'Android Fundamentals', desc: 'Core Android concepts', benefit: 'Platform understanding' },
+        'activities': { id: 'activities', position: { x: 100, y: 340 }, prerequisites: ['android_fundamentals'], name: 'Activities', desc: 'Screen components', benefit: 'UI screen management' },
+        'fragments': { id: 'fragments', position: { x: 300, y: 340 }, prerequisites: ['android_fundamentals'], name: 'Fragments', desc: 'Reusable UI components', benefit: 'Modular UI design' },
+        'services': { id: 'services', position: { x: 200, y: 420 }, prerequisites: ['activities'], name: 'Services', desc: 'Background processing', benefit: 'Long-running operations' },
+        
+        'layouts': { id: 'layouts', position: { x: 500, y: 260 }, prerequisites: ['android_studio'], name: 'Layouts', desc: 'UI layout systems', benefit: 'Structured user interfaces' },
+        'linear_layout': { id: 'linear_layout', position: { x: 450, y: 340 }, prerequisites: ['layouts'], name: 'LinearLayout', desc: 'Sequential layout', benefit: 'Simple UI arrangements' },
+        'relative_layout': { id: 'relative_layout', position: { x: 550, y: 340 }, prerequisites: ['layouts'], name: 'RelativeLayout', desc: 'Relative positioning', benefit: 'Flexible UI positioning' },
+        'constraint_layout': { id: 'constraint_layout', position: { x: 500, y: 420 }, prerequisites: ['relative_layout'], name: 'ConstraintLayout', desc: 'Constraint-based layout', benefit: 'Responsive UI design' },
+        
+        'jetpack_compose': { id: 'jetpack_compose', position: { x: 750, y: 260 }, prerequisites: ['kotlin'], name: 'Jetpack Compose', desc: 'Modern UI toolkit', benefit: 'Declarative UI development' },
+        'compose_ui': { id: 'compose_ui', position: { x: 700, y: 340 }, prerequisites: ['jetpack_compose'], name: 'Compose UI', desc: 'Composable functions', benefit: 'Reactive UI components' },
+        'compose_navigation': { id: 'compose_navigation', position: { x: 800, y: 340 }, prerequisites: ['jetpack_compose'], name: 'Compose Navigation', desc: 'Navigation in Compose', benefit: 'Modern navigation patterns' },
+        
+        'intents': { id: 'intents', position: { x: 150, y: 500 }, prerequisites: ['services'], name: 'Intents', desc: 'Component communication', benefit: 'Inter-component messaging' },
+        'broadcast_receivers': { id: 'broadcast_receivers', position: { x: 300, y: 500 }, prerequisites: ['intents'], name: 'Broadcast Receivers', desc: 'System event handling', benefit: 'System integration' },
+        'content_providers': { id: 'content_providers', position: { x: 450, y: 500 }, prerequisites: ['broadcast_receivers'], name: 'Content Providers', desc: 'Data sharing', benefit: 'Inter-app data access' },
+        
+        'recyclerview': { id: 'recyclerview', position: { x: 600, y: 500 }, prerequisites: ['constraint_layout'], name: 'RecyclerView', desc: 'Efficient list display', benefit: 'Performance list rendering' },
+        'viewpager': { id: 'viewpager', position: { x: 750, y: 500 }, prerequisites: ['recyclerview'], name: 'ViewPager', desc: 'Swipeable views', benefit: 'Tab-like interfaces' },
+        'cardview': { id: 'cardview', position: { x: 675, y: 580 }, prerequisites: ['recyclerview'], name: 'CardView', desc: 'Material design cards', benefit: 'Modern UI components' },
+        
+        'room_database': { id: 'room_database', position: { x: 200, y: 600 }, prerequisites: ['android_fundamentals'], name: 'Room Database', desc: 'Local database solution', benefit: 'Type-safe database access' },
+        'shared_preferences': { id: 'shared_preferences', position: { x: 350, y: 600 }, prerequisites: ['android_fundamentals'], name: 'SharedPreferences', desc: 'Simple data storage', benefit: 'Settings persistence' },
+        'datastore': { id: 'datastore', position: { x: 500, y: 600 }, prerequisites: ['shared_preferences'], name: 'DataStore', desc: 'Modern data storage', benefit: 'Asynchronous data storage' },
+        
+        'retrofit': { id: 'retrofit', position: { x: 150, y: 700 }, prerequisites: ['android_fundamentals'], name: 'Retrofit', desc: 'HTTP client library', benefit: 'Type-safe API calls' },
+        'okhttp': { id: 'okhttp', position: { x: 300, y: 700 }, prerequisites: ['retrofit'], name: 'OkHttp', desc: 'HTTP client', benefit: 'Efficient networking' },
+        'gson': { id: 'gson', position: { x: 450, y: 700 }, prerequisites: ['retrofit'], name: 'Gson', desc: 'JSON serialization', benefit: 'Object-JSON conversion' },
+        
+        'mvvm': { id: 'mvvm', position: { x: 600, y: 700 }, prerequisites: ['jetpack_compose'], name: 'MVVM', desc: 'Architecture pattern', benefit: 'Separation of concerns' },
+        'viewmodel': { id: 'viewmodel', position: { x: 550, y: 780 }, prerequisites: ['mvvm'], name: 'ViewModel', desc: 'UI state management', benefit: 'Configuration change survival' },
+        'livedata': { id: 'livedata', position: { x: 650, y: 780 }, prerequisites: ['mvvm'], name: 'LiveData', desc: 'Observable data holder', benefit: 'Lifecycle-aware data' },
+        
+        'testing': { id: 'testing', position: { x: 800, y: 600 }, prerequisites: ['jetpack_compose'], name: 'Testing', desc: 'Unit and UI testing', benefit: 'Code quality assurance' },
+        'junit': { id: 'junit', position: { x: 750, y: 680 }, prerequisites: ['testing'], name: 'JUnit', desc: 'Unit testing framework', benefit: 'Automated testing' },
+        'espresso': { id: 'espresso', position: { x: 850, y: 680 }, prerequisites: ['testing'], name: 'Espresso', desc: 'UI testing framework', benefit: 'Android UI testing' },
+        
+        'google_play': { id: 'google_play', position: { x: 400, y: 860 }, prerequisites: ['testing'], name: 'Google Play', desc: 'App distribution', benefit: 'App publishing' },
+        'app_signing': { id: 'app_signing', position: { x: 300, y: 940 }, prerequisites: ['google_play'], name: 'App Signing', desc: 'Application security', benefit: 'Secure app distribution' },
+        'play_console': { id: 'play_console', position: { x: 500, y: 940 }, prerequisites: ['google_play'], name: 'Play Console', desc: 'App management platform', benefit: 'App lifecycle management' }
+    },
+    'ux-design': {
+        'design_thinking': { id: 'design_thinking', position: { x: 300, y: 100 }, prerequisites: [], name: 'Design Thinking', desc: 'Human-centered design process', benefit: 'User-focused solutions' },
+        'user_research': { id: 'user_research', position: { x: 500, y: 100 }, prerequisites: ['design_thinking'], name: 'User Research', desc: 'Understanding user needs', benefit: 'Evidence-based design decisions' },
+        'personas': { id: 'personas', position: { x: 450, y: 180 }, prerequisites: ['user_research'], name: 'Personas', desc: 'User archetype creation', benefit: 'Targeted design approach' },
+        'user_journey': { id: 'user_journey', position: { x: 550, y: 180 }, prerequisites: ['user_research'], name: 'User Journey Mapping', desc: 'User experience visualization', benefit: 'Holistic experience understanding' },
+        
+        'information_architecture': { id: 'information_architecture', position: { x: 200, y: 250 }, prerequisites: ['design_thinking'], name: 'Information Architecture', desc: 'Content organization', benefit: 'Logical content structure' },
+        'site_mapping': { id: 'site_mapping', position: { x: 150, y: 330 }, prerequisites: ['information_architecture'], name: 'Site Mapping', desc: 'Website structure planning', benefit: 'Clear navigation hierarchy' },
+        'card_sorting': { id: 'card_sorting', position: { x: 250, y: 330 }, prerequisites: ['information_architecture'], name: 'Card Sorting', desc: 'Content categorization method', benefit: 'User-driven organization' },
+        
+        'wireframing': { id: 'wireframing', position: { x: 400, y: 250 }, prerequisites: ['personas'], name: 'Wireframing', desc: 'Low-fidelity design layouts', benefit: 'Rapid concept validation' },
+        'low_fidelity': { id: 'low_fidelity', position: { x: 350, y: 330 }, prerequisites: ['wireframing'], name: 'Low-Fidelity Prototypes', desc: 'Basic interactive mockups', benefit: 'Quick concept testing' },
+        'high_fidelity': { id: 'high_fidelity', position: { x: 450, y: 330 }, prerequisites: ['low_fidelity'], name: 'High-Fidelity Prototypes', desc: 'Detailed interactive designs', benefit: 'Realistic user testing' },
+        
+        'prototyping': { id: 'prototyping', position: { x: 650, y: 250 }, prerequisites: ['user_journey'], name: 'Prototyping', desc: 'Interactive design creation', benefit: 'User experience validation' },
+        'figma': { id: 'figma', position: { x: 600, y: 330 }, prerequisites: ['prototyping'], name: 'Figma', desc: 'Collaborative design tool', benefit: 'Team design workflow' },
+        'sketch': { id: 'sketch', position: { x: 700, y: 330 }, prerequisites: ['prototyping'], name: 'Sketch', desc: 'Vector design tool', benefit: 'Professional design creation' },
+        'adobe_xd': { id: 'adobe_xd', position: { x: 650, y: 410 }, prerequisites: ['figma'], name: 'Adobe XD', desc: 'Design and prototyping tool', benefit: 'Integrated design workflow' },
+        
+        'visual_design': { id: 'visual_design', position: { x: 800, y: 250 }, prerequisites: ['prototyping'], name: 'Visual Design', desc: 'Aesthetic design principles', benefit: 'Appealing user interfaces' },
+        'color_theory': { id: 'color_theory', position: { x: 750, y: 330 }, prerequisites: ['visual_design'], name: 'Color Theory', desc: 'Color psychology and harmony', benefit: 'Effective color usage' },
+        'typography': { id: 'typography', position: { x: 850, y: 330 }, prerequisites: ['visual_design'], name: 'Typography', desc: 'Text design and readability', benefit: 'Clear communication' },
+        'layout_principles': { id: 'layout_principles', position: { x: 800, y: 410 }, prerequisites: ['color_theory', 'typography'], name: 'Layout Principles', desc: 'Visual hierarchy and composition', benefit: 'Organized information presentation' },
+        
+        'usability_testing': { id: 'usability_testing', position: { x: 200, y: 500 }, prerequisites: ['high_fidelity'], name: 'Usability Testing', desc: 'User experience validation', benefit: 'Evidence-based improvements' },
+        'a_b_testing': { id: 'a_b_testing', position: { x: 100, y: 580 }, prerequisites: ['usability_testing'], name: 'A/B Testing', desc: 'Comparative design testing', benefit: 'Data-driven design decisions' },
+        'user_interviews': { id: 'user_interviews', position: { x: 300, y: 580 }, prerequisites: ['usability_testing'], name: 'User Interviews', desc: 'Qualitative user feedback', benefit: 'Deep user insights' },
+        
+        'interaction_design': { id: 'interaction_design', position: { x: 500, y: 500 }, prerequisites: ['adobe_xd'], name: 'Interaction Design', desc: 'User interface behavior design', benefit: 'Intuitive user interactions' },
+        'micro_interactions': { id: 'micro_interactions', position: { x: 450, y: 580 }, prerequisites: ['interaction_design'], name: 'Micro-interactions', desc: 'Small interactive details', benefit: 'Enhanced user engagement' },
+        'animation': { id: 'animation', position: { x: 550, y: 580 }, prerequisites: ['interaction_design'], name: 'Animation', desc: 'Motion design for interfaces', benefit: 'Smooth user experience' },
+        
+        'design_systems': { id: 'design_systems', position: { x: 700, y: 500 }, prerequisites: ['layout_principles'], name: 'Design Systems', desc: 'Consistent design standards', benefit: 'Scalable design consistency' },
+        'component_library': { id: 'component_library', position: { x: 650, y: 580 }, prerequisites: ['design_systems'], name: 'Component Library', desc: 'Reusable design components', benefit: 'Efficient design workflow' },
+        'style_guides': { id: 'style_guides', position: { x: 750, y: 580 }, prerequisites: ['design_systems'], name: 'Style Guides', desc: 'Design documentation', benefit: 'Design consistency maintenance' },
+        
+        'accessibility': { id: 'accessibility', position: { x: 200, y: 680 }, prerequisites: ['user_interviews'], name: 'Accessibility', desc: 'Inclusive design practices', benefit: 'Universal usability' },
+        'wcag': { id: 'wcag', position: { x: 150, y: 760 }, prerequisites: ['accessibility'], name: 'WCAG Guidelines', desc: 'Web accessibility standards', benefit: 'Compliant accessible design' },
+        'screen_readers': { id: 'screen_readers', position: { x: 250, y: 760 }, prerequisites: ['accessibility'], name: 'Screen Reader Testing', desc: 'Assistive technology validation', benefit: 'Verified accessibility' },
+        
+        'mobile_design': { id: 'mobile_design', position: { x: 500, y: 680 }, prerequisites: ['animation'], name: 'Mobile Design', desc: 'Mobile-first design approach', benefit: 'Optimized mobile experiences' },
+        'responsive_design': { id: 'responsive_design', position: { x: 450, y: 760 }, prerequisites: ['mobile_design'], name: 'Responsive Design', desc: 'Multi-device compatibility', benefit: 'Universal device support' },
+        'touch_interfaces': { id: 'touch_interfaces', position: { x: 550, y: 760 }, prerequisites: ['mobile_design'], name: 'Touch Interfaces', desc: 'Touch-optimized interactions', benefit: 'Natural mobile interactions' },
+        
+        'ux_metrics': { id: 'ux_metrics', position: { x: 700, y: 680 }, prerequisites: ['style_guides'], name: 'UX Metrics', desc: 'User experience measurement', benefit: 'Quantified design impact' },
+        'analytics': { id: 'analytics', position: { x: 650, y: 760 }, prerequisites: ['ux_metrics'], name: 'Analytics', desc: 'User behavior analysis', benefit: 'Data-driven insights' },
+        'conversion_optimization': { id: 'conversion_optimization', position: { x: 750, y: 760 }, prerequisites: ['ux_metrics'], name: 'Conversion Optimization', desc: 'Goal achievement improvement', benefit: 'Business objective alignment' }
     }
 };
 
@@ -868,12 +1194,7 @@ function getSkillState(skillId, type) {
 }
 
 function isSkillUnlocked(skillId, type) {
-    const skill = currentSkillTreeData[skillId];
-    if (!skill) return false;
-    
-    const skills = skillTreeState[type === 'soft' ? 'softSkills' : 'hardSkills'];
-    
-    return skill.prerequisites.every(prereqId => skills.mastered.includes(prereqId));
+    return true;
 }
 
 function isConnectionActive(fromSkillId, toSkillId, type) {
@@ -884,11 +1205,6 @@ function isConnectionActive(fromSkillId, toSkillId, type) {
 function handleSkillClick(skillId, type) {
     const state = getSkillState(skillId, type);
     const skills = skillTreeState[type === 'soft' ? 'softSkills' : 'hardSkills'];
-    
-    if (state === 'locked') {
-        showToast(window.translationManager ? window.translationManager.t('prerequisite_required') : 'Требуется изучить предварительные навыки');
-        return;
-    }
     
     if (state === 'mastered') {
         const index = skills.mastered.indexOf(skillId);
