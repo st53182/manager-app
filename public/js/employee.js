@@ -1325,7 +1325,7 @@ function initZoomPan(svg) {
 
     apply();
   };
-
+//
   // навешаем и на svg, и на vp — чтобы точно ловить событие под любым слоем
   svg.addEventListener('wheel', onWheel, { passive: false });
   vp.addEventListener('wheel', onWheel, { passive: false });
