@@ -1150,25 +1150,41 @@ function drawSkillNode(svg, skill, type) {
     }
     
     const words = skillName.split(' ');
-    if (words.length > 2) {
-        const tspan1 = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
-        tspan1.setAttribute('x', skill.position.x);
-        tspan1.setAttribute('dy', '-0.3em');
-        tspan1.textContent = words.slice(0, Math.ceil(words.length / 2)).join(' ');
-        text.appendChild(tspan1);
+    const maxCharsPerLine = 12; // Adjusted for larger circles
+    
+    if (skillName.length > maxCharsPerLine || words.length > 2) {
+        const lines = [];
+        let currentLine = '';
         
-        const tspan2 = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
-        tspan2.setAttribute('x', skill.position.x);
-        tspan2.setAttribute('dy', '1em');
-        tspan2.textContent = words.slice(Math.ceil(words.length / 2)).join(' ');
-        text.appendChild(tspan2);
+        for (const word of words) {
+            if ((currentLine + ' ' + word).length <= maxCharsPerLine) {
+                currentLine = currentLine ? currentLine + ' ' + word : word;
+            } else {
+                if (currentLine) lines.push(currentLine);
+                currentLine = word;
+            }
+        }
+        if (currentLine) lines.push(currentLine);
+        
+        const displayLines = lines.slice(0, 3);
+        
+        displayLines.forEach((line, index) => {
+            const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+            tspan.setAttribute('x', skill.position.x);
+            tspan.setAttribute('dy', index === 0 ? `-${(displayLines.length - 1) * 0.4}em` : '0.8em');
+            tspan.textContent = line;
+            text.appendChild(tspan);
+        });
     } else {
         text.textContent = skillName;
     }
     
     group.appendChild(text);
     
-    group.addEventListener('click', () => handleSkillClick(skill.id, type));
+    group.addEventListener('click', (event) => {
+        handleSkillClick(skill.id, type);
+        showSkillTooltip(skill, type, event);
+    });
     group.addEventListener('mouseenter', () => showSkillDetails(skill, type));
     group.addEventListener('mouseleave', () => hideSkillDetails());
     
@@ -1254,6 +1270,44 @@ function hideSkillDetails() {
             document.getElementById('skillDetailsPanel').classList.add('hidden');
         }
     }, 100);
+}
+
+function showSkillTooltip(skill, type, event) {
+    const tooltip = document.getElementById('skillTooltip');
+    const title = document.getElementById('tooltipTitle');
+    const description = document.getElementById('tooltipDescription');
+    const benefit = document.getElementById('tooltipBenefit');
+    
+    if (type === 'soft') {
+        title.textContent = window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey;
+        description.textContent = window.translationManager ? window.translationManager.t(skill.descKey) : skill.descKey;
+        benefit.textContent = window.translationManager ? window.translationManager.t(skill.benefitKey) : skill.benefitKey;
+    } else {
+        title.textContent = skill.name;
+        description.textContent = skill.desc;
+        benefit.textContent = skill.benefit;
+    }
+    
+    const rect = event.target.closest('.skill-tree-container').getBoundingClientRect();
+    const svgRect = event.target.closest('svg').getBoundingClientRect();
+    const nodeX = skill.position.x;
+    const nodeY = skill.position.y;
+    
+    const tooltipX = (nodeX / 1200) * svgRect.width + 50;
+    const tooltipY = (nodeY / 1000) * svgRect.height - 20;
+    
+    tooltip.style.left = `${tooltipX}px`;
+    tooltip.style.top = `${tooltipY}px`;
+    tooltip.classList.remove('hidden');
+    
+    setTimeout(() => {
+        tooltip.classList.add('hidden');
+    }, 3000);
+}
+
+function hideSkillTooltip() {
+    const tooltip = document.getElementById('skillTooltip');
+    tooltip.classList.add('hidden');
 }
 
 function updateSkillCounters() {

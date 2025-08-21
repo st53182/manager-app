@@ -561,6 +561,16 @@
                         <p class="text-xs font-medium text-green-800 mb-1" data-translate="skill_benefits">Что дает этот навык</p>
                         <p id="skillDetailBenefit" class="text-sm text-green-700"></p>
                     </div>
+                <!-- Skill Tooltip -->
+                <div id="skillTooltip" class="absolute bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50 hidden max-w-xs">
+                    <h4 id="tooltipTitle" class="font-medium text-gray-900 mb-1 text-sm"></h4>
+                    <p id="tooltipDescription" class="text-xs text-gray-600 mb-2"></p>
+                    <div class="bg-green-50 p-2 rounded">
+                        <p class="text-xs font-medium text-green-800 mb-1" data-translate="skill_benefits">Что дает этот навык</p>
+                        <p id="tooltipBenefit" class="text-xs text-green-700"></p>
+                    </div>
+                </div>
+
                 </div>
 
                 <!-- Action Buttons -->
@@ -1249,7 +1259,7 @@
         }
 
         .skill-node:hover {
-            transform: scale(1.1);
+            filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
         }
 
         .skill-node.locked {
@@ -1264,14 +1274,16 @@
         .skill-node.mastered .skill-node-circle {
             fill: #10b981;
             stroke: #059669;
-            stroke-width: 3;
+            stroke-width: 4;
+            filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.4));
         }
 
         .skill-node.selected .skill-node-circle {
             fill: #3b82f6;
             stroke: #1d4ed8;
-            stroke-width: 3;
+            stroke-width: 4;
             animation: pulse 2s infinite;
+            filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.4));
         }
 
         .skill-node.available .skill-node-circle {
@@ -1283,14 +1295,15 @@
         .skill-node.available:hover .skill-node-circle {
             fill: #e5e7eb;
             stroke: #374151;
+            stroke-width: 3;
         }
 
         .skill-node-circle {
-            r: 35;
+            r: 40;
         }
 
         .skill-node-text {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 500;
             text-anchor: middle;
             dominant-baseline: central;
