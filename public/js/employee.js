@@ -1415,27 +1415,27 @@ function showSkillDetails(skill, type) {
             }
         }
         
-        if (type === 'soft' && skillData) {
-            const nameKey = skillData.nameKey;
-            const descKey = skillData.descKey;
-            const benefitKey = skillData.benefitKey;
+        function safeTranslate(key, fallback) {
+            if (!key || typeof key !== 'string' || !key.trim()) {
+                return fallback || 'No information available';
+            }
             
             try {
-                title.textContent = (window.translationManager && nameKey && typeof nameKey === 'string' && nameKey.trim()) ? 
-                    window.translationManager.t(nameKey) : 
-                    (skillData.name || nameKey || 'Unknown Skill');
-                description.textContent = (window.translationManager && descKey && typeof descKey === 'string' && descKey.trim()) ? 
-                    window.translationManager.t(descKey) : 
-                    (skillData.desc || descKey || 'No description available');
-                benefit.textContent = (window.translationManager && benefitKey && typeof benefitKey === 'string' && benefitKey.trim()) ? 
-                    window.translationManager.t(benefitKey) : 
-                    (skillData.benefit || benefitKey || 'No benefit information');
+                if (window.translationManager && typeof window.translationManager.t === 'function') {
+                    const translated = window.translationManager.t(key);
+                    return translated && translated !== key ? translated : fallback || key;
+                }
             } catch (error) {
-                console.error('Translation error:', error);
-                title.textContent = skillData.name || nameKey || 'Unknown Skill';
-                description.textContent = skillData.desc || descKey || 'No description available';
-                benefit.textContent = skillData.benefit || benefitKey || 'No benefit information';
+                console.error('Translation error for key:', key, error);
             }
+            
+            return fallback || key;
+        }
+        
+        if (type === 'soft' && skillData) {
+            title.textContent = safeTranslate(skillData.nameKey, skillData.name || 'Unknown Skill');
+            description.textContent = safeTranslate(skillData.descKey, skillData.desc || 'No description available');
+            benefit.textContent = safeTranslate(skillData.benefitKey, skillData.benefit || 'No benefit information');
         } else {
             title.textContent = skillData?.name || 'Unknown Skill';
             description.textContent = skillData?.desc || 'No description available';
@@ -1444,6 +1444,8 @@ function showSkillDetails(skill, type) {
         
         panel.classList.remove('hidden');
         panel.style.display = 'block';
+        
+        console.log('Skill details displayed in right panel:', title.textContent);
     }
 }
 
