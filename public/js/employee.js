@@ -1220,12 +1220,12 @@ function drawSkillNode(svg, skill, type) {
 
   group.addEventListener('click', (event) => {
     handleSkillClick(skill.id, type, 'left');
-    showSkillTooltip(skill, type, event);
+    showSkillDetails(skill, type);
   });
   group.addEventListener('contextmenu', (event) => {
     event.preventDefault();
     handleSkillClick(skill.id, type, 'right');
-    showSkillTooltip(skill, type, event);
+    showSkillDetails(skill, type);
   });
   group.addEventListener('mouseenter', () => showSkillDetails(skill, type));
   group.addEventListener('mouseleave', () => hideSkillDetails());
@@ -1394,7 +1394,7 @@ function handleSkillClick(skillId, type, clickType = 'left') {
         }
     }
     
-    renderSkillTree(type);
+    updateSkillVisualState(skillId, type);
     updateSkillCounters();
 }
 
@@ -1404,18 +1404,36 @@ function showSkillDetails(skill, type) {
     const description = document.getElementById('skillDetailDescription');
     const benefit = document.getElementById('skillDetailBenefit');
     
-    if (type === 'soft') {
-        title.textContent = window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey;
-        description.textContent = window.translationManager ? window.translationManager.t(skill.descKey) : skill.descKey;
-        benefit.textContent = window.translationManager ? window.translationManager.t(skill.benefitKey) : skill.benefitKey;
-    } else {
-        title.textContent = skill.name;
-        description.textContent = skill.desc;
-        benefit.textContent = skill.benefit;
+    if (panel && title && description && benefit) {
+        if (type === 'soft') {
+            title.textContent = window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey;
+            description.textContent = window.translationManager ? window.translationManager.t(skill.descKey) : skill.descKey;
+            benefit.textContent = window.translationManager ? window.translationManager.t(skill.benefitKey) : skill.benefitKey;
+        } else {
+            title.textContent = skill.name;
+            description.textContent = skill.desc;
+            benefit.textContent = skill.benefit;
+        }
+        
+        panel.classList.remove('hidden');
+        panel.style.display = 'block';
     }
-    const svg = document.getElementById('softSkillsTreeSvg'); // и/или hard
-    initZoomPan(svg)
-    panel.classList.remove('hidden');
+}
+
+function updateSkillVisualState(skillId, type) {
+    const skillElement = document.querySelector(`[data-skill-id="${skillId}"]`);
+    if (skillElement) {
+        const circle = skillElement.querySelector('circle');
+        const state = getSkillState(skillId, type);
+        
+        if (state === 'selected') {
+            circle.setAttribute('fill', '#3b82f6');
+        } else if (state === 'mastered') {
+            circle.setAttribute('fill', '#10b981');
+        } else {
+            circle.setAttribute('fill', '#6b7280');
+        }
+    }
 }
 
 function hideSkillDetails() {
