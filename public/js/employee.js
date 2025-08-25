@@ -1414,15 +1414,19 @@ function showSkillDetails(skill, type) {
         }
         
         if (type === 'soft') {
-            title.textContent = (window.translationManager && skillData.nameKey) ? 
-                window.translationManager.t(skillData.nameKey) : 
-                (skillData.name || skillData.nameKey || 'Unknown Skill');
-            description.textContent = (window.translationManager && skillData.descKey) ? 
-                window.translationManager.t(skillData.descKey) : 
-                (skillData.desc || skillData.descKey || 'No description available');
-            benefit.textContent = (window.translationManager && skillData.benefitKey) ? 
-                window.translationManager.t(skillData.benefitKey) : 
-                (skillData.benefit || skillData.benefitKey || 'No benefit information');
+            const nameKey = skillData?.nameKey;
+            const descKey = skillData?.descKey;
+            const benefitKey = skillData?.benefitKey;
+            
+            title.textContent = (window.translationManager && nameKey && typeof nameKey === 'string') ? 
+                window.translationManager.t(nameKey) : 
+                (skillData?.name || nameKey || 'Unknown Skill');
+            description.textContent = (window.translationManager && descKey && typeof descKey === 'string') ? 
+                window.translationManager.t(descKey) : 
+                (skillData?.desc || descKey || 'No description available');
+            benefit.textContent = (window.translationManager && benefitKey && typeof benefitKey === 'string') ? 
+                window.translationManager.t(benefitKey) : 
+                (skillData?.benefit || benefitKey || 'No benefit information');
         } else {
             title.textContent = skillData.name || 'Unknown Skill';
             description.textContent = skillData.desc || 'No description available';
