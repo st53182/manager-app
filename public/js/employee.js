@@ -1220,12 +1220,12 @@ function drawSkillNode(svg, skill, type) {
 
   group.addEventListener('click', (event) => {
     handleSkillClick(skill.id, type, 'left');
-    showSkillDetails(skill.id, type);
+    showSkillDetails(skill, type);
   });
   group.addEventListener('contextmenu', (event) => {
     event.preventDefault();
     handleSkillClick(skill.id, type, 'right');
-    showSkillDetails(skill.id, type);
+    showSkillDetails(skill, type);
   });
 
   // КЛЮЧЕВОЕ изменение: не используем локальную переменную vp,
@@ -1410,27 +1410,36 @@ function showSkillDetails(skill, type) {
                 skillData = SOFT_SKILLS_DATA[skill];
             } else if (type === 'hard' && HARD_SKILLS_DATA && HARD_SKILLS_DATA[skill]) {
                 skillData = HARD_SKILLS_DATA[skill];
+            } else {
+                skillData = { name: skill, desc: 'No description available', benefit: 'No benefit information' };
             }
         }
         
-        if (type === 'soft') {
-            const nameKey = skillData?.nameKey;
-            const descKey = skillData?.descKey;
-            const benefitKey = skillData?.benefitKey;
+        if (type === 'soft' && skillData) {
+            const nameKey = skillData.nameKey;
+            const descKey = skillData.descKey;
+            const benefitKey = skillData.benefitKey;
             
-            title.textContent = (window.translationManager && nameKey && typeof nameKey === 'string') ? 
-                window.translationManager.t(nameKey) : 
-                (skillData?.name || nameKey || 'Unknown Skill');
-            description.textContent = (window.translationManager && descKey && typeof descKey === 'string') ? 
-                window.translationManager.t(descKey) : 
-                (skillData?.desc || descKey || 'No description available');
-            benefit.textContent = (window.translationManager && benefitKey && typeof benefitKey === 'string') ? 
-                window.translationManager.t(benefitKey) : 
-                (skillData?.benefit || benefitKey || 'No benefit information');
+            try {
+                title.textContent = (window.translationManager && nameKey && typeof nameKey === 'string' && nameKey.trim()) ? 
+                    window.translationManager.t(nameKey) : 
+                    (skillData.name || nameKey || 'Unknown Skill');
+                description.textContent = (window.translationManager && descKey && typeof descKey === 'string' && descKey.trim()) ? 
+                    window.translationManager.t(descKey) : 
+                    (skillData.desc || descKey || 'No description available');
+                benefit.textContent = (window.translationManager && benefitKey && typeof benefitKey === 'string' && benefitKey.trim()) ? 
+                    window.translationManager.t(benefitKey) : 
+                    (skillData.benefit || benefitKey || 'No benefit information');
+            } catch (error) {
+                console.error('Translation error:', error);
+                title.textContent = skillData.name || nameKey || 'Unknown Skill';
+                description.textContent = skillData.desc || descKey || 'No description available';
+                benefit.textContent = skillData.benefit || benefitKey || 'No benefit information';
+            }
         } else {
-            title.textContent = skillData.name || 'Unknown Skill';
-            description.textContent = skillData.desc || 'No description available';
-            benefit.textContent = skillData.benefit || 'No benefit information';
+            title.textContent = skillData?.name || 'Unknown Skill';
+            description.textContent = skillData?.desc || 'No description available';
+            benefit.textContent = skillData?.benefit || 'No benefit information';
         }
         
         panel.classList.remove('hidden');
