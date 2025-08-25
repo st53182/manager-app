@@ -1419,16 +1419,11 @@ function showSkillDetails(skill, type) {
 function updateSkillVisualState(skillId, type) {
     const skillElement = document.querySelector(`[data-skill-id="${skillId}"]`);
     if (skillElement) {
-        const circle = skillElement.querySelector('circle');
         const state = getSkillState(skillId, type);
         
-        if (state === 'selected') {
-            circle.setAttribute('fill', '#3b82f6');
-        } else if (state === 'mastered') {
-            circle.setAttribute('fill', '#10b981');
-        } else {
-            circle.setAttribute('fill', '#6b7280');
-        }
+        skillElement.classList.remove('selected', 'mastered', 'available', 'locked');
+        
+        skillElement.classList.add(state);
     }
 }
 
