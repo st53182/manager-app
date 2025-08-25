@@ -1220,12 +1220,12 @@ function drawSkillNode(svg, skill, type) {
 
   group.addEventListener('click', (event) => {
     handleSkillClick(skill.id, type, 'left');
-    showSkillTooltip(skill, type, event);
+    showSkillDetails(skill, type);
   });
   group.addEventListener('contextmenu', (event) => {
     event.preventDefault();
     handleSkillClick(skill.id, type, 'right');
-    showSkillTooltip(skill, type, event);
+    showSkillDetails(skill, type);
   });
   group.addEventListener('mouseenter', () => showSkillDetails(skill, type));
   group.addEventListener('mouseleave', () => hideSkillDetails());
@@ -1394,7 +1394,7 @@ function handleSkillClick(skillId, type, clickType = 'left') {
         }
     }
     
-    renderSkillTree(type);
+    updateSkillVisualState(skillId, type);
     updateSkillCounters();
 }
 
@@ -1413,9 +1413,23 @@ function showSkillDetails(skill, type) {
         description.textContent = skill.desc;
         benefit.textContent = skill.benefit;
     }
-    const svg = document.getElementById('softSkillsTreeSvg'); // и/или hard
-    initZoomPan(svg)
     panel.classList.remove('hidden');
+}
+
+function updateSkillVisualState(skillId, type) {
+    const skillElement = document.querySelector(`[data-skill-id="${skillId}"]`);
+    if (skillElement) {
+        const circle = skillElement.querySelector('circle');
+        const state = getSkillState(skillId, type);
+        
+        if (state === 'selected') {
+            circle.setAttribute('fill', '#3b82f6');
+        } else if (state === 'mastered') {
+            circle.setAttribute('fill', '#10b981');
+        } else {
+            circle.setAttribute('fill', '#6b7280');
+        }
+    }
 }
 
 function hideSkillDetails() {
@@ -1604,11 +1618,11 @@ async function saveSkillTreeData() {
         };
         
         let endpoint;
-        if (token.startsWith('Bearer ')) {
-            headers['Authorization'] = token;
-            endpoint = `/api/employee/${employeeId}/profile`;
-        } else {
+        if (typeof isEmployeeView !== 'undefined' && isEmployeeView) {
             endpoint = `/api/employee/${employeeId}/profile?token=${token}`;
+        } else {
+            headers['Authorization'] = `Bearer ${token}`;
+            endpoint = `/api/employee/${employeeId}/profile`;
         }
         
         const response = await fetch(endpoint, {
