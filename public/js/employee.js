@@ -1227,8 +1227,6 @@ function drawSkillNode(svg, skill, type) {
     handleSkillClick(skill.id, type, 'right');
     showSkillDetails(skill, type);
   });
-  group.addEventListener('mouseenter', () => showSkillDetails(skill, type));
-  group.addEventListener('mouseleave', () => hideSkillDetails());
 
   // КЛЮЧЕВОЕ изменение: не используем локальную переменную vp,
   // берём контейнер из svg (или сам svg как запасной вариант)
