@@ -1425,19 +1425,22 @@ function updateSkillVisualState(skillId, type) {
         const state = getSkillState(skillId, type);
         
         skillElement.classList.remove('selected', 'mastered', 'available', 'locked');
-        
         skillElement.classList.add(state);
         
         const circle = skillElement.querySelector('circle');
         if (circle) {
             if (state === 'selected') {
                 circle.setAttribute('fill', '#3b82f6');
+                circle.style.fill = '#3b82f6';
             } else if (state === 'mastered') {
                 circle.setAttribute('fill', '#10b981');
+                circle.style.fill = '#10b981';
             } else if (state === 'available') {
                 circle.setAttribute('fill', '#6b7280');
+                circle.style.fill = '#6b7280';
             } else {
                 circle.setAttribute('fill', '#d1d5db');
+                circle.style.fill = '#d1d5db';
             }
         }
     }
