@@ -1360,8 +1360,7 @@ function initZoomPan(svg) {
 function handleSkillClick(skillId, type, clickType = 'left') {
     const state = getSkillState(skillId, type);
     const skills = skillTreeState[type === 'soft' ? 'softSkills' : 'hardSkills'];
-    const svg = document.getElementById('softSkillsTreeSvg'); // и/или hard
-    initZoomPan(svg)
+    
     if (clickType === 'right') {
         if (state === 'mastered') {
             const index = skills.mastered.indexOf(skillId);
@@ -1393,8 +1392,6 @@ function handleSkillClick(skillId, type, clickType = 'left') {
             }
             skills.selected.push(skillId);
         }
-        const svg = document.getElementById('softSkillsTreeSvg'); // и/или hard
-    initZoomPan(svg)
     }
     
     renderSkillTree(type);
@@ -1429,6 +1426,36 @@ function hideSkillDetails() {
     }, 100);
 }
 
+function getTransformedCoordinates(nodeEl, svg) {
+  const nodeRect = nodeEl.getBoundingClientRect();
+  const svgRect = svg.getBoundingClientRect();
+  
+  const vp = svg.querySelector('#skillTreeViewport');
+  if (!vp) return { x: nodeRect.x, y: nodeRect.y };
+  
+  const transform = vp.getAttribute('transform') || '';
+  const translateMatch = transform.match(/translate\(([^)]+)\)/);
+  const scaleMatch = transform.match(/scale\(([^)]+)\)/);
+  
+  let tx = 0, ty = 0, scale = 1;
+  if (translateMatch) {
+    const coords = translateMatch[1].split(/[\s,]+/);
+    tx = parseFloat(coords[0]) || 0;
+    ty = parseFloat(coords[1]) || 0;
+  }
+  if (scaleMatch) {
+    scale = parseFloat(scaleMatch[1]) || 1;
+  }
+  
+  const relativeX = (nodeRect.x - svgRect.x - tx) / scale;
+  const relativeY = (nodeRect.y - svgRect.y - ty) / scale;
+  
+  return {
+    x: svgRect.x + relativeX * scale + tx,
+    y: svgRect.y + relativeY * scale + ty
+  };
+}
+
 function showSkillTooltip(skill, type, event) {
   const tooltip = document.getElementById('skillTooltip');
   const title = document.getElementById('tooltipTitle');
@@ -1456,7 +1483,9 @@ function showSkillTooltip(skill, type, event) {
                tooltip.parentElement;
 
   const hostRect = host.getBoundingClientRect();
-  const nodeRect = nodeEl.getBoundingClientRect();
+  
+  const svg = nodeEl.closest('svg');
+  const transformedCoords = getTransformedCoordinates(nodeEl, svg);
 
   // 3) Временно показать tooltip невидимым, чтобы померить размеры
   tooltip.classList.remove('hidden');
@@ -1469,14 +1498,14 @@ function showSkillTooltip(skill, type, event) {
   const tW = tooltip.offsetWidth || 300;
   const tH = tooltip.offsetHeight || 140;
 
-  // 4) Координаты относительно host
+  // 4) Координаты относительно host с учетом трансформаций
   const pad = 10;
-  let x = (nodeRect.x) + pad;
-  let y = (nodeRect.y);
+  let x = (transformedCoords.x - hostRect.left) + pad;
+  let y = (transformedCoords.y - hostRect.top);
 
   // если не влезает справа — покажем слева
   const maxX = hostRect.width - tW - pad;
-  if (x > maxX) x = (nodeRect.left - hostRect.left) - tW - pad;
+  if (x > maxX) x = (transformedCoords.x - hostRect.left) - tW - pad;
 
 
   const maxY = hostRect.height - tH - pad;
