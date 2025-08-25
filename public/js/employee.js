@@ -1425,9 +1425,10 @@ function updateSkillVisualState(skillId, type) {
         const state = getSkillState(skillId, type);
         
         skillElement.classList.remove('selected', 'mastered', 'available', 'locked');
+        
         skillElement.classList.add(state);
         
-        const circle = skillElement.querySelector('.skill-node-circle');
+        const circle = skillElement.querySelector('circle');
         if (circle) {
             if (state === 'selected') {
                 circle.setAttribute('fill', '#3b82f6');
