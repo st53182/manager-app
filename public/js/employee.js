@@ -1400,6 +1400,7 @@ function handleSkillClick(skillId, type, clickType = 'left') {
 
 function showSkillDetails(skill, type) {
     const panel = document.getElementById('skillDetailsPanel');
+    const placeholder = document.getElementById('skillDetailsPlaceholder');
     const title = document.getElementById('skillDetailTitle');
     const description = document.getElementById('skillDetailDescription');
     const benefit = document.getElementById('skillDetailBenefit');
@@ -1413,6 +1414,8 @@ function showSkillDetails(skill, type) {
         description.textContent = skill.desc;
         benefit.textContent = skill.benefit;
     }
+    
+    placeholder.classList.add('hidden');
     panel.classList.remove('hidden');
 }
 
@@ -1422,15 +1425,30 @@ function updateSkillVisualState(skillId, type) {
         const state = getSkillState(skillId, type);
         
         skillElement.classList.remove('selected', 'mastered', 'available', 'locked');
-        
         skillElement.classList.add(state);
+        
+        const circle = skillElement.querySelector('.skill-node-circle');
+        if (circle) {
+            if (state === 'selected') {
+                circle.setAttribute('fill', '#3b82f6');
+            } else if (state === 'mastered') {
+                circle.setAttribute('fill', '#10b981');
+            } else if (state === 'available') {
+                circle.setAttribute('fill', '#6b7280');
+            } else {
+                circle.setAttribute('fill', '#d1d5db');
+            }
+        }
     }
 }
 
 function hideSkillDetails() {
     setTimeout(() => {
-        if (!document.getElementById('skillDetailsPanel').matches(':hover')) {
-            document.getElementById('skillDetailsPanel').classList.add('hidden');
+        const panel = document.getElementById('skillDetailsPanel');
+        const placeholder = document.getElementById('skillDetailsPlaceholder');
+        if (!panel.matches(':hover')) {
+            panel.classList.add('hidden');
+            placeholder.classList.remove('hidden');
         }
     }, 100);
 }
