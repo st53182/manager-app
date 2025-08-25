@@ -240,6 +240,15 @@
     "skill_mastered": "Skill mastered",
     "prerequisite_required": "Prerequisites required",
     
+    "skill_level_title": "Select Skill Level",
+    "skill_level_description": "What level do you plan to achieve?",
+    "skill_level_1_title": "1 - Beginner",
+    "skill_level_1_desc": "Basic understanding and application",
+    "skill_level_2_title": "2 - Advanced",
+    "skill_level_2_desc": "Confident mastery and practical application", 
+    "skill_level_3_title": "3 - Expert",
+    "skill_level_3_desc": "Deep expertise and ability to teach others",
+    
     "soft_skill_business_communication": "Business Communication",
     "soft_skill_business_communication_desc": "Effective interaction in professional environment",
     "soft_skill_business_communication_benefit": "Improves communication quality with colleagues and clients",
