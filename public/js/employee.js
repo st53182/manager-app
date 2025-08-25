@@ -1649,11 +1649,11 @@ async function saveSkillTreeData() {
         };
         
         let endpoint;
-        if (token.startsWith('Bearer ')) {
-            headers['Authorization'] = token;
-            endpoint = `/api/employee/${employeeId}/profile`;
-        } else {
+        if (typeof isEmployeeView !== 'undefined' && isEmployeeView) {
             endpoint = `/api/employee/${employeeId}/profile?token=${token}`;
+        } else {
+            headers['Authorization'] = `Bearer ${token}`;
+            endpoint = `/api/employee/${employeeId}/profile`;
         }
         
         const response = await fetch(endpoint, {
