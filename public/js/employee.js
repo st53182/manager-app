@@ -805,13 +805,16 @@ function displayDevelopmentPlan(plan) {
                     <div class="border border-gray-200 rounded-lg p-4">
                         <h4 class="font-medium text-gray-900 mb-3" data-translate="soft_skills">Софт скиллы</h4>
                         <div class="space-y-2">
-                            ${softSkills.selected.map(skillId => {
+                            ${softSkills.selected.map(skillItem => {
+                                const skillId = typeof skillItem === 'string' ? skillItem : skillItem.skillId;
+                                const level = typeof skillItem === 'string' ? null : skillItem.level;
                                 const skill = SOFT_SKILLS_DATA[skillId];
                                 const skillName = skill ? (window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey) : skillId;
                                 const isMastered = softSkills.mastered && softSkills.mastered.includes(skillId);
+                                const levelText = level ? ` (Уровень ${level})` : '';
                                 return `
                                     <div class="flex items-center justify-between p-2 bg-blue-50 rounded">
-                                        <span class="text-sm font-medium text-blue-900">${skillName}</span>
+                                        <span class="text-sm font-medium text-blue-900">${skillName}${levelText}</span>
                                         <span class="text-xs px-2 py-1 rounded-full ${isMastered ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
                                             ${isMastered ? 'Освоен' : 'В развитии'}
                                         </span>
@@ -825,14 +828,17 @@ function displayDevelopmentPlan(plan) {
                     <div class="border border-gray-200 rounded-lg p-4">
                         <h4 class="font-medium text-gray-900 mb-3" data-translate="hard_skills">Хард скиллы</h4>
                         <div class="space-y-2">
-                            ${hardSkills.selected.map(skillId => {
+                            ${hardSkills.selected.map(skillItem => {
+                                const skillId = typeof skillItem === 'string' ? skillItem : skillItem.skillId;
+                                const level = typeof skillItem === 'string' ? null : skillItem.level;
                                 const competencyArea = hardSkills.competencyArea || 'backend';
                                 const skill = HARD_SKILLS_DATA[competencyArea] && HARD_SKILLS_DATA[competencyArea][skillId];
                                 const skillName = skill ? skill.name : skillId;
                                 const isMastered = hardSkills.mastered && hardSkills.mastered.includes(skillId);
+                                const levelText = level ? ` (Уровень ${level})` : '';
                                 return `
                                     <div class="flex items-center justify-between p-2 bg-purple-50 rounded">
-                                        <span class="text-sm font-medium text-purple-900">${skillName}</span>
+                                        <span class="text-sm font-medium text-purple-900">${skillName}${levelText}</span>
                                         <span class="text-xs px-2 py-1 rounded-full ${isMastered ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'}">
                                             ${isMastered ? 'Освоен' : 'В развитии'}
                                         </span>
@@ -990,6 +996,11 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('cancelSkillTree').addEventListener('click', closeSkillTreeModal);
     document.getElementById('saveSkillTree').addEventListener('click', saveSkillTreeData);
     document.getElementById('resetSkillSelection').addEventListener('click', resetSkillSelection);
+    
+    document.getElementById('skillLevel1').addEventListener('click', () => selectSkillLevel(1));
+    document.getElementById('skillLevel2').addEventListener('click', () => selectSkillLevel(2));
+    document.getElementById('skillLevel3').addEventListener('click', () => selectSkillLevel(3));
+    document.getElementById('cancelSkillLevel').addEventListener('click', closeSkillLevelModal);
     
     document.getElementById('softSkillsTab').addEventListener('click', () => switchSkillTreeTab('soft'));
     document.getElementById('hardSkillsTab').addEventListener('click', () => switchSkillTreeTab('hard'));
@@ -1244,7 +1255,9 @@ function getSkillState(skillId, type) {
         return 'mastered';
     }
     
-    if (skills.selected.includes(skillId)) {
+    if (skills.selected.some(item => 
+        typeof item === 'string' ? item === skillId : item.skillId === skillId
+    )) {
         return 'selected';
     }
     
@@ -1368,18 +1381,26 @@ function handleSkillClick(skillId, type, clickType = 'left') {
                 skills.mastered.splice(index, 1);
             }
         } else {
-            const selectedIndex = skills.selected.indexOf(skillId);
+            const selectedIndex = skills.selected.findIndex(item => 
+                typeof item === 'string' ? item === skillId : item.skillId === skillId
+            );
             if (selectedIndex > -1) {
                 skills.selected.splice(selectedIndex, 1);
             }
             skills.mastered.push(skillId);
         }
+        updateSkillVisualState(skillId, type);
+        updateSkillCounters();
     } else {
         if (state === 'selected') {
-            const index = skills.selected.indexOf(skillId);
+            const index = skills.selected.findIndex(item => 
+                typeof item === 'string' ? item === skillId : item.skillId === skillId
+            );
             if (index > -1) {
                 skills.selected.splice(index, 1);
             }
+            updateSkillVisualState(skillId, type);
+            updateSkillCounters();
         } else if (state === 'available' || state === 'mastered') {
             const masteredIndex = skills.mastered.indexOf(skillId);
             if (masteredIndex > -1) {
@@ -1390,12 +1411,10 @@ function handleSkillClick(skillId, type, clickType = 'left') {
                 showToast('Максимум 3 навыка для развития в каждой категории');
                 return;
             }
-            skills.selected.push(skillId);
+            
+            showSkillLevelModal(skillId, type);
         }
     }
-    
-    updateSkillVisualState(skillId, type);
-    updateSkillCounters();
 }
 
 function showSkillDetails(skill, type) {
@@ -1672,6 +1691,47 @@ async function saveSkillTreeData() {
         console.error('Error saving skill tree:', error);
         showToast('Ошибка при сохранении карты навыков');
     }
+}
+
+let currentSkillForLevel = null;
+let currentSkillTypeForLevel = null;
+
+function showSkillLevelModal(skillId, type) {
+    currentSkillForLevel = skillId;
+    currentSkillTypeForLevel = type;
+    
+    let skillName;
+    if (type === 'soft') {
+        const skill = SOFT_SKILLS_DATA[skillId];
+        skillName = skill ? (window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey) : skillId;
+    } else {
+        const competencyArea = skillTreeState.competencyArea || 'backend';
+        const skill = HARD_SKILLS_DATA[competencyArea] && HARD_SKILLS_DATA[competencyArea][skillId];
+        skillName = skill ? skill.name : skillId;
+    }
+    
+    document.getElementById('skillLevelSkillName').textContent = skillName;
+    document.getElementById('skillLevelModal').classList.remove('hidden');
+}
+
+function closeSkillLevelModal() {
+    document.getElementById('skillLevelModal').classList.add('hidden');
+    currentSkillForLevel = null;
+    currentSkillTypeForLevel = null;
+}
+
+function selectSkillLevel(level) {
+    if (!currentSkillForLevel || !currentSkillTypeForLevel) return;
+    
+    const skills = skillTreeState[currentSkillTypeForLevel === 'soft' ? 'softSkills' : 'hardSkills'];
+    skills.selected.push({
+        skillId: currentSkillForLevel,
+        level: level
+    });
+    
+    updateSkillVisualState(currentSkillForLevel, currentSkillTypeForLevel);
+    updateSkillCounters();
+    closeSkillLevelModal();
 }
 
 const DISC_QUESTIONS = [

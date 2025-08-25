@@ -592,6 +592,42 @@
         </div>
     </div>
 
+    <!-- Skill Level Selection Modal -->
+    <div id="skillLevelModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900" data-translate="skill_level_title">
+                    Выберите уровень навыка
+                </h3>
+                <p id="skillLevelSkillName" class="text-sm text-gray-600 mt-1"></p>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-600 mb-4" data-translate="skill_level_description">
+                    Какой уровень планируется освоить?
+                </p>
+                <div class="space-y-3">
+                    <button id="skillLevel1" class="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                        <div class="font-medium text-gray-900" data-translate="skill_level_1_title">1 - Стартовый</div>
+                        <div class="text-sm text-gray-600" data-translate="skill_level_1_desc">Базовое понимание и применение</div>
+                    </button>
+                    <button id="skillLevel2" class="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                        <div class="font-medium text-gray-900" data-translate="skill_level_2_title">2 - Продвинутый</div>
+                        <div class="text-sm text-gray-600" data-translate="skill_level_2_desc">Уверенное владение и практическое применение</div>
+                    </button>
+                    <button id="skillLevel3" class="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                        <div class="font-medium text-gray-900" data-translate="skill_level_3_title">3 - Эксперт</div>
+                        <div class="text-sm text-gray-600" data-translate="skill_level_3_desc">Глубокая экспертиза и способность обучать других</div>
+                    </button>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button id="cancelSkillLevel" class="px-4 py-2 text-gray-600 hover:text-gray-800" data-translate="common.cancel">
+                    Отмена
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- DISC Test Modal -->
     <div id="discModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">

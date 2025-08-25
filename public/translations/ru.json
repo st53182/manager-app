@@ -267,6 +267,15 @@
   "skill_mastered": "Навык освоен",
   "prerequisite_required": "Требуется изучить предварительные навыки",
   
+  "skill_level_title": "Выберите уровень навыка",
+  "skill_level_description": "Какой уровень планируется освоить?",
+  "skill_level_1_title": "1 - Стартовый",
+  "skill_level_1_desc": "Базовое понимание и применение",
+  "skill_level_2_title": "2 - Продвинутый", 
+  "skill_level_2_desc": "Уверенное владение и практическое применение",
+  "skill_level_3_title": "3 - Эксперт",
+  "skill_level_3_desc": "Глубокая экспертиза и способность обучать других",
+  
   "soft_skill_business_communication": "Деловое общение",
   "soft_skill_business_communication_desc": "Эффективное взаимодействие в профессиональной среде",
   "soft_skill_business_communication_benefit": "Улучшает качество коммуникации с коллегами и клиентами",
