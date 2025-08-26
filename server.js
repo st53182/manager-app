@@ -29,7 +29,11 @@ const {
   createUser,
   getUserByEmail,
   getUserById,
-  updateUserLastLogin
+  updateUserLastLogin,
+  addSkillDevelopmentHistory,
+  getSkillDevelopmentHistory,
+  createCustomSkillTree,
+  getCustomSkillTrees
 } = require('./database');
 
 const app = express();
@@ -1111,6 +1115,50 @@ function generateDiscData(personalityType, scores) {
   
   return discProfiles[personalityType] || discProfiles['D'];
 }
+
+app.get('/api/employee/:id/skill-history', authenticateToken, async (req, res) => {
+  try {
+    const history = await getSkillDevelopmentHistory(req.params.id);
+    res.json(history);
+  } catch (error) {
+    console.error('Error fetching skill history:', error);
+    res.status(500).json({ error: 'Failed to fetch skill history' });
+  }
+});
+
+app.post('/api/employee/:id/skill-history', authenticateToken, async (req, res) => {
+  try {
+    const { skillId, skillType, action, level, previousLevel, competencyArea } = req.body;
+    const history = await addSkillDevelopmentHistory(
+      req.params.id, skillId, skillType, action, level, previousLevel, competencyArea
+    );
+    res.json(history);
+  } catch (error) {
+    console.error('Error adding skill history:', error);
+    res.status(500).json({ error: 'Failed to add skill history' });
+  }
+});
+
+app.post('/api/custom-trees', authenticateToken, async (req, res) => {
+  try {
+    const { name, description, treeData, isTemplate } = req.body;
+    const tree = await createCustomSkillTree(req.user.id, name, description, treeData, isTemplate);
+    res.json(tree);
+  } catch (error) {
+    console.error('Error creating custom tree:', error);
+    res.status(500).json({ error: 'Failed to create custom tree' });
+  }
+});
+
+app.get('/api/custom-trees', authenticateToken, async (req, res) => {
+  try {
+    const trees = await getCustomSkillTrees(req.user.id);
+    res.json(trees);
+  } catch (error) {
+    console.error('Error fetching custom trees:', error);
+    res.status(500).json({ error: 'Failed to fetch custom trees' });
+  }
+});
 
 async function startServer() {
   try {
