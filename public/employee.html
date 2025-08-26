@@ -560,9 +560,17 @@
 
                     <!-- Action Buttons -->
                     <div class="flex justify-between items-center mt-6 pt-6 border-t border-gray-200">
-                        <button id="resetSkillSelection" class="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50" data-translate="reset_selection">
-                            Сбросить выбор
-                        </button>
+                        <div class="flex space-x-3">
+                            <button id="resetSkillSelection" class="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50" data-translate="reset_selection">
+                                Сбросить выбор
+                            </button>
+                            <button onclick="showSkillHistory()" class="px-4 py-2 text-purple-600 hover:text-purple-800 border border-purple-300 rounded-lg hover:bg-purple-50">
+                                История развития
+                            </button>
+                            <button onclick="showTreeEditor()" class="px-4 py-2 text-green-600 hover:text-green-800 border border-green-300 rounded-lg hover:bg-green-50">
+                                Редактор древа
+                            </button>
+                        </div>
                         <div class="space-x-3">
                             <button id="cancelSkillTree" class="px-6 py-2 text-gray-600 hover:text-gray-800" data-translate="common.cancel">
                                 Отмена
@@ -606,17 +614,29 @@
                     Какой уровень планируется освоить?
                 </p>
                 <div class="space-y-3">
-                    <button id="skillLevel1" class="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                    <button onclick="selectSkillLevel(1)" class="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
                         <div class="font-medium text-gray-900" data-translate="skill_level_1_title">1 - Стартовый</div>
                         <div class="text-sm text-gray-600" data-translate="skill_level_1_desc">Базовое понимание и применение</div>
                     </button>
-                    <button id="skillLevel2" class="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                    <button onclick="selectSkillLevel(2)" class="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
                         <div class="font-medium text-gray-900" data-translate="skill_level_2_title">2 - Продвинутый</div>
                         <div class="text-sm text-gray-600" data-translate="skill_level_2_desc">Уверенное владение и практическое применение</div>
                     </button>
-                    <button id="skillLevel3" class="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                    <button onclick="selectSkillLevel(3)" class="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
                         <div class="font-medium text-gray-900" data-translate="skill_level_3_title">3 - Эксперт</div>
                         <div class="text-sm text-gray-600" data-translate="skill_level_3_desc">Глубокая экспертиза и способность обучать других</div>
+                    </button>
+                    <button onclick="selectMasteredSkillLevel(1)" class="w-full p-3 text-left border border-green-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors">
+                        <div class="font-medium text-green-900">1 - Стартовый (Освоенный)</div>
+                        <div class="text-sm text-green-600">Базовое понимание и применение</div>
+                    </button>
+                    <button onclick="selectMasteredSkillLevel(2)" class="w-full p-3 text-left border border-green-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors">
+                        <div class="font-medium text-green-900">2 - Продвинутый (Освоенный)</div>
+                        <div class="text-sm text-green-600">Уверенное владение и практическое применение</div>
+                    </button>
+                    <button onclick="selectMasteredSkillLevel(3)" class="w-full p-3 text-left border border-green-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors">
+                        <div class="font-medium text-green-900">3 - Эксперт (Освоенный)</div>
+                        <div class="text-sm text-green-600">Глубокая экспертиза и способность обучать других</div>
                     </button>
                 </div>
             </div>
@@ -1430,6 +1450,54 @@
             opacity: 0.4;
         }
     </style>
+
+    <!-- Skill Development History Modal -->
+    <div id="skillHistoryModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-50">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-semibold text-gray-900">История развития навыков</h3>
+                    <button id="closeSkillHistoryModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div id="skillHistoryContent" class="space-y-4">
+                    <!-- History entries will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tree Editor Modal -->
+    <div id="treeEditorModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-[95vw] w-[95vw] h-[95vh] mx-4 overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-50">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-semibold text-gray-900">Редактор древа навыков</h3>
+                    <button id="closeTreeEditorModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="flex space-x-4 mb-4">
+                    <button id="addNodeBtn" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Добавить узел</button>
+                    <button id="deleteNodeBtn" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Удалить узел</button>
+                    <button id="saveTreeBtn" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Сохранить древо</button>
+                    <input type="text" id="treeNameInput" placeholder="Название древа" class="px-3 py-2 border border-gray-300 rounded">
+                </div>
+                <div id="treeEditorCanvas" class="border border-gray-300 rounded bg-white" style="height: 600px; position: relative;">
+                    <!-- Tree editor SVG will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="/js/edge-router.js"></script>
     <script src="/js/employee.js"></script>

@@ -810,11 +810,18 @@ function displayDevelopmentPlan(plan) {
                                 const level = typeof skillItem === 'string' ? null : skillItem.level;
                                 const skill = SOFT_SKILLS_DATA[skillId];
                                 const skillName = skill ? (window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey) : skillId;
-                                const isMastered = softSkills.mastered && softSkills.mastered.includes(skillId);
+                                const isMastered = softSkills.mastered && softSkills.mastered.some(item => 
+                                    typeof item === 'string' ? item === skillId : item.skillId === skillId
+                                );
+                                const masteredItem = softSkills.mastered && softSkills.mastered.find(item => 
+                                    typeof item === 'string' ? item === skillId : item.skillId === skillId
+                                );
+                                const masteredLevel = typeof masteredItem === 'object' ? masteredItem.level : null;
                                 const levelText = level ? ` (Уровень ${level})` : '';
+                                const masteredText = isMastered && masteredLevel ? ` (Освоен: Уровень ${masteredLevel})` : '';
                                 return `
                                     <div class="flex items-center justify-between p-2 bg-blue-50 rounded">
-                                        <span class="text-sm font-medium text-blue-900">${skillName}${levelText}</span>
+                                        <span class="text-sm font-medium text-blue-900">${skillName}${levelText}${masteredText}</span>
                                         <span class="text-xs px-2 py-1 rounded-full ${isMastered ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
                                             ${isMastered ? 'Освоен' : 'В развитии'}
                                         </span>
@@ -834,11 +841,18 @@ function displayDevelopmentPlan(plan) {
                                 const competencyArea = hardSkills.competencyArea || 'backend';
                                 const skill = HARD_SKILLS_DATA[competencyArea] && HARD_SKILLS_DATA[competencyArea][skillId];
                                 const skillName = skill ? skill.name : skillId;
-                                const isMastered = hardSkills.mastered && hardSkills.mastered.includes(skillId);
+                                const isMastered = hardSkills.mastered && hardSkills.mastered.some(item => 
+                                    typeof item === 'string' ? item === skillId : item.skillId === skillId
+                                );
+                                const masteredItem = hardSkills.mastered && hardSkills.mastered.find(item => 
+                                    typeof item === 'string' ? item === skillId : item.skillId === skillId
+                                );
+                                const masteredLevel = typeof masteredItem === 'object' ? masteredItem.level : null;
                                 const levelText = level ? ` (Уровень ${level})` : '';
+                                const masteredText = isMastered && masteredLevel ? ` (Освоен: Уровень ${masteredLevel})` : '';
                                 return `
                                     <div class="flex items-center justify-between p-2 bg-purple-50 rounded">
-                                        <span class="text-sm font-medium text-purple-900">${skillName}${levelText}</span>
+                                        <span class="text-sm font-medium text-purple-900">${skillName}${levelText}${masteredText}</span>
                                         <span class="text-xs px-2 py-1 rounded-full ${isMastered ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'}">
                                             ${isMastered ? 'Освоен' : 'В развитии'}
                                         </span>
@@ -1002,8 +1016,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('skillLevel3').addEventListener('click', () => selectSkillLevel(3));
     document.getElementById('cancelSkillLevel').addEventListener('click', closeSkillLevelModal);
     
-    document.getElementById('softSkillsTab').addEventListener('click', () => switchSkillTreeTab('soft'));
-    document.getElementById('hardSkillsTab').addEventListener('click', () => switchSkillTreeTab('hard'));
 
     initializeSkillTreeModal();
 
@@ -1059,6 +1071,10 @@ function getCompetencyAreaFromDomains() {
 function openSkillTreeModal() {
     document.getElementById('skillTreeModal').classList.remove('hidden');
     initializeSkillTreeModal();
+    
+    document.getElementById('softSkillsTab').addEventListener('click', () => switchSkillTreeTab('soft'));
+    document.getElementById('hardSkillsTab').addEventListener('click', () => switchSkillTreeTab('hard'));
+    
     renderSkillTree('soft');
     const svg = document.getElementById('softSkillsTreeSvg'); // и/или hard
     initZoomPan(svg);
@@ -1074,9 +1090,6 @@ function closeSkillTreeModal() {
 function switchSkillTreeTab(type) {
     document.querySelectorAll('.skill-tree-tab').forEach(tab => {
         tab.classList.remove('active');
-        const svg = document.getElementById('softSkillsTreeSvg'); // и/или hard
-    initZoomPan(svg)
-
     });
     
     if (type === 'soft') {
@@ -1084,11 +1097,23 @@ function switchSkillTreeTab(type) {
         document.getElementById('softSkillsTree').classList.remove('hidden');
         document.getElementById('hardSkillsTree').classList.add('hidden');
         renderSkillTree('soft');
+        
+        const softSkillsTreeSvg = document.querySelector('#softSkillsTree svg');
+        if (softSkillsTreeSvg) {
+            softSkillsTreeSvg.dataset.zoomInit = '';
+            initZoomPan(softSkillsTreeSvg);
+        }
     } else {
         document.getElementById('hardSkillsTab').classList.add('active');
         document.getElementById('softSkillsTree').classList.add('hidden');
         document.getElementById('hardSkillsTree').classList.remove('hidden');
         renderSkillTree('hard');
+        
+        const hardSkillsTreeSvg = document.querySelector('#hardSkillsTree svg');
+        if (hardSkillsTreeSvg) {
+            hardSkillsTreeSvg.dataset.zoomInit = '';
+            initZoomPan(hardSkillsTreeSvg);
+        }
     }
 }
 
@@ -1251,7 +1276,9 @@ container.appendChild(group);
 function getSkillState(skillId, type) {
     const skills = skillTreeState[type === 'soft' ? 'softSkills' : 'hardSkills'];
     
-    if (skills.mastered.includes(skillId)) {
+    if (skills.mastered.some(item => 
+        typeof item === 'string' ? item === skillId : item.skillId === skillId
+    )) {
         return 'mastered';
     }
     
@@ -1376,10 +1403,7 @@ function handleSkillClick(skillId, type, clickType = 'left') {
     
     if (clickType === 'right') {
         if (state === 'mastered') {
-            const index = skills.mastered.indexOf(skillId);
-            if (index > -1) {
-                skills.mastered.splice(index, 1);
-            }
+            showMasteredSkillLevelModal(skillId, type);
         } else {
             const selectedIndex = skills.selected.findIndex(item => 
                 typeof item === 'string' ? item === skillId : item.skillId === skillId
@@ -1387,10 +1411,11 @@ function handleSkillClick(skillId, type, clickType = 'left') {
             if (selectedIndex > -1) {
                 skills.selected.splice(selectedIndex, 1);
             }
-            skills.mastered.push(skillId);
+            skills.mastered.push({skillId: skillId, level: 1});
+            updateSkillVisualState(skillId, type);
+            updateSkillCounters();
+            trackSkillHistory(skillId, type, 'mastered', 1);
         }
-        updateSkillVisualState(skillId, type);
-        updateSkillCounters();
     } else {
         if (state === 'selected') {
             const index = skills.selected.findIndex(item => 
@@ -1402,9 +1427,12 @@ function handleSkillClick(skillId, type, clickType = 'left') {
             updateSkillVisualState(skillId, type);
             updateSkillCounters();
         } else if (state === 'available' || state === 'mastered') {
-            const masteredIndex = skills.mastered.indexOf(skillId);
+            const masteredIndex = skills.mastered.findIndex(item => 
+                typeof item === 'string' ? item === skillId : item.skillId === skillId
+            );
             if (masteredIndex > -1) {
                 skills.mastered.splice(masteredIndex, 1);
+                trackSkillHistory(skillId, type, 'removed');
             }
             
             if (skills.selected.length >= 3) {
@@ -1452,8 +1480,14 @@ function updateSkillVisualState(skillId, type) {
                 circle.setAttribute('fill', '#3b82f6');
                 circle.style.fill = '#3b82f6';
             } else if (state === 'mastered') {
-                circle.setAttribute('fill', '#10b981');
-                circle.style.fill = '#10b981';
+                const skills = skillTreeState[type === 'soft' ? 'softSkills' : 'hardSkills'];
+                const masteredItem = skills.mastered.find(item => 
+                    typeof item === 'string' ? item === skillId : item.skillId === skillId
+                );
+                const level = typeof masteredItem === 'object' ? masteredItem.level : 1;
+                const colors = ['#10b981', '#059669', '#047857'];
+                circle.setAttribute('fill', colors[level - 1] || '#10b981');
+                circle.style.fill = colors[level - 1] || '#10b981';
             } else if (state === 'available') {
                 circle.setAttribute('fill', '#6b7280');
                 circle.style.fill = '#6b7280';
@@ -1730,9 +1764,347 @@ function selectSkillLevel(level) {
     });
     
     updateSkillVisualState(currentSkillForLevel, currentSkillTypeForLevel);
-    updateSkillCounters();
+    trackSkillHistory(currentSkillForLevel, currentSkillTypeForLevel, 'selected', level);
     closeSkillLevelModal();
+    currentSkillForLevel = null;
+    currentSkillTypeForLevel = null;
 }
+
+let currentMasteredSkillForLevel = null;
+let currentMasteredSkillTypeForLevel = null;
+
+function showMasteredSkillLevelModal(skillId, type) {
+    currentMasteredSkillForLevel = skillId;
+    currentMasteredSkillTypeForLevel = type;
+    
+    let skillName;
+    if (type === 'soft') {
+        const skill = SOFT_SKILLS_DATA[skillId];
+        skillName = skill ? (window.translationManager ? window.translationManager.t(skill.nameKey) : skill.nameKey) : skillId;
+    } else {
+        const competencyArea = skillTreeState.competencyArea || 'backend';
+        const skill = HARD_SKILLS_DATA[competencyArea] && HARD_SKILLS_DATA[competencyArea][skillId];
+        skillName = skill ? skill.name : skillId;
+    }
+    
+    document.getElementById('skillLevelSkillName').textContent = skillName + ' (Освоенный навык)';
+    document.getElementById('skillLevelModal').classList.remove('hidden');
+}
+
+function selectMasteredSkillLevel(level) {
+    if (!currentMasteredSkillForLevel || !currentMasteredSkillTypeForLevel) return;
+    
+    const skills = skillTreeState[currentMasteredSkillTypeForLevel === 'soft' ? 'softSkills' : 'hardSkills'];
+    const masteredIndex = skills.mastered.findIndex(item => 
+        typeof item === 'string' ? item === currentMasteredSkillForLevel : item.skillId === currentMasteredSkillForLevel
+    );
+    
+    if (masteredIndex > -1) {
+        const previousLevel = typeof skills.mastered[masteredIndex] === 'object' ? skills.mastered[masteredIndex].level : 1;
+        skills.mastered[masteredIndex] = {
+            skillId: currentMasteredSkillForLevel,
+            level: level
+        };
+        trackSkillHistory(currentMasteredSkillForLevel, currentMasteredSkillTypeForLevel, 'level_changed', level, previousLevel);
+    }
+    
+    updateSkillVisualState(currentMasteredSkillForLevel, currentMasteredSkillTypeForLevel);
+    closeSkillLevelModal();
+    currentMasteredSkillForLevel = null;
+    currentMasteredSkillTypeForLevel = null;
+}
+
+function trackSkillHistory(skillId, skillType, action, level = null, previousLevel = null) {
+    if (!currentEmployee || !currentEmployee.id) return;
+    
+    const competencyArea = skillType === 'hard' ? (skillTreeState.competencyArea || 'backend') : null;
+    
+    fetch('/api/employee/' + currentEmployee.id + '/skill-history', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: JSON.stringify({
+            skillId: skillId,
+            skillType: skillType,
+            action: action,
+            level: level,
+            previousLevel: previousLevel,
+            competencyArea: competencyArea
+        })
+    }).catch(error => {
+        console.error('Error tracking skill history:', error);
+    });
+}
+
+function showSkillHistory() {
+    if (!currentEmployee || !currentEmployee.id) return;
+    
+    fetch('/api/employee/' + currentEmployee.id + '/skill-history', {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        }
+    })
+    .then(response => response.json())
+    .then(history => {
+        const content = document.getElementById('skillHistoryContent');
+        content.innerHTML = '';
+        
+        if (history.length === 0) {
+            content.innerHTML = '<p class="text-gray-500">История развития навыков пуста</p>';
+        } else {
+            history.forEach(entry => {
+                const date = new Date(entry.created_at).toLocaleDateString('ru-RU');
+                const time = new Date(entry.created_at).toLocaleTimeString('ru-RU');
+                
+                let actionText = '';
+                switch (entry.action) {
+                    case 'selected':
+                        actionText = `добавлен в план развития (уровень ${entry.level})`;
+                        break;
+                    case 'mastered':
+                        actionText = `освоен (уровень ${entry.level})`;
+                        break;
+                    case 'level_changed':
+                        actionText = `изменен уровень с ${entry.previous_level} на ${entry.level}`;
+                        break;
+                    case 'removed':
+                        actionText = 'удален';
+                        break;
+                    default:
+                        actionText = entry.action;
+                }
+                
+                const skillTypeText = entry.skill_type === 'soft' ? 'Мягкий навык' : 'Жесткий навык';
+                
+                const entryDiv = document.createElement('div');
+                entryDiv.className = 'border-l-4 border-blue-500 pl-4 py-2';
+                entryDiv.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-medium">${entry.skill_id}</p>
+                            <p class="text-sm text-gray-600">${skillTypeText} - ${actionText}</p>
+                            ${entry.competency_area ? `<p class="text-xs text-gray-500">Область: ${entry.competency_area}</p>` : ''}
+                        </div>
+                        <div class="text-right text-sm text-gray-500">
+                            <p>${date}</p>
+                            <p>${time}</p>
+                        </div>
+                    </div>
+                `;
+                content.appendChild(entryDiv);
+            });
+        }
+        
+        document.getElementById('skillHistoryModal').classList.remove('hidden');
+    })
+    .catch(error => {
+        console.error('Error fetching skill history:', error);
+        showToast('Ошибка загрузки истории развития', 'error');
+    });
+}
+
+function showTreeEditor() {
+    document.getElementById('treeEditorModal').classList.remove('hidden');
+    initializeTreeEditor();
+}
+
+function initializeTreeEditor() {
+    const canvas = document.getElementById('treeEditorCanvas');
+    canvas.innerHTML = `
+        <svg width="100%" height="100%" style="background: #f9fafb;">
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                        refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+                </marker>
+            </defs>
+            <g id="editorNodes"></g>
+            <g id="editorConnections"></g>
+        </svg>
+    `;
+    
+    setupTreeEditorEvents();
+}
+
+function setupTreeEditorEvents() {
+    document.getElementById('addNodeBtn').onclick = addTreeNode;
+    document.getElementById('deleteNodeBtn').onclick = deleteTreeNode;
+    document.getElementById('saveTreeBtn').onclick = saveCustomTree;
+    document.getElementById('closeTreeEditorModal').onclick = closeTreeEditor;
+    
+    const canvas = document.getElementById('treeEditorCanvas');
+    canvas.onclick = handleCanvasClick;
+}
+
+let selectedNode = null;
+let nodeCounter = 1;
+let editorNodes = [];
+let editorConnections = [];
+
+function addTreeNode() {
+    const nodeId = 'custom_node_' + nodeCounter++;
+    const node = {
+        id: nodeId,
+        name: 'Новый навык ' + (nodeCounter - 1),
+        description: 'Описание навыка',
+        x: 100 + Math.random() * 400,
+        y: 100 + Math.random() * 300,
+        dependencies: []
+    };
+    
+    editorNodes.push(node);
+    renderTreeEditor();
+}
+
+function deleteTreeNode() {
+    if (!selectedNode) {
+        alert('Выберите узел для удаления');
+        return;
+    }
+    
+    editorNodes = editorNodes.filter(node => node.id !== selectedNode.id);
+    editorConnections = editorConnections.filter(conn => 
+        conn.from !== selectedNode.id && conn.to !== selectedNode.id
+    );
+    selectedNode = null;
+    renderTreeEditor();
+}
+
+function handleCanvasClick(event) {
+    const rect = event.target.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    const clickedNode = editorNodes.find(node => {
+        const dx = x - node.x;
+        const dy = y - node.y;
+        return Math.sqrt(dx * dx + dy * dy) < 30;
+    });
+    
+    if (clickedNode) {
+        if (selectedNode && selectedNode !== clickedNode) {
+            const existingConnection = editorConnections.find(conn => 
+                conn.from === selectedNode.id && conn.to === clickedNode.id
+            );
+            
+            if (!existingConnection) {
+                editorConnections.push({
+                    from: selectedNode.id,
+                    to: clickedNode.id
+                });
+                renderTreeEditor();
+            }
+        }
+        selectedNode = clickedNode;
+        renderTreeEditor();
+    } else {
+        selectedNode = null;
+        renderTreeEditor();
+    }
+}
+
+function renderTreeEditor() {
+    const nodesGroup = document.getElementById('editorNodes');
+    const connectionsGroup = document.getElementById('editorConnections');
+    
+    nodesGroup.innerHTML = '';
+    connectionsGroup.innerHTML = '';
+    
+    editorConnections.forEach(conn => {
+        const fromNode = editorNodes.find(n => n.id === conn.from);
+        const toNode = editorNodes.find(n => n.id === conn.to);
+        
+        if (fromNode && toNode) {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', fromNode.x);
+            line.setAttribute('y1', fromNode.y);
+            line.setAttribute('x2', toNode.x);
+            line.setAttribute('y2', toNode.y);
+            line.setAttribute('stroke', '#666');
+            line.setAttribute('stroke-width', '2');
+            line.setAttribute('marker-end', 'url(#arrowhead)');
+            connectionsGroup.appendChild(line);
+        }
+    });
+    
+    editorNodes.forEach(node => {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', node.x);
+        circle.setAttribute('cy', node.y);
+        circle.setAttribute('r', '25');
+        circle.setAttribute('fill', selectedNode === node ? '#3b82f6' : '#e5e7eb');
+        circle.setAttribute('stroke', '#374151');
+        circle.setAttribute('stroke-width', '2');
+        circle.style.cursor = 'pointer';
+        
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', node.x);
+        text.setAttribute('y', node.y + 5);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('font-size', '10');
+        text.setAttribute('fill', selectedNode === node ? 'white' : 'black');
+        text.textContent = node.name.substring(0, 8);
+        text.style.pointerEvents = 'none';
+        
+        nodesGroup.appendChild(circle);
+        nodesGroup.appendChild(text);
+    });
+}
+
+function saveCustomTree() {
+    const treeName = document.getElementById('treeNameInput').value.trim();
+    if (!treeName) {
+        alert('Введите название древа');
+        return;
+    }
+    
+    const treeData = {
+        nodes: editorNodes,
+        connections: editorConnections
+    };
+    
+    fetch('/api/custom-trees', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: JSON.stringify({
+            name: treeName,
+            description: 'Пользовательское древо навыков',
+            treeData: treeData,
+            isTemplate: false
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        alert('Древо сохранено успешно!');
+        closeTreeEditor();
+    })
+    .catch(error => {
+        console.error('Error saving tree:', error);
+        alert('Ошибка при сохранении древа');
+    });
+}
+
+function closeTreeEditor() {
+    document.getElementById('treeEditorModal').classList.add('hidden');
+    editorNodes = [];
+    editorConnections = [];
+    selectedNode = null;
+    nodeCounter = 1;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('closeSkillHistoryModal')) {
+        document.getElementById('closeSkillHistoryModal').onclick = function() {
+            document.getElementById('skillHistoryModal').classList.add('hidden');
+        };
+    }
+});
 
 const DISC_QUESTIONS = [
     {
@@ -3629,4 +4001,158 @@ function returnCardToPalette(triggerId, isEdit) {
         }
     }
 }
+
+async function showSkillHistory() {
+    const modal = document.getElementById('skillHistoryModal');
+    const content = document.getElementById('skillHistoryContent');
+    
+    if (!modal || !content) {
+        console.error('History modal elements not found');
+        return;
+    }
+    
+    try {
+        const token = checkAuth();
+        if (!token || !employeeId) return;
+        
+        const response = await fetch(`/api/employee/${employeeId}/skill-history`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch skill history');
+        }
+        
+        const history = await response.json();
+        
+        if (history.length === 0) {
+            content.innerHTML = '<p class="text-gray-500 text-center py-8">История развития навыков пуста</p>';
+        } else {
+            content.innerHTML = history.map(entry => {
+                const date = new Date(entry.created_at).toLocaleDateString('ru-RU');
+                const time = new Date(entry.created_at).toLocaleTimeString('ru-RU');
+                const actionText = {
+                    'selected': 'выбран для развития',
+                    'mastered': 'освоен',
+                    'level_changed': 'изменен уровень'
+                }[entry.action] || entry.action;
+                
+                const levelText = entry.level ? ` (Уровень ${entry.level})` : '';
+                const previousLevelText = entry.previous_level ? ` с уровня ${entry.previous_level}` : '';
+                
+                return `
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-medium text-gray-900">${entry.skill_id}</h4>
+                                <p class="text-sm text-gray-600">${actionText}${levelText}${previousLevelText}</p>
+                                <p class="text-xs text-gray-500 mt-1">Тип: ${entry.skill_type === 'soft' ? 'Софт скиллы' : 'Хард скиллы'}</p>
+                                ${entry.competency_area ? `<p class="text-xs text-gray-500">Область: ${entry.competency_area}</p>` : ''}
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm text-gray-500">${date}</p>
+                                <p class="text-xs text-gray-400">${time}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        modal.classList.remove('hidden');
+    } catch (error) {
+        console.error('Error loading skill history:', error);
+        showToast('Ошибка загрузки истории развития', 'error');
+    }
+}
+
+function closeSkillHistoryModal() {
+    const modal = document.getElementById('skillHistoryModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function showTreeEditor() {
+    const modal = document.getElementById('treeEditorModal');
+    const canvas = document.getElementById('treeEditorCanvas');
+    
+    if (!modal || !canvas) {
+        console.error('Tree editor modal elements not found');
+        return;
+    }
+    
+    canvas.innerHTML = `
+        <svg width="100%" height="100%" style="background: #f9fafb;">
+            <defs>
+                <marker id="arrowhead-editor" markerWidth="10" markerHeight="7" 
+                        refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280" />
+                </marker>
+            </defs>
+            <text x="50%" y="50%" text-anchor="middle" class="text-gray-500" font-size="16">
+                Редактор древа навыков - в разработке
+            </text>
+            <text x="50%" y="60%" text-anchor="middle" class="text-gray-400" font-size="14">
+                Используйте кнопки выше для добавления узлов
+            </text>
+        </svg>
+    `;
+    
+    modal.classList.remove('hidden');
+}
+
+function closeTreeEditorModal() {
+    const modal = document.getElementById('treeEditorModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function addTreeNode() {
+    showToast('Функция добавления узлов в разработке', 'info');
+}
+
+function deleteTreeNode() {
+    showToast('Функция удаления узлов в разработке', 'info');
+}
+
+function saveCustomTree() {
+    const treeName = document.getElementById('treeNameInput').value;
+    if (!treeName) {
+        showToast('Введите название древа', 'error');
+        return;
+    }
+    showToast('Функция сохранения древа в разработке', 'info');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const closeHistoryBtn = document.getElementById('closeSkillHistoryModal');
+    if (closeHistoryBtn) {
+        closeHistoryBtn.addEventListener('click', closeSkillHistoryModal);
+    }
+    
+    const closeTreeEditorBtn = document.getElementById('closeTreeEditorModal');
+    if (closeTreeEditorBtn) {
+        closeTreeEditorBtn.addEventListener('click', closeTreeEditorModal);
+    }
+    
+    const addNodeBtn = document.getElementById('addNodeBtn');
+    if (addNodeBtn) {
+        addNodeBtn.addEventListener('click', addTreeNode);
+    }
+    
+    const deleteNodeBtn = document.getElementById('deleteNodeBtn');
+    if (deleteNodeBtn) {
+        deleteNodeBtn.addEventListener('click', deleteTreeNode);
+    }
+    
+    const saveTreeBtn = document.getElementById('saveTreeBtn');
+    if (saveTreeBtn) {
+        saveTreeBtn.addEventListener('click', saveCustomTree);
+    }
+});
 

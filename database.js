@@ -148,6 +148,35 @@ async function initializeDatabase() {
       }
     }
 
+    console.log('Creating skill_development_history table...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS skill_development_history (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
+        skill_id VARCHAR(255) NOT NULL,
+        skill_type VARCHAR(20) NOT NULL,
+        action VARCHAR(20) NOT NULL,
+        level INTEGER,
+        previous_level INTEGER,
+        competency_area VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    console.log('Creating custom_skill_trees table...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS custom_skill_trees (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        manager_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        tree_data JSONB NOT NULL,
+        is_template BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     console.log('Database initialization completed successfully');
   } catch (error) {
     console.error('Database initialization error:', error);
@@ -462,6 +491,60 @@ async function validateEmployeeSecureToken(token) {
   }
 }
 
+async function addSkillDevelopmentHistory(employeeId, skillId, skillType, action, level = null, previousLevel = null, competencyArea = null) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`
+      INSERT INTO skill_development_history (employee_id, skill_id, skill_type, action, level, previous_level, competency_area)
+      VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *
+    `, [employeeId, skillId, skillType, action, level, previousLevel, competencyArea]);
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function getSkillDevelopmentHistory(employeeId) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`
+      SELECT * FROM skill_development_history 
+      WHERE employee_id = $1 
+      ORDER BY created_at DESC
+    `, [employeeId]);
+    return result.rows;
+  } finally {
+    client.release();
+  }
+}
+
+async function createCustomSkillTree(managerId, name, description, treeData, isTemplate = false) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`
+      INSERT INTO custom_skill_trees (manager_id, name, description, tree_data, is_template)
+      VALUES ($1, $2, $3, $4, $5) RETURNING *
+    `, [managerId, name, description, JSON.stringify(treeData), isTemplate]);
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function getCustomSkillTrees(managerId) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`
+      SELECT * FROM custom_skill_trees 
+      WHERE manager_id = $1 OR is_template = true
+      ORDER BY created_at DESC
+    `, [managerId]);
+    return result.rows;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   initializeDatabase,
   createTeam,
@@ -481,5 +564,9 @@ module.exports = {
   createUser,
   getUserByEmail,
   getUserById,
-  updateUserLastLogin
+  updateUserLastLogin,
+  addSkillDevelopmentHistory,
+  getSkillDevelopmentHistory,
+  createCustomSkillTree,
+  getCustomSkillTrees
 };
