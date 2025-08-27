@@ -494,6 +494,13 @@ let skillTreeState = {
     competencyArea: 'backend'
 };
 
+let treeEditorState = {
+    nodes: [],
+    connections: [],
+    selectedNode: null,
+    isEditing: false
+};
+
 function checkAuth() {
     const token = localStorage.getItem('auth_token');
     const user = localStorage.getItem('user_info');
@@ -1745,29 +1752,47 @@ function showSkillLevelModal(skillId, type) {
     }
     
     document.getElementById('skillLevelSkillName').textContent = skillName;
+    
+    document.getElementById('regularSkillLevels').classList.remove('hidden');
+    document.getElementById('masteredSkillLevels').classList.add('hidden');
+    
     document.getElementById('skillLevelModal').classList.remove('hidden');
 }
 
 function closeSkillLevelModal() {
     document.getElementById('skillLevelModal').classList.add('hidden');
+    
+    document.getElementById('regularSkillLevels').classList.remove('hidden');
+    document.getElementById('masteredSkillLevels').classList.add('hidden');
+    
     currentSkillForLevel = null;
     currentSkillTypeForLevel = null;
+    currentMasteredSkillForLevel = null;
+    currentMasteredSkillTypeForLevel = null;
 }
 
 function selectSkillLevel(level) {
-    if (!currentSkillForLevel || !currentSkillTypeForLevel) return;
-    
-    const skills = skillTreeState[currentSkillTypeForLevel === 'soft' ? 'softSkills' : 'hardSkills'];
-    skills.selected.push({
-        skillId: currentSkillForLevel,
-        level: level
-    });
-    
-    updateSkillVisualState(currentSkillForLevel, currentSkillTypeForLevel);
-    trackSkillHistory(currentSkillForLevel, currentSkillTypeForLevel, 'selected', level);
-    closeSkillLevelModal();
-    currentSkillForLevel = null;
-    currentSkillTypeForLevel = null;
+    if (currentSkillForLevel && currentSkillTypeForLevel) {
+        const skillId = currentSkillForLevel;
+        const skillType = currentSkillTypeForLevel;
+        
+        if (!skillTreeState.selected) {
+            skillTreeState.selected = [];
+        }
+        
+        const existingIndex = skillTreeState.selected.findIndex(s => s.skillId === skillId);
+        const previousLevel = existingIndex > -1 ? skillTreeState.selected[existingIndex].level : null;
+        
+        if (existingIndex > -1) {
+            skillTreeState.selected[existingIndex].level = level;
+        } else {
+            skillTreeState.selected.push({ skillId: skillId, level: level });
+        }
+        
+        trackSkillHistory(skillId, skillType, 'planned', level, previousLevel);
+        updateSkillTreeDisplay();
+        closeSkillLevelModal();
+    }
 }
 
 let currentMasteredSkillForLevel = null;
@@ -1788,6 +1813,10 @@ function showMasteredSkillLevelModal(skillId, type) {
     }
     
     document.getElementById('skillLevelSkillName').textContent = skillName + ' (Освоенный навык)';
+    
+    document.getElementById('regularSkillLevels').classList.add('hidden');
+    document.getElementById('masteredSkillLevels').classList.remove('hidden');
+    
     document.getElementById('skillLevelModal').classList.remove('hidden');
 }
 
@@ -1833,8 +1862,19 @@ function trackSkillHistory(skillId, skillType, action, level = null, previousLev
             previousLevel: previousLevel,
             competencyArea: competencyArea
         })
-    }).catch(error => {
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to track skill history: ' + response.status);
+        }
+        return response.json();
+    })
+    .then(result => {
+        console.log('Skill history tracked successfully:', result);
+    })
+    .catch(error => {
         console.error('Error tracking skill history:', error);
+        showToast('Ошибка при сохранении истории навыка');
     });
 }
 
@@ -4113,11 +4153,60 @@ function closeTreeEditorModal() {
 }
 
 function addTreeNode() {
-    showToast('Функция добавления узлов в разработке', 'info');
+    const nodeName = prompt('Введите название навыка:');
+    if (!nodeName) return;
+    
+    const nodeDescription = prompt('Введите описание навыка:');
+    if (!nodeDescription) return;
+    
+    const newNode = {
+        id: 'custom_' + Date.now(),
+        name: nodeName,
+        description: nodeDescription,
+        x: 100 + Math.random() * 200,
+        y: 100 + Math.random() * 200,
+        prerequisites: []
+    };
+function renderTreeEditor() {
+    const container = document.getElementById('treeEditorContainer');
+    if (!container) return;
+    
+    container.innerHTML = '<p>Редактор древа: ' + treeEditorState.nodes.length + ' узлов</p>';
+    
+    treeEditorState.nodes.forEach(node => {
+        const nodeElement = document.createElement('div');
+        nodeElement.className = 'tree-node p-2 m-1 bg-blue-100 border rounded cursor-pointer';
+        nodeElement.textContent = node.name;
+        nodeElement.onclick = () => {
+            treeEditorState.selectedNode = node.id;
+            document.querySelectorAll('.tree-node').forEach(n => n.classList.remove('bg-blue-300'));
+            nodeElement.classList.add('bg-blue-300');
+        };
+        container.appendChild(nodeElement);
+    });
+}
+
+
+    
+    treeEditorState.nodes.push(newNode);
+    showToast('Узел добавлен: ' + nodeName);
+    renderTreeEditor();
 }
 
 function deleteTreeNode() {
-    showToast('Функция удаления узлов в разработке', 'info');
+    if (!treeEditorState.selectedNode) {
+        showToast('Выберите узел для удаления', 'error');
+        return;
+    }
+    
+    const nodeIndex = treeEditorState.nodes.findIndex(n => n.id === treeEditorState.selectedNode);
+    if (nodeIndex > -1) {
+        const nodeName = treeEditorState.nodes[nodeIndex].name;
+        treeEditorState.nodes.splice(nodeIndex, 1);
+        treeEditorState.selectedNode = null;
+        showToast('Узел удален: ' + nodeName);
+        renderTreeEditor();
+    }
 }
 
 function saveCustomTree() {
@@ -4126,7 +4215,40 @@ function saveCustomTree() {
         showToast('Введите название древа', 'error');
         return;
     }
-    showToast('Функция сохранения древа в разработке', 'info');
+    
+    const treeData = {
+        name: treeName,
+        nodes: treeEditorState.nodes,
+        connections: treeEditorState.connections
+    };
+    
+    fetch('/api/custom-trees', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: JSON.stringify({
+            name: treeName,
+            description: 'Пользовательское древо навыков',
+            treeData: treeData,
+            isTemplate: false
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to save custom tree');
+        }
+        return response.json();
+    })
+    .then(result => {
+        showToast('Древо сохранено успешно');
+        closeTreeEditorModal();
+    })
+    .catch(error => {
+        console.error('Error saving custom tree:', error);
+        showToast('Ошибка при сохранении древа');
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
