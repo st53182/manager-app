@@ -558,8 +558,8 @@
                         </div>
                     </div>
 
-                    <!-- Action Buttons -->
-                    <div class="flex justify-between items-center mt-6 pt-6 border-t border-gray-200">
+                    <!-- Action Buttons - Moved to top -->
+                    <div class="flex justify-between items-center mb-6 pb-6 border-b border-gray-200">
                         <div class="flex space-x-3">
                             <button id="resetSkillSelection" class="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50" data-translate="reset_selection">
                                 Сбросить выбор
@@ -613,31 +613,37 @@
                 <p class="text-sm text-gray-600 mb-4" data-translate="skill_level_description">
                     Какой уровень планируется освоить?
                 </p>
-                <div class="space-y-3">
-                    <button onclick="selectSkillLevel(1)" class="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
-                        <div class="font-medium text-gray-900" data-translate="skill_level_1_title">1 - Стартовый</div>
-                        <div class="text-sm text-gray-600" data-translate="skill_level_1_desc">Базовое понимание и применение</div>
-                    </button>
-                    <button onclick="selectSkillLevel(2)" class="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
-                        <div class="font-medium text-gray-900" data-translate="skill_level_2_title">2 - Продвинутый</div>
-                        <div class="text-sm text-gray-600" data-translate="skill_level_2_desc">Уверенное владение и практическое применение</div>
-                    </button>
-                    <button onclick="selectSkillLevel(3)" class="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
-                        <div class="font-medium text-gray-900" data-translate="skill_level_3_title">3 - Эксперт</div>
-                        <div class="text-sm text-gray-600" data-translate="skill_level_3_desc">Глубокая экспертиза и способность обучать других</div>
-                    </button>
-                    <button onclick="selectMasteredSkillLevel(1)" class="w-full p-3 text-left border border-green-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors">
-                        <div class="font-medium text-green-900">1 - Стартовый (Освоенный)</div>
-                        <div class="text-sm text-green-600">Базовое понимание и применение</div>
-                    </button>
-                    <button onclick="selectMasteredSkillLevel(2)" class="w-full p-3 text-left border border-green-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors">
-                        <div class="font-medium text-green-900">2 - Продвинутый (Освоенный)</div>
-                        <div class="text-sm text-green-600">Уверенное владение и практическое применение</div>
-                    </button>
-                    <button onclick="selectMasteredSkillLevel(3)" class="w-full p-3 text-left border border-green-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors">
-                        <div class="font-medium text-green-900">3 - Эксперт (Освоенный)</div>
-                        <div class="text-sm text-green-600">Глубокая экспертиза и способность обучать других</div>
-                    </button>
+                <div id="skillLevelButtons" class="space-y-3">
+                    <!-- Regular skill level buttons -->
+                    <div id="regularSkillLevels" class="space-y-3">
+                        <button onclick="selectSkillLevel(1)" class="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                            <div class="font-medium text-gray-900" data-translate="skill_level_1_title">1 - Стартовый</div>
+                            <div class="text-sm text-gray-600" data-translate="skill_level_1_desc">Базовое понимание и применение</div>
+                        </button>
+                        <button onclick="selectSkillLevel(2)" class="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                            <div class="font-medium text-gray-900" data-translate="skill_level_2_title">2 - Продвинутый</div>
+                            <div class="text-sm text-gray-600" data-translate="skill_level_2_desc">Уверенное владение и практическое применение</div>
+                        </button>
+                        <button onclick="selectSkillLevel(3)" class="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                            <div class="font-medium text-gray-900" data-translate="skill_level_3_title">3 - Эксперт</div>
+                            <div class="text-sm text-gray-600" data-translate="skill_level_3_desc">Глубокая экспертиза и способность обучать других</div>
+                        </button>
+                    </div>
+                    <!-- Mastered skill level buttons -->
+                    <div id="masteredSkillLevels" class="space-y-3 hidden">
+                        <button onclick="selectMasteredSkillLevel(1)" class="w-full p-3 text-left border border-green-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors">
+                            <div class="font-medium text-green-900">1 - Стартовый (Освоенный)</div>
+                            <div class="text-sm text-green-600">Базовое понимание и применение</div>
+                        </button>
+                        <button onclick="selectMasteredSkillLevel(2)" class="w-full p-3 text-left border border-green-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors">
+                            <div class="font-medium text-green-900">2 - Продвинутый (Освоенный)</div>
+                            <div class="text-sm text-green-600">Уверенное владение и практическое применение</div>
+                        </button>
+                        <button onclick="selectMasteredSkillLevel(3)" class="w-full p-3 text-left border border-green-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors">
+                            <div class="font-medium text-green-900">3 - Эксперт (Освоенный)</div>
+                            <div class="text-sm text-green-600">Глубокая экспертиза и способность обучать других</div>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
