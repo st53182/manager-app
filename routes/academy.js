@@ -63,6 +63,50 @@ function createRouter({ JWT_SECRET }) {
     });
   }
 
+  /**
+   * Builds OpenRouter messages; truncates long assistant replies for token budget and drops
+   * oldest turns until under MAX_CONTEXT_CHARS (CSV/HTML-heavy chats).
+   */
+  async function buildMessagesWithBudget(rows, lessonForPrompt, req) {
+    const maxAssist = parseInt(process.env.MAX_ASSISTANT_CHARS_IN_CONTEXT || '42000', 10);
+    let subset = [...rows];
+    let droppedTurns = 0;
+
+    async function rebuild() {
+      const apiMessages = [];
+      apiMessages.push({
+        role: 'system',
+        content: getMentorSystemPrompt({ lesson: lessonForPrompt })
+      });
+      let totalChars = estimatePayloadFootprintForLimits(apiMessages[0].content);
+      for (const m of subset) {
+        if (m.role !== 'user' && m.role !== 'assistant') continue;
+        let content;
+        if (m.role === 'user') {
+          content = await buildUserContentForApi(m.content, req.dbUser.id, m.meta);
+        } else {
+          const raw = m.content || '';
+          content =
+            typeof raw === 'string' && raw.length > maxAssist
+              ? raw.slice(0, maxAssist) +
+                '\n\n[… предыдущий ответ обрезан в контексте (длинный отчёт/HTML); полный текст — в истории чата …]'
+              : raw;
+        }
+        totalChars += estimatePayloadFootprintForLimits(content);
+        apiMessages.push({ role: m.role, content });
+      }
+      return { apiMessages, totalChars };
+    }
+
+    let { apiMessages, totalChars } = await rebuild();
+    while (totalChars > MAX_CONTEXT_CHARS && subset.length > 1) {
+      subset = subset.slice(1);
+      droppedTurns += 1;
+      ({ apiMessages, totalChars } = await rebuild());
+    }
+    return { apiMessages, totalChars, droppedTurns };
+  }
+
   router.get('/catalog', authenticateAcademy, async (req, res) => {
     try {
       const catalog = await db.getAcademyCatalog();
@@ -454,28 +498,25 @@ function createRouter({ JWT_SECRET }) {
         let rows = await db.listAiMessagesAsc(conversationId, 500);
         rows = rows.slice(-MAX_CONTEXT_MESSAGES);
 
-        let totalChars = 0;
-        const apiMessages = [];
         const lessonForPrompt = lesson || (conv.lesson_id ? await db.getLessonById(conv.lesson_id) : null);
-        apiMessages.push({
-          role: 'system',
-          content: getMentorSystemPrompt({ lesson: lessonForPrompt })
-        });
 
-        for (const m of rows) {
-          if (m.role !== 'user' && m.role !== 'assistant') continue;
-          let content;
-          if (m.role === 'user') {
-            content = await buildUserContentForApi(m.content, req.dbUser.id, m.meta);
-          } else {
-            content = m.content;
-          }
-          totalChars += estimatePayloadFootprintForLimits(content);
-          apiMessages.push({ role: m.role, content });
+        const { apiMessages, totalChars, droppedTurns } = await buildMessagesWithBudget(
+          rows,
+          lessonForPrompt,
+          req
+        );
+
+        if (droppedTurns > 0) {
+          console.info(
+            `[academy/chat] context shrink: dropped ${droppedTurns} oldest message(s), chars=${totalChars}`
+          );
         }
 
         if (totalChars > MAX_CONTEXT_CHARS) {
-          return res.status(400).json({ error: 'Context too large. Start a new chat or shorten messages.' });
+          return res.status(400).json({
+            error:
+              'Контекст слишком большой даже после сжатия истории. Начните новый диалог или отправьте файл отдельным коротким чатом.'
+          });
         }
 
         const estTokens = estimateTokensFromText(JSON.stringify(apiMessages));

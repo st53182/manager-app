@@ -4,6 +4,12 @@ const path = require('path');
 const MAX_FILE_BYTES = parseInt(process.env.ACADEMY_MAX_FILE_MB || '25', 10) * 1024 * 1024;
 const MAX_FILES = parseInt(process.env.ACADEMY_MAX_FILES_PER_MESSAGE || '8', 10);
 
+/** Max characters injected for CSV/TSV/JSON/plain previews (token economy). */
+const MAX_TABULAR_CHARS = parseInt(process.env.ACADEMY_MAX_TABULAR_CHARS || '80000', 10);
+const TABULAR_PREVIEW_ROWS = parseInt(process.env.ACADEMY_TABULAR_PREVIEW_ROWS || '80', 10);
+const TABULAR_TAIL_ROWS = parseInt(process.env.ACADEMY_TABULAR_TAIL_ROWS || '25', 10);
+const MAX_PLAIN_TEXT_CHARS = parseInt(process.env.ACADEMY_MAX_PLAIN_TEXT_CHARS || '80000', 10);
+
 const ALLOWED_MIME = new Set([
   'image/jpeg',
   'image/png',
@@ -60,6 +66,84 @@ function mimeToAudioFormat(mime) {
 function assertSafeStoredName(stored) {
   if (!stored || stored.includes('..') || stored.includes('/') || stored.includes('\\')) {
     throw new Error('Invalid file reference');
+  }
+}
+
+function looksLikeDelimitedTable(raw) {
+  const lines = raw.split(/\r?\n/).filter((l) => l.length > 0).slice(0, 20);
+  if (lines.length < 4) return false;
+  let commas = 0;
+  let tabs = 0;
+  let semis = 0;
+  for (const line of lines) {
+    commas += (line.match(/,/g) || []).length;
+    tabs += (line.match(/\t/g) || []).length;
+    semis += (line.match(/;/g) || []).length;
+  }
+  const strong = Math.max(commas, tabs, semis);
+  return strong >= lines.length * 2;
+}
+
+/**
+ * Reduce CSV/TSV-like files to head + tail rows so long chats still fit context limits.
+ */
+function compactDelimitedText(raw, originalName) {
+  const lines = raw.split(/\r?\n/);
+  const nonempty = lines.filter((l) => l.trim().length > 0);
+  const header = nonempty[0] || '';
+  const dataLines = nonempty.slice(1);
+  const totalData = dataLines.length;
+
+  if (totalData <= TABULAR_PREVIEW_ROWS + TABULAR_TAIL_ROWS + 5 && raw.length <= MAX_TABULAR_CHARS) {
+    return `[Вложение: ${originalName}]\n${raw}`;
+  }
+
+  const head = dataLines.slice(0, TABULAR_PREVIEW_ROWS);
+  const tail =
+    totalData > TABULAR_PREVIEW_ROWS + TABULAR_TAIL_ROWS
+      ? dataLines.slice(-TABULAR_TAIL_ROWS)
+      : [];
+  const omitted =
+    tail.length > 0 ? Math.max(0, totalData - head.length - tail.length) : 0;
+
+  let sample =
+    `[Вложение (выборка строк для экономии контекста): ${originalName}]\n` +
+    `Всего строк данных: ${totalData}. Включены первые ${head.length}` +
+    (tail.length ? ` и последние ${tail.length} строк.` : '.') +
+    (omitted > 0 ? ` Пропущено средних строк: ${omitted}.` : '') +
+    `\n\nПервая строка:\n${header}\n\n--- начало ---\n${head.join('\n')}\n`;
+
+  if (tail.length) {
+    sample += `\n--- … … ---\n\n--- конец ---\n${tail.join('\n')}\n`;
+  }
+
+  sample +=
+    '\n\nИспользуй выборку для анализа и отчёта. Для расчётов по всем строкам пользователь может начать новый короткий диалог только с файлом.';
+
+  if (sample.length > MAX_TABULAR_CHARS) {
+    sample = sample.slice(0, MAX_TABULAR_CHARS) + '\n\n[… обрезано ACADEMY_MAX_TABULAR_CHARS …]';
+  }
+  return sample;
+}
+
+function compactJsonBuffer(buf, originalName) {
+  const text = buf.toString('utf8');
+  if (text.length <= MAX_TABULAR_CHARS) {
+    return `[Вложение JSON: ${originalName}]\n${text}`;
+  }
+  try {
+    const obj = JSON.parse(text);
+    const pretty = JSON.stringify(obj, null, 2);
+    if (pretty.length <= MAX_TABULAR_CHARS) {
+      return `[Вложение JSON: ${originalName}]\n${pretty}`;
+    }
+    return (
+      `[Вложение JSON (обрезано): ${originalName}]\n${pretty.slice(0, MAX_TABULAR_CHARS)}\n\n[… обрезано для лимита контекста …]`
+    );
+  } catch {
+    return (
+      `[Вложение: ${originalName}]\n${text.slice(0, MAX_TABULAR_CHARS)}\n\n[… не JSON или обрезано …]`
+    );
   }
 }
 
@@ -135,13 +219,34 @@ async function buildContentPartFromFile(absPath, mime, originalName) {
     };
   }
 
-  if (
-    mime === 'text/plain' ||
-    mime === 'text/csv' ||
-    mime === 'application/json' ||
-    mime === 'text/tab-separated-values'
-  ) {
+  if (mime === 'text/csv' || mime === 'text/tab-separated-values') {
     const text = buf.toString('utf8');
+    const body = compactDelimitedText(text, originalName || 'file.csv');
+    return { type: 'text', text: body };
+  }
+
+  if (mime === 'application/json') {
+    const body = compactJsonBuffer(buf, originalName || 'file.json');
+    return { type: 'text', text: body };
+  }
+
+  if (mime === 'text/plain') {
+    const text = buf.toString('utf8');
+    if (looksLikeDelimitedTable(text)) {
+      return {
+        type: 'text',
+        text: compactDelimitedText(text, originalName || 'file.txt')
+      };
+    }
+    if (text.length > MAX_PLAIN_TEXT_CHARS) {
+      return {
+        type: 'text',
+        text:
+          `[Вложение (обрезано): ${originalName || 'file.txt'}]\n` +
+          text.slice(0, MAX_PLAIN_TEXT_CHARS) +
+          '\n\n[… ACADEMY_MAX_PLAIN_TEXT_CHARS …]'
+      };
+    }
     return {
       type: 'text',
       text: `[Вложение: ${originalName || 'file'}]\n${text}`
