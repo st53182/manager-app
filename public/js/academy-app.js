@@ -56,6 +56,177 @@ function renderMarkdown(text) {
   });
 }
 
+/** Full HTML documents from the model: strip scripts / interactive vectors before iframe srcdoc. */
+function sanitizeArtifactHtml(html) {
+  if (!html || typeof DOMPurify === 'undefined') return '';
+  return DOMPurify.sanitize(html.trim(), {
+    WHOLE_DOCUMENT: true,
+    ADD_TAGS: ['style', 'meta', 'title', 'thead', 'tbody', 'tfoot', 'colgroup', 'col'],
+    ADD_ATTR: ['charset', 'name', 'content', 'media', 'colspan', 'rowspan', 'scope'],
+    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'base', 'link', 'form', 'input', 'button']
+  });
+}
+
+/**
+ * Split assistant message into markdown + special fenced blocks (academy-html, mermaid, academy-image-spec).
+ */
+function parseAssistantContent(text) {
+  const segments = [];
+  const s = text || '';
+  let i = 0;
+  while (i < s.length) {
+    const fenceStart = s.indexOf('```', i);
+    if (fenceStart === -1) {
+      if (i < s.length) segments.push({ type: 'markdown', text: s.slice(i) });
+      break;
+    }
+    if (fenceStart > i) {
+      segments.push({ type: 'markdown', text: s.slice(i, fenceStart) });
+    }
+    const nl = s.indexOf('\n', fenceStart + 3);
+    if (nl === -1) {
+      segments.push({ type: 'markdown', text: s.slice(fenceStart) });
+      break;
+    }
+    const lang = s.slice(fenceStart + 3, nl).trim();
+    const bodyStart = nl + 1;
+    const close = s.indexOf('\n```', bodyStart);
+    if (close === -1) {
+      segments.push({ type: 'markdown', text: s.slice(fenceStart) });
+      break;
+    }
+    const body = s.slice(bodyStart, close);
+    const afterFence = close + 4;
+    if (lang === 'academy-html') {
+      segments.push({ type: 'html', html: body });
+    } else if (lang === 'mermaid') {
+      segments.push({ type: 'mermaid', code: body });
+    } else if (lang === 'academy-image-spec') {
+      segments.push({ type: 'imageSpec', jsonText: body.trim() });
+    } else {
+      segments.push({ type: 'markdown', text: s.slice(fenceStart, afterFence) });
+    }
+    i = afterFence;
+  }
+  return segments;
+}
+
+async function runMermaidIn(container) {
+  if (typeof mermaid === 'undefined' || !container) return;
+  const nodes = container.querySelectorAll('pre.mermaid');
+  if (!nodes.length) return;
+  try {
+    await mermaid.run({ nodes: Array.from(nodes) });
+  } catch (e) {
+    console.warn('Mermaid:', e);
+    nodes.forEach((n) => {
+      const err = document.createElement('div');
+      err.className = 'text-xs text-amber-400 mt-2';
+      err.textContent = 'Не удалось отрисовать диаграмму (проверьте синтаксис Mermaid).';
+      n.parentNode?.appendChild(err);
+    });
+  }
+}
+
+async function fillAssistantBubble(root, content) {
+  root.innerHTML = '';
+  const segments = parseAssistantContent(content);
+  for (const seg of segments) {
+    if (seg.type === 'markdown') {
+      const el = document.createElement('div');
+      el.className = 'assistant-md';
+      el.innerHTML = renderMarkdown(seg.text);
+      el.querySelectorAll('pre code').forEach((block) => {
+        if (typeof hljs !== 'undefined') hljs.highlightElement(block);
+      });
+      root.appendChild(el);
+    } else if (seg.type === 'html') {
+      const wrap = document.createElement('div');
+      wrap.className = 'my-3 border border-slate-600 rounded-lg overflow-hidden bg-slate-900/80';
+      const header = document.createElement('div');
+      header.className = 'flex flex-wrap items-center gap-2 px-2 py-1.5 bg-slate-800 text-xs text-slate-400';
+      const label = document.createElement('span');
+      label.textContent = 'HTML-отчёт';
+      header.appendChild(label);
+      const openBtn = document.createElement('button');
+      openBtn.type = 'button';
+      openBtn.className = 'text-indigo-400 hover:text-indigo-300';
+      openBtn.textContent = 'Открыть в новой вкладке';
+      const iframe = document.createElement('iframe');
+      iframe.className = 'w-full min-h-[min(70vh,560px)] bg-white';
+      iframe.setAttribute('sandbox', 'allow-popups allow-popups-to-escape-sandbox');
+      iframe.title = 'HTML-отчёт';
+      const safe = sanitizeArtifactHtml(seg.html);
+      openBtn.addEventListener('click', () => {
+        const blob = new Blob([safe], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const w = window.open(url, '_blank', 'noopener,noreferrer');
+        if (w) setTimeout(() => URL.revokeObjectURL(url), 60000);
+      });
+      iframe.srcdoc = safe;
+      header.appendChild(openBtn);
+      wrap.appendChild(header);
+      wrap.appendChild(iframe);
+      root.appendChild(wrap);
+    } else if (seg.type === 'mermaid') {
+      const container = document.createElement('div');
+      container.className = 'my-3 p-3 bg-slate-900 rounded-lg border border-slate-600 overflow-x-auto';
+      const graphEl = document.createElement('pre');
+      graphEl.className = 'mermaid';
+      graphEl.textContent = seg.code.trim();
+      container.appendChild(graphEl);
+      root.appendChild(container);
+    } else if (seg.type === 'imageSpec') {
+      const wrap = document.createElement('div');
+      wrap.className = 'my-3 p-3 rounded-lg border border-violet-700/40 bg-violet-950/30 text-sm space-y-2';
+      const title = document.createElement('div');
+      title.className = 'text-xs font-medium text-violet-300';
+      title.textContent = 'Спецификация инфографики (academy-image-spec)';
+      let spec = {};
+      try {
+        spec = JSON.parse(seg.jsonText);
+      } catch {
+        spec = {};
+      }
+      const prompt =
+        typeof spec.prompt === 'string'
+          ? spec.prompt
+          : typeof spec.text === 'string'
+            ? spec.text
+            : '';
+      const preview = document.createElement('pre');
+      preview.className = 'text-xs text-slate-400 whitespace-pre-wrap max-h-32 overflow-y-auto';
+      preview.textContent = seg.jsonText;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className =
+        'text-xs bg-violet-800 hover:bg-violet-700 rounded px-3 py-1.5 text-violet-100 border border-violet-600';
+      btn.textContent = 'Сгенерировать картинку';
+      btn.addEventListener('click', () => {
+        const combined = [prompt, typeof spec.style_notes === 'string' ? spec.style_notes : '']
+          .filter(Boolean)
+          .join('\n\n');
+        runImageGeneration(combined || seg.jsonText);
+      });
+      wrap.appendChild(title);
+      wrap.appendChild(preview);
+      wrap.appendChild(btn);
+      root.appendChild(wrap);
+    }
+  }
+  await runMermaidIn(root);
+}
+
+function initMermaid() {
+  if (typeof mermaid === 'undefined') return;
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'dark',
+    securityLevel: 'strict',
+    fontFamily: 'ui-sans-serif, system-ui, sans-serif'
+  });
+}
+
 const state = {
   catalog: null,
   conversations: [],
@@ -87,6 +258,7 @@ function parseUser() {
 
 async function init() {
   configureMarked();
+  initMermaid();
   if (!getToken()) {
     showGate();
     return;
@@ -318,9 +490,12 @@ function renderMessageEl(m) {
   const bubble = document.createElement('div');
   bubble.className = `max-w-[85%] rounded-2xl px-4 py-2 text-sm ${m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-100'}`;
   if (m.role === 'assistant') {
-    bubble.innerHTML = renderMarkdown(m.content);
-    bubble.querySelectorAll('pre code').forEach((block) => {
-      if (typeof hljs !== 'undefined') hljs.highlightElement(block);
+    bubble.innerHTML = '';
+    fillAssistantBubble(bubble, m.content).catch(() => {
+      bubble.innerHTML = renderMarkdown(m.content);
+      bubble.querySelectorAll('pre code').forEach((block) => {
+        if (typeof hljs !== 'undefined') hljs.highlightElement(block);
+      });
     });
   } else {
     bubble.textContent = '';
@@ -483,12 +658,16 @@ function setComposerBusy(busy) {
   if (ig) ig.disabled = busy;
 }
 
-async function imageGenHandler() {
-  if (state.streaming) return;
-  const text = document.getElementById('composer').value.trim();
-  if (!text) {
-    alert('Опишите, какое изображение нужно (промпт для генерации).');
-    return;
+/**
+ * Image generation via OpenRouter (shared by composer button and academy-image-spec blocks).
+ * @returns {Promise<boolean>} success
+ */
+async function runImageGeneration(prompt) {
+  if (state.streaming) return false;
+  const p = (prompt || '').trim();
+  if (!p) {
+    alert('Опишите изображение или заполните блок academy-image-spec.');
+    return false;
   }
 
   document.getElementById('typingRow').classList.remove('hidden');
@@ -497,7 +676,7 @@ async function imageGenHandler() {
     const out = await api('/api/academy/image/generate', {
       method: 'POST',
       body: JSON.stringify({
-        prompt: text,
+        prompt: p,
         conversationId: state.currentConversationId || undefined,
         lessonId: state.currentLessonId || undefined
       })
@@ -505,7 +684,6 @@ async function imageGenHandler() {
     if (out.conversationId) {
       state.currentConversationId = out.conversationId;
     }
-    document.getElementById('composer').value = '';
     state.usage = await api('/api/academy/usage');
     renderUsage();
     state.conversations = (await api('/api/academy/conversations')).conversations;
@@ -513,12 +691,24 @@ async function imageGenHandler() {
     if (state.currentConversationId) {
       await loadConversation(state.currentConversationId);
     }
+    return true;
   } catch (e) {
     alert(e.message || 'Не удалось сгенерировать изображение');
+    return false;
   } finally {
     document.getElementById('typingRow').classList.add('hidden');
     setComposerBusy(false);
   }
+}
+
+async function imageGenHandler() {
+  const text = document.getElementById('composer').value.trim();
+  if (!text) {
+    alert('Опишите, какое изображение нужно (промпт для генерации).');
+    return;
+  }
+  const ok = await runImageGeneration(text);
+  if (ok) document.getElementById('composer').value = '';
 }
 
 function wireUi() {
