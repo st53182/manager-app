@@ -56,15 +56,37 @@ function renderMarkdown(text) {
   });
 }
 
+/** Allowed stylesheet for Material-like reports (same-origin only). */
+const ALLOWED_REPORT_STYLESHEET = '/css/academy-report-material.css';
+
 /** Full HTML documents from the model: strip scripts / interactive vectors before iframe srcdoc. */
 function sanitizeArtifactHtml(html) {
   if (!html || typeof DOMPurify === 'undefined') return '';
-  return DOMPurify.sanitize(html.trim(), {
-    WHOLE_DOCUMENT: true,
-    ADD_TAGS: ['style', 'meta', 'title', 'thead', 'tbody', 'tfoot', 'colgroup', 'col'],
-    ADD_ATTR: ['charset', 'name', 'content', 'media', 'colspan', 'rowspan', 'scope'],
-    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'base', 'link', 'form', 'input', 'button']
-  });
+
+  function stripUnsafeLink(node) {
+    if (!node || node.tagName !== 'LINK') return;
+    const rel = (node.getAttribute('rel') || '').toLowerCase();
+    const href = node.getAttribute('href') || '';
+    if (rel !== 'stylesheet' || href !== ALLOWED_REPORT_STYLESHEET) {
+      node.remove();
+    }
+  }
+
+  if (typeof DOMPurify.addHook === 'function') {
+    DOMPurify.addHook('uponSanitizeElement', stripUnsafeLink);
+  }
+  try {
+    return DOMPurify.sanitize(html.trim(), {
+      WHOLE_DOCUMENT: true,
+      ADD_TAGS: ['style', 'meta', 'title', 'thead', 'tbody', 'tfoot', 'colgroup', 'col', 'link'],
+      ADD_ATTR: ['charset', 'name', 'content', 'media', 'colspan', 'rowspan', 'scope', 'rel', 'href', 'class', 'id'],
+      FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'base', 'form', 'input', 'button']
+    });
+  } finally {
+    if (typeof DOMPurify.removeHook === 'function') {
+      DOMPurify.removeHook('uponSanitizeElement', stripUnsafeLink);
+    }
+  }
 }
 
 /** Models often use ```html instead of ```academy-html — detect report-like HTML for live preview. */
