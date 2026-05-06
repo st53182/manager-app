@@ -50,7 +50,10 @@ function configureMarked() {
 
 function renderMarkdown(text) {
   const raw = marked.parse(text || '');
-  return DOMPurify.sanitize(raw, { ADD_ATTR: ['target'] });
+  return DOMPurify.sanitize(raw, {
+    ADD_ATTR: ['target', 'src', 'alt', 'loading', 'decoding'],
+    ADD_TAGS: ['img']
+  });
 }
 
 const state = {
@@ -476,6 +479,46 @@ function setComposerBusy(busy) {
   document.getElementById('composer').disabled = busy;
   const fi = document.getElementById('fileInput');
   if (fi) fi.disabled = busy;
+  const ig = document.getElementById('imageGenBtn');
+  if (ig) ig.disabled = busy;
+}
+
+async function imageGenHandler() {
+  if (state.streaming) return;
+  const text = document.getElementById('composer').value.trim();
+  if (!text) {
+    alert('Опишите, какое изображение нужно (промпт для генерации).');
+    return;
+  }
+
+  document.getElementById('typingRow').classList.remove('hidden');
+  setComposerBusy(true);
+  try {
+    const out = await api('/api/academy/image/generate', {
+      method: 'POST',
+      body: JSON.stringify({
+        prompt: text,
+        conversationId: state.currentConversationId || undefined,
+        lessonId: state.currentLessonId || undefined
+      })
+    });
+    if (out.conversationId) {
+      state.currentConversationId = out.conversationId;
+    }
+    document.getElementById('composer').value = '';
+    state.usage = await api('/api/academy/usage');
+    renderUsage();
+    state.conversations = (await api('/api/academy/conversations')).conversations;
+    renderConversationList();
+    if (state.currentConversationId) {
+      await loadConversation(state.currentConversationId);
+    }
+  } catch (e) {
+    alert(e.message || 'Не удалось сгенерировать изображение');
+  } finally {
+    document.getElementById('typingRow').classList.add('hidden');
+    setComposerBusy(false);
+  }
 }
 
 function wireUi() {
@@ -506,6 +549,7 @@ function wireUi() {
   });
 
   document.getElementById('sendBtn').addEventListener('click', sendHandler);
+  document.getElementById('imageGenBtn').addEventListener('click', imageGenHandler);
 
   document.getElementById('composer').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {

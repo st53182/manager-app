@@ -14,6 +14,7 @@ const {
   MAX_FILE_BYTES
 } = require('../services/academy/multimodal');
 const { getModelCatalog } = require('../services/academy/modelCatalog');
+const { generateImageForEducation, getImageModel } = require('../services/ai/imageGeneration');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -197,6 +198,126 @@ function createRouter({ JWT_SECRET }) {
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: 'Delete failed' });
+    }
+  });
+
+  /**
+   * Генерация изображений (отдельная модель + modalities). Обычный /chat только текст.
+   */
+  router.post('/image/generate', authenticateAcademy, aiChatLimiter, async (req, res) => {
+    if (!process.env.OPENROUTER_API_KEY) {
+      return res.status(503).json({ error: 'AI service not configured' });
+    }
+
+    const { prompt, conversationId: incomingConvId, lessonId, courseId } = req.body || {};
+    const text = prompt != null ? String(prompt).trim() : '';
+    if (!text) {
+      return res.status(400).json({ error: 'Введите описание изображения' });
+    }
+    if (text.length > MAX_PROMPT_CHARS) {
+      return res.status(400).json({ error: `Текст слишком длинный (макс. ${MAX_PROMPT_CHARS})` });
+    }
+
+    const imgModel = getImageModel();
+
+    try {
+      await assertQuota(req, 16000);
+
+      let conversationId = incomingConvId;
+      let lesson = null;
+      if (lessonId) {
+        lesson = await db.getLessonById(lessonId);
+      }
+
+      if (!conversationId) {
+        const conv = await db.createAiConversation(req.dbUser.id, {
+          lessonId: lesson?.id || lessonId || null,
+          courseId: courseId || lesson?.course_id || null,
+          title: text.slice(0, 80) + (text.length > 80 ? '…' : ''),
+          model: imgModel
+        });
+        conversationId = conv.id;
+      }
+
+      const conv = await db.getAiConversationForUser(conversationId, req.dbUser.id);
+      if (!conv) {
+        return res.status(404).json({ error: 'Conversation not found' });
+      }
+
+      await db.addAiMessage(conversationId, 'user', `🖼 Запрос изображения:\n${text}`, {
+        kind: 'image_prompt'
+      });
+
+      let result;
+      try {
+        result = await generateImageForEducation(text);
+      } catch (genErr) {
+        console.error('Image generation failed:', genErr.message || genErr);
+        await db.addAiMessage(
+          conversationId,
+          'assistant',
+          `Не удалось сгенерировать изображение. ${String(genErr.message || genErr).slice(0, 500)}`,
+          { model: imgModel, error: true }
+        );
+        return res.status(502).json({
+          error: genErr.message || 'Генерация не удалась',
+          conversationId
+        });
+      }
+
+      await db.addAiMessage(conversationId, 'assistant', result.markdown, {
+        model: imgModel,
+        mentor_prompt_version: MENTOR_PROMPT_VERSION,
+        image_generation: true,
+        images: result.images
+      });
+
+      const u = result.usage;
+      const pt = Number(u?.prompt_tokens) || estimateTokensFromText(text);
+      const ct = Number(u?.completion_tokens) || 2500;
+      const costFromApi = u?.total_cost ?? u?.cost;
+      const costUsd =
+        typeof costFromApi === 'number'
+          ? costFromApi
+          : estimateCostUsd(pt, ct, imgModel);
+
+      await db.recordAiUsage({
+        userId: req.dbUser.id,
+        conversationId,
+        model: imgModel,
+        promptTokens: pt,
+        completionTokens: ct,
+        costUsd
+      });
+
+      let autoTitle;
+      if (!conv.title || conv.title === 'New chat') {
+        autoTitle = text.slice(0, 80) + (text.length > 80 ? '…' : '');
+      }
+      await db.updateAiConversation(req.dbUser.id, conversationId, {
+        title: autoTitle,
+        model: imgModel
+      });
+
+      res.json({
+        ok: true,
+        conversationId,
+        model: imgModel,
+        usage: {
+          prompt_tokens: pt,
+          completion_tokens: ct,
+          cost_usd: costUsd
+        }
+      });
+    } catch (e) {
+      if (e.message === 'DAILY_LIMIT') {
+        return res.status(429).json({ error: 'Daily token limit reached' });
+      }
+      if (e.message === 'MONTHLY_LIMIT') {
+        return res.status(429).json({ error: 'Monthly token limit reached' });
+      }
+      console.error(e);
+      res.status(500).json({ error: e.message || 'Image route failed' });
     }
   });
 

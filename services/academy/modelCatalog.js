@@ -20,6 +20,12 @@ const MODEL_CATALOG = [
     label: 'Данные · код · анализ',
     group: 'data',
     hint: 'Таблицы, CSV, код, разбор логики и данных'
+  },
+  {
+    id: 'google/gemini-2.5-flash-image',
+    label: 'Генерация изображений',
+    group: 'image',
+    hint: 'Используется кнопкой «Картинка» (отдельный режим OpenRouter modalities:image)'
   }
 ];
 

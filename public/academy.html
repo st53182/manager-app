@@ -88,7 +88,12 @@
                   <span id="fileListHint" class="truncate"></span>
                 </div>
               </div>
-              <button type="button" id="sendBtn" class="shrink-0 bg-indigo-600 hover:bg-indigo-500 rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-40">Отправить</button>
+              <div class="flex flex-col gap-2 shrink-0">
+                <button type="button" id="imageGenBtn" class="bg-violet-900/80 hover:bg-violet-800 border border-violet-700 rounded-xl px-3 py-2 text-xs font-medium text-violet-100 disabled:opacity-40" title="Отдельная модель генерации изображений (OpenRouter)">
+                  Картинка
+                </button>
+                <button type="button" id="sendBtn" class="bg-indigo-600 hover:bg-indigo-500 rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-40">Отправить</button>
+              </div>
             </div>
           </div>
         </section>
