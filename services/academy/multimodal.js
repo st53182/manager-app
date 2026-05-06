@@ -64,9 +64,10 @@ function assertSafeStoredName(stored) {
 }
 
 /**
- * Build OpenRouter-compatible content parts from disk (after multer saved files).
+ * Build one OpenRouter content part from a saved file (async: PDF may use text extraction).
+ * ACADEMY_PDF_MODE=text_first (default) | native — native = всегда отправлять PDF как file (дороже).
  */
-function filePathToContentPart(absPath, mime, originalName) {
+async function buildContentPartFromFile(absPath, mime, originalName) {
   const buf = fs.readFileSync(absPath);
   if (buf.length > MAX_FILE_BYTES) {
     throw new Error(`File too large (max ${MAX_FILE_BYTES / (1024 * 1024)} MB)`);
@@ -81,6 +82,33 @@ function filePathToContentPart(absPath, mime, originalName) {
   }
 
   if (mime === 'application/pdf') {
+    const pdfMode = process.env.ACADEMY_PDF_MODE || 'text_first';
+    const minChars = parseInt(process.env.ACADEMY_PDF_MIN_TEXT_CHARS || '80', 10);
+    const maxChars = parseInt(process.env.ACADEMY_MAX_PDF_TEXT_CHARS || '80000', 10);
+
+    if (pdfMode !== 'native') {
+      try {
+        const { extractPdfText } = require('./pdfText');
+        const { text: rawText, numpages } = await extractPdfText(buf);
+        let body = rawText.replace(/\s+/g, ' ').trim();
+        if (body.length >= minChars) {
+          if (body.length > maxChars) {
+            body =
+              body.slice(0, maxChars) +
+              '\n\n[… фрагмент обрезан (ACADEMY_MAX_PDF_TEXT_CHARS), чтобы уложиться в лимит токенов …]';
+          }
+          return {
+            type: 'text',
+            text:
+              `[PDF «${originalName || 'документ.pdf'}», ~${numpages} стр. Текст извлечён на сервере — меньше токенов, чем отправка файла целиком.]\n\n` +
+              body
+          };
+        }
+      } catch (e) {
+        console.warn('PDF text extraction failed, falling back to native PDF:', e.message);
+      }
+    }
+
     return {
       type: 'file',
       file: {
@@ -193,7 +221,9 @@ async function buildUserContentForApi(text, userId, meta) {
       });
       continue;
     }
-    parts.push(filePathToContentPart(abs, f.mime || 'application/octet-stream', f.name));
+    parts.push(
+      await buildContentPartFromFile(abs, f.mime || 'application/octet-stream', f.name)
+    );
   }
 
   return parts;
