@@ -266,13 +266,22 @@ async function initializeDatabase() {
       `ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true`,
       `ADD COLUMN IF NOT EXISTS ai_daily_token_limit INTEGER DEFAULT 100000`,
       `ADD COLUMN IF NOT EXISTS ai_monthly_token_limit INTEGER DEFAULT 5000000`,
-      `ADD COLUMN IF NOT EXISTS ai_allowed_models JSONB DEFAULT '["openai/gpt-4o-mini"]'::jsonb`
+      `ADD COLUMN IF NOT EXISTS ai_allowed_models JSONB DEFAULT '["openai/gpt-4o-mini","google/gemini-2.0-flash-001","anthropic/claude-3.5-sonnet"]'::jsonb`
     ]) {
       try {
         await client.query(`ALTER TABLE users ${col}`);
       } catch (e) {
         console.log('users alter skipped:', e.message);
       }
+    }
+
+    try {
+      await client.query(`
+        ALTER TABLE users ALTER COLUMN ai_allowed_models SET DEFAULT
+        '["openai/gpt-4o-mini","google/gemini-2.0-flash-001","anthropic/claude-3.5-sonnet"]'::jsonb
+      `);
+    } catch (e) {
+      console.log('ai_allowed_models default alter skipped:', e.message);
     }
 
     console.log('AI Academy: courses & lessons...');

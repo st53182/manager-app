@@ -104,6 +104,7 @@ async function init() {
     renderCourseTree();
     renderConversationList();
     populateModels();
+    updateModelHint();
     showApp();
   } catch (e) {
     if (e.status === 401 || e.status === 403) {
@@ -173,15 +174,37 @@ function populateModels() {
   const sel = document.getElementById('modelSelect');
   sel.innerHTML = '';
   const models = state.usage?.allowed_models || ['openai/gpt-4o-mini'];
+  const catalog = state.usage?.model_catalog || [];
   const def = state.usage?.default_model || models[0];
-  for (const m of models) {
+  for (const id of models) {
     const o = document.createElement('option');
-    o.value = m;
-    o.textContent = m.split('/').pop();
-    if (m === def) o.selected = true;
+    o.value = id;
+    const hint = catalog.find((c) => c.id === id);
+    o.textContent = hint ? hint.label : id.split('/').pop();
+    o.title = hint ? `${id} — ${hint.hint || ''}` : id;
+    if (id === def) o.selected = true;
     sel.appendChild(o);
   }
   state.selectedModel = sel.value;
+}
+
+function updateModelHint() {
+  const sel = document.getElementById('modelSelect');
+  const hintEl = document.getElementById('modelHint');
+  if (!hintEl || !sel) return;
+  const catalog = state.usage?.model_catalog || [];
+  const item = catalog.find((c) => c.id === sel.value);
+  hintEl.textContent = item ? `${item.label} — ${item.hint || ''}` : '';
+}
+
+function parseMsgMeta(raw) {
+  if (!raw) return {};
+  if (typeof raw === 'object') return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
 }
 
 async function selectLesson(lesson) {
@@ -219,6 +242,7 @@ async function loadConversation(id, opts = {}) {
   document.getElementById('conversationTitle').value = data.conversation.title || '';
   document.getElementById('modelSelect').value = data.conversation.model || state.selectedModel;
   state.selectedModel = document.getElementById('modelSelect').value;
+  updateModelHint();
   if (data.conversation.lesson_id) {
     const lesson = state.catalog.lessons.find((l) => l.id === data.conversation.lesson_id);
     if (lesson) {
@@ -251,7 +275,18 @@ function renderMessageEl(m) {
       if (typeof hljs !== 'undefined') hljs.highlightElement(block);
     });
   } else {
-    bubble.textContent = m.content;
+    bubble.textContent = '';
+    const meta = parseMsgMeta(m.meta);
+    if (meta.files?.length) {
+      const att = document.createElement('div');
+      att.className = 'text-xs opacity-90 mb-1';
+      att.textContent = `📎 ${meta.files.map((f) => f.name || f.stored).join(', ')}`;
+      bubble.appendChild(att);
+    }
+    const textDiv = document.createElement('div');
+    textDiv.className = 'whitespace-pre-wrap';
+    textDiv.textContent = m.content || '';
+    bubble.appendChild(textDiv);
   }
   const actions = document.createElement('div');
   actions.className = 'flex gap-2 mt-1 text-xs text-slate-500';
@@ -289,11 +324,37 @@ async function streamChat(payload) {
   state.streaming = true;
   setComposerBusy(true);
 
-  const res = await fetch(`${apiBase}/api/academy/chat`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(payload)
-  });
+  const fileInput = document.getElementById('fileInput');
+  const fileCount = fileInput?.files?.length || 0;
+  const useMultipart = fileCount > 0 && !payload.regenerate;
+
+  let fetchOpts;
+  if (useMultipart) {
+    const fd = new FormData();
+    fd.append('message', payload.message || '');
+    fd.append('model', payload.model || '');
+    if (payload.conversationId) fd.append('conversationId', payload.conversationId);
+    if (payload.lessonId) fd.append('lessonId', payload.lessonId);
+    if (payload.courseId) fd.append('courseId', payload.courseId);
+    if (payload.regenerate) fd.append('regenerate', 'true');
+    for (let i = 0; i < fileInput.files.length; i++) {
+      fd.append('files', fileInput.files[i]);
+    }
+    const token = getToken();
+    fetchOpts = {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: fd
+    };
+  } else {
+    fetchOpts = {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload)
+    };
+  }
+
+  const res = await fetch(`${apiBase}/api/academy/chat`, fetchOpts);
 
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
@@ -351,6 +412,11 @@ async function streamChat(payload) {
   document.getElementById('streamingBubble')?.remove();
   state.streaming = false;
   setComposerBusy(false);
+  if (fileInput) {
+    fileInput.value = '';
+    const hint = document.getElementById('fileListHint');
+    if (hint) hint.textContent = '';
+  }
 
   if (state.currentConversationId) {
     const data = await api(`/api/academy/conversations/${state.currentConversationId}`);
@@ -363,6 +429,8 @@ async function streamChat(payload) {
 function setComposerBusy(busy) {
   document.getElementById('sendBtn').disabled = busy;
   document.getElementById('composer').disabled = busy;
+  const fi = document.getElementById('fileInput');
+  if (fi) fi.disabled = busy;
 }
 
 function wireUi() {
@@ -403,7 +471,23 @@ function wireUi() {
 
   document.getElementById('modelSelect').addEventListener('change', () => {
     state.selectedModel = document.getElementById('modelSelect').value;
+    updateModelHint();
   });
+
+  const fileInputEl = document.getElementById('fileInput');
+  const fileHintEl = document.getElementById('fileListHint');
+  if (fileInputEl && fileHintEl) {
+    fileInputEl.addEventListener('change', () => {
+      const files = fileInputEl.files;
+      if (!files?.length) {
+        fileHintEl.textContent = '';
+        return;
+      }
+      fileHintEl.textContent = Array.from(files)
+        .map((f) => `${f.name} (${Math.round(f.size / 1024)} KB)`)
+        .join(', ');
+    });
+  }
 
   document.getElementById('conversationTitle').addEventListener('change', async () => {
     if (!state.currentConversationId) return;
@@ -447,7 +531,9 @@ function wireUi() {
 async function sendHandler() {
   if (state.streaming) return;
   const text = document.getElementById('composer').value.trim();
-  if (!text) return;
+  const fileInput = document.getElementById('fileInput');
+  const hasFiles = fileInput?.files?.length > 0;
+  if (!text && !hasFiles) return;
 
   document.getElementById('typingRow').classList.remove('hidden');
 

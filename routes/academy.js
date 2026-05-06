@@ -1,10 +1,24 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
+const multer = require('multer');
 const db = require('../database');
 const { getMentorSystemPrompt, MENTOR_PROMPT_VERSION } = require('../prompts/mentorPrompt');
 const { createOpenRouterClient, getDefaultModel } = require('../services/ai/openRouterClient');
 const { streamChatCompletion, estimateTokensFromText, estimateCostUsd } = require('../services/ai/streamChat');
+const {
+  persistMulterFiles,
+  buildUserContentForApi,
+  estimateContentChars,
+  MAX_FILES,
+  MAX_FILE_BYTES
+} = require('../services/academy/multimodal');
+const { getModelCatalog } = require('../services/academy/modelCatalog');
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_FILE_BYTES, files: MAX_FILES }
+});
 
 const MAX_PROMPT_CHARS = parseInt(process.env.MAX_PROMPT_CHARS || '32000', 10);
 const MAX_CONTEXT_MESSAGES = parseInt(process.env.MAX_CONTEXT_MESSAGES || '40', 10);
@@ -112,7 +126,8 @@ function createRouter({ JWT_SECRET }) {
           cost_usd: Number(monthU.cost_usd)
         },
         allowed_models: allowedModels,
-        default_model: getDefaultModel()
+        default_model: getDefaultModel(),
+        model_catalog: getModelCatalog()
       });
     } catch (e) {
       console.error(e);
@@ -225,182 +240,220 @@ function createRouter({ JWT_SECRET }) {
     }
   }
 
-  router.post('/chat', authenticateAcademy, aiChatLimiter, async (req, res) => {
-    const openai = createOpenRouterClient();
-    if (!openai) {
-      return res.status(503).json({ error: 'AI service not configured' });
-    }
-
-    const {
-      conversationId: incomingConvId,
-      lessonId,
-      courseId,
-      message,
-      regenerate,
-      model: bodyModel
-    } = req.body || {};
-
-    if (regenerate && !incomingConvId) {
-      return res.status(400).json({ error: 'conversationId required for regenerate' });
-    }
-    if (!regenerate && (!message || !String(message).trim())) {
-      return res.status(400).json({ error: 'message required' });
-    }
-
-    try {
-      let conversationId = incomingConvId;
-      let lesson = null;
-      if (lessonId) {
-        lesson = await db.getLessonById(lessonId);
-      }
-
-      if (!conversationId) {
-        const title =
-          !regenerate && message
-            ? String(message).slice(0, 80) + (String(message).length > 80 ? '…' : '')
-            : 'New chat';
-        const conv = await db.createAiConversation(req.dbUser.id, {
-          lessonId: lesson?.id || lessonId || null,
-          courseId: courseId || lesson?.course_id || null,
-          title,
-          model: pickModel(bodyModel, req.dbUser)
+  router.post(
+    '/chat',
+    authenticateAcademy,
+    aiChatLimiter,
+    (req, res, next) => {
+      const ct = req.headers['content-type'] || '';
+      if (ct.includes('multipart/form-data')) {
+        return upload.array('files', MAX_FILES)(req, res, (err) => {
+          if (err) {
+            return res.status(400).json({ error: err.message || 'Ошибка загрузки файлов' });
+          }
+          next();
         });
-        conversationId = conv.id;
+      }
+      next();
+    },
+    async (req, res) => {
+      const openai = createOpenRouterClient();
+      if (!openai) {
+        return res.status(503).json({ error: 'AI service not configured' });
       }
 
-      const conv = await db.getAiConversationForUser(conversationId, req.dbUser.id);
-      if (!conv) {
-        return res.status(404).json({ error: 'Conversation not found' });
-      }
+      const body = req.body || {};
+      const incomingConvId = body.conversationId;
+      const lessonId = body.lessonId;
+      const courseId = body.courseId;
+      const message = body.message != null ? String(body.message) : '';
+      const regenerate = body.regenerate === true || body.regenerate === 'true';
+      const bodyModel = body.model;
 
-      const model = pickModel(bodyModel || conv.model, req.dbUser);
-
-      if (regenerate) {
-        await db.deleteLastAssistantMessage(conversationId);
-      } else if (message != null && String(message).trim()) {
-        if (String(message).length > MAX_PROMPT_CHARS) {
-          return res.status(400).json({ error: `Message too long (max ${MAX_PROMPT_CHARS} chars)` });
+      let savedFiles = [];
+      if (!regenerate && req.files?.length) {
+        try {
+          savedFiles = persistMulterFiles(req.dbUser.id, req.files);
+        } catch (e) {
+          return res.status(400).json({ error: e.message || 'Файлы не сохранены' });
         }
-        await db.addAiMessage(conversationId, 'user', String(message).trim(), {});
       }
 
-      let rows = await db.listAiMessagesAsc(conversationId, 500);
-      rows = rows.slice(-MAX_CONTEXT_MESSAGES);
-
-      let totalChars = 0;
-      const apiMessages = [];
-      const lessonForPrompt = lesson || (conv.lesson_id ? await db.getLessonById(conv.lesson_id) : null);
-      apiMessages.push({
-        role: 'system',
-        content: getMentorSystemPrompt({ lesson: lessonForPrompt })
-      });
-
-      for (const m of rows) {
-        if (m.role !== 'user' && m.role !== 'assistant') continue;
-        totalChars += (m.content || '').length;
-        apiMessages.push({ role: m.role, content: m.content });
+      if (regenerate && !incomingConvId) {
+        return res.status(400).json({ error: 'conversationId required for regenerate' });
       }
-
-      if (totalChars > MAX_CONTEXT_CHARS) {
-        return res.status(400).json({ error: 'Context too large. Start a new chat or shorten messages.' });
+      if (!regenerate && !message.trim() && !savedFiles.length) {
+        return res.status(400).json({ error: 'Нужен текст сообщения или хотя бы один файл' });
       }
-
-      const estTokens = estimateTokensFromText(JSON.stringify(apiMessages));
-      await assertQuota(req, estTokens);
-
-      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-cache, no-transform');
-      res.setHeader('Connection', 'keep-alive');
-      if (typeof res.flushHeaders === 'function') res.flushHeaders();
-
-      const send = (obj) => {
-        res.write(`data: ${JSON.stringify(obj)}\n\n`);
-      };
-
-      send({ type: 'start', conversationId, model });
-
-      let finalUsage = null;
-      let fullAssistant = '';
 
       try {
-        const gen = streamChatCompletion(openai, {
-          model,
-          messages: apiMessages,
-          maxTokens: 4096
+        let conversationId = incomingConvId;
+        let lesson = null;
+        if (lessonId) {
+          lesson = await db.getLessonById(lessonId);
+        }
+
+        if (!conversationId) {
+          let title = 'New chat';
+          if (!regenerate && message.trim()) {
+            title = String(message).slice(0, 80) + (String(message).length > 80 ? '…' : '');
+          } else if (!regenerate && savedFiles.length) {
+            title = savedFiles[0].name.slice(0, 80) + (savedFiles[0].name.length > 80 ? '…' : '');
+          }
+          const conv = await db.createAiConversation(req.dbUser.id, {
+            lessonId: lesson?.id || lessonId || null,
+            courseId: courseId || lesson?.course_id || null,
+            title,
+            model: pickModel(bodyModel, req.dbUser)
+          });
+          conversationId = conv.id;
+        }
+
+        const conv = await db.getAiConversationForUser(conversationId, req.dbUser.id);
+        if (!conv) {
+          return res.status(404).json({ error: 'Conversation not found' });
+        }
+
+        const model = pickModel(bodyModel || conv.model, req.dbUser);
+
+        if (regenerate) {
+          await db.deleteLastAssistantMessage(conversationId);
+        } else {
+          if (message.trim() && String(message).length > MAX_PROMPT_CHARS) {
+            return res.status(400).json({ error: `Message too long (max ${MAX_PROMPT_CHARS} chars)` });
+          }
+          const userMeta = savedFiles.length ? { files: savedFiles } : {};
+          await db.addAiMessage(conversationId, 'user', message.trim(), userMeta);
+        }
+
+        let rows = await db.listAiMessagesAsc(conversationId, 500);
+        rows = rows.slice(-MAX_CONTEXT_MESSAGES);
+
+        let totalChars = 0;
+        const apiMessages = [];
+        const lessonForPrompt = lesson || (conv.lesson_id ? await db.getLessonById(conv.lesson_id) : null);
+        apiMessages.push({
+          role: 'system',
+          content: getMentorSystemPrompt({ lesson: lessonForPrompt })
         });
 
-        for await (const part of gen) {
-          if (part.type === 'chunk') {
-            fullAssistant += part.text;
-            send({ type: 'chunk', text: part.text });
+        for (const m of rows) {
+          if (m.role !== 'user' && m.role !== 'assistant') continue;
+          let content;
+          if (m.role === 'user') {
+            content = await buildUserContentForApi(m.content, req.dbUser.id, m.meta);
+          } else {
+            content = m.content;
           }
-          if (part.type === 'done') {
-            finalUsage = part.usage;
-            if (part.fullText) fullAssistant = part.fullText;
+          totalChars += estimateContentChars(content);
+          apiMessages.push({ role: m.role, content });
+        }
+
+        if (totalChars > MAX_CONTEXT_CHARS) {
+          return res.status(400).json({ error: 'Context too large. Start a new chat or shorten messages.' });
+        }
+
+        const estTokens = estimateTokensFromText(JSON.stringify(apiMessages));
+        await assertQuota(req, estTokens);
+
+        res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-transform');
+        res.setHeader('Connection', 'keep-alive');
+        if (typeof res.flushHeaders === 'function') res.flushHeaders();
+
+        const send = (obj) => {
+          res.write(`data: ${JSON.stringify(obj)}\n\n`);
+        };
+
+        send({ type: 'start', conversationId, model });
+
+        let finalUsage = null;
+        let fullAssistant = '';
+
+        try {
+          const gen = streamChatCompletion(openai, {
+            model,
+            messages: apiMessages,
+            maxTokens: 4096
+          });
+
+          for await (const part of gen) {
+            if (part.type === 'chunk') {
+              fullAssistant += part.text;
+              send({ type: 'chunk', text: part.text });
+            }
+            if (part.type === 'done') {
+              finalUsage = part.usage;
+              if (part.fullText) fullAssistant = part.fullText;
+            }
+          }
+        } catch (streamErr) {
+          console.error('Stream error:', streamErr.message || streamErr);
+          send({ type: 'error', error: 'AI provider error. Try again.' });
+          res.end();
+          return;
+        }
+
+        const meta = {
+          model,
+          mentor_prompt_version: MENTOR_PROMPT_VERSION
+        };
+        await db.addAiMessage(conversationId, 'assistant', fullAssistant || ' ', meta);
+
+        let promptTokens = finalUsage?.prompt_tokens ?? estimateTokensFromText(JSON.stringify(apiMessages));
+        let completionTokens = finalUsage?.completion_tokens ?? estimateTokensFromText(fullAssistant);
+        const costFromApi = finalUsage?.total_cost ?? finalUsage?.cost;
+        let costUsd =
+          typeof costFromApi === 'number'
+            ? costFromApi
+            : estimateCostUsd(promptTokens, completionTokens, model);
+
+        await db.recordAiUsage({
+          userId: req.dbUser.id,
+          conversationId,
+          model,
+          promptTokens,
+          completionTokens,
+          costUsd
+        });
+
+        let autoTitle;
+        if (!regenerate && (!conv.title || conv.title === 'New chat')) {
+          if (message.trim()) {
+            autoTitle = String(message).slice(0, 80) + (String(message).length > 80 ? '…' : '');
+          } else if (savedFiles.length) {
+            autoTitle = savedFiles[0].name.slice(0, 80) + (savedFiles[0].name.length > 80 ? '…' : '');
           }
         }
-      } catch (streamErr) {
-        console.error('Stream error:', streamErr.message || streamErr);
-        send({ type: 'error', error: 'AI provider error. Try again.' });
+        await db.updateAiConversation(req.dbUser.id, conversationId, {
+          title: autoTitle,
+          model
+        });
+
+        send({
+          type: 'done',
+          conversationId,
+          usage: {
+            prompt_tokens: promptTokens,
+            completion_tokens: completionTokens,
+            cost_usd: costUsd
+          }
+        });
         res.end();
-        return;
-      }
-
-      const meta = {
-        model,
-        mentor_prompt_version: MENTOR_PROMPT_VERSION
-      };
-      await db.addAiMessage(conversationId, 'assistant', fullAssistant || ' ', meta);
-
-      let promptTokens = finalUsage?.prompt_tokens ?? estimateTokensFromText(JSON.stringify(apiMessages));
-      let completionTokens = finalUsage?.completion_tokens ?? estimateTokensFromText(fullAssistant);
-      const costFromApi = finalUsage?.total_cost ?? finalUsage?.cost;
-      let costUsd =
-        typeof costFromApi === 'number'
-          ? costFromApi
-          : estimateCostUsd(promptTokens, completionTokens, model);
-
-      await db.recordAiUsage({
-        userId: req.dbUser.id,
-        conversationId,
-        model,
-        promptTokens,
-        completionTokens,
-        costUsd
-      });
-
-      let autoTitle;
-      if (!regenerate && message && (!conv.title || conv.title === 'New chat')) {
-        autoTitle = String(message).slice(0, 80) + (String(message).length > 80 ? '…' : '');
-      }
-      await db.updateAiConversation(req.dbUser.id, conversationId, {
-        title: autoTitle,
-        model
-      });
-
-      send({
-        type: 'done',
-        conversationId,
-        usage: {
-          prompt_tokens: promptTokens,
-          completion_tokens: completionTokens,
-          cost_usd: costUsd
+      } catch (e) {
+        if (e.message === 'DAILY_LIMIT') {
+          return res.status(429).json({ error: 'Daily token limit reached' });
         }
-      });
-      res.end();
-    } catch (e) {
-      if (e.message === 'DAILY_LIMIT') {
-        return res.status(429).json({ error: 'Daily token limit reached' });
-      }
-      if (e.message === 'MONTHLY_LIMIT') {
-        return res.status(429).json({ error: 'Monthly token limit reached' });
-      }
-      console.error(e);
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'Chat failed' });
+        if (e.message === 'MONTHLY_LIMIT') {
+          return res.status(429).json({ error: 'Monthly token limit reached' });
+        }
+        console.error(e);
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Chat failed' });
+        }
       }
     }
-  });
+  );
 
   return router;
 }
