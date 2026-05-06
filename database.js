@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const { mergeDefaultAllowedModels } = require('./services/academy/modelCatalog');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -12,6 +13,35 @@ async function bootstrapAdminEmail(client) {
     `UPDATE users SET role = 'admin' WHERE lower(trim(email)) = lower(trim($1))`,
     [email]
   );
+}
+
+async function mergeExistingUsersAiAllowedModels(client) {
+  try {
+    const r = await client.query(`SELECT id, ai_allowed_models FROM users`);
+    for (const row of r.rows) {
+      let arr = row.ai_allowed_models;
+      if (typeof arr === 'string') {
+        try {
+          arr = JSON.parse(arr);
+        } catch {
+          arr = [];
+        }
+      }
+      if (!Array.isArray(arr)) arr = [];
+      const merged = mergeDefaultAllowedModels(arr);
+      const prev = JSON.stringify([...arr].sort());
+      const next = JSON.stringify([...merged].sort());
+      if (prev !== next) {
+        await client.query(`UPDATE users SET ai_allowed_models = $1::jsonb WHERE id = $2`, [
+          JSON.stringify(merged),
+          row.id
+        ]);
+      }
+    }
+    console.log('AI Academy: merged preset models into user ai_allowed_models where missing');
+  } catch (e) {
+    console.error('mergeExistingUsersAiAllowedModels:', e.message);
+  }
 }
 
 async function seedAcademyCatalog(client) {
@@ -383,6 +413,7 @@ async function initializeDatabase() {
 
     await seedAcademyCatalog(client);
     await bootstrapAdminEmail(client);
+    await mergeExistingUsersAiAllowedModels(client);
 
     console.log('Database initialization completed successfully');
   } catch (error) {
