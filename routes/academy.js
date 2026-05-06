@@ -20,6 +20,9 @@ const upload = multer({
   limits: { fileSize: MAX_FILE_BYTES, files: MAX_FILES }
 });
 
+const FALLBACK_DAILY_TOKENS = parseInt(process.env.DEFAULT_AI_DAILY_TOKEN_LIMIT || '2000000', 10);
+const FALLBACK_MONTHLY_TOKENS = parseInt(process.env.DEFAULT_AI_MONTHLY_TOKEN_LIMIT || '60000000', 10);
+
 const MAX_PROMPT_CHARS = parseInt(process.env.MAX_PROMPT_CHARS || '32000', 10);
 const MAX_CONTEXT_MESSAGES = parseInt(process.env.MAX_CONTEXT_MESSAGES || '40', 10);
 /** Soft guard; PDF/audio/video base64 is capped in footprint calculation (see multimodal). */
@@ -99,8 +102,8 @@ function createRouter({ JWT_SECRET }) {
       const dayU = await db.sumAiTokensForUser(u.id, dayStart, dayEnd);
       const monthU = await db.sumAiTokensForUser(u.id, monthStart, monthEnd);
 
-      const dailyLimit = u.ai_daily_token_limit ?? 100000;
-      const monthlyLimit = u.ai_monthly_token_limit ?? 5000000;
+      const dailyLimit = u.ai_daily_token_limit ?? FALLBACK_DAILY_TOKENS;
+      const monthlyLimit = u.ai_monthly_token_limit ?? FALLBACK_MONTHLY_TOKENS;
       let allowedModels = ['openai/gpt-4o-mini'];
       try {
         allowedModels = typeof u.ai_allowed_models === 'string'
@@ -223,8 +226,8 @@ function createRouter({ JWT_SECRET }) {
     const dayU = await db.sumAiTokensForUser(u.id, dayStart, dayEnd);
     const monthU = await db.sumAiTokensForUser(u.id, monthStart, monthEnd);
 
-    const dailyLimit = u.ai_daily_token_limit ?? 100000;
-    const monthlyLimit = u.ai_monthly_token_limit ?? 5000000;
+    const dailyLimit = u.ai_daily_token_limit ?? FALLBACK_DAILY_TOKENS;
+    const monthlyLimit = u.ai_monthly_token_limit ?? FALLBACK_MONTHLY_TOKENS;
 
     const usedDay = Number(dayU.prompt_tokens) + Number(dayU.completion_tokens);
     const usedMonth = Number(monthU.prompt_tokens) + Number(monthU.completion_tokens);

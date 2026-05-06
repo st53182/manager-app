@@ -15,6 +15,26 @@ async function bootstrapAdminEmail(client) {
   );
 }
 
+async function bumpLegacyTokenLimits(client) {
+  try {
+    const newDaily = parseInt(process.env.DEFAULT_AI_DAILY_TOKEN_LIMIT || '2000000', 10);
+    const newMonthly = parseInt(process.env.DEFAULT_AI_MONTHLY_TOKEN_LIMIT || '60000000', 10);
+    const r1 = await client.query(
+      `UPDATE users SET ai_daily_token_limit = $1 WHERE ai_daily_token_limit <= 100000`,
+      [newDaily]
+    );
+    const r2 = await client.query(
+      `UPDATE users SET ai_monthly_token_limit = $1 WHERE ai_monthly_token_limit <= 5000000`,
+      [newMonthly]
+    );
+    console.log(
+      `AI Academy: raised legacy token caps (daily updates: ${r1.rowCount}, monthly: ${r2.rowCount}; targets ${newDaily}/${newMonthly})`
+    );
+  } catch (e) {
+    console.error('bumpLegacyTokenLimits:', e.message);
+  }
+}
+
 async function mergeExistingUsersAiAllowedModels(client) {
   try {
     const r = await client.query(`SELECT id, ai_allowed_models FROM users`);
@@ -294,8 +314,8 @@ async function initializeDatabase() {
     for (const col of [
       `ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'student'`,
       `ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true`,
-      `ADD COLUMN IF NOT EXISTS ai_daily_token_limit INTEGER DEFAULT 100000`,
-      `ADD COLUMN IF NOT EXISTS ai_monthly_token_limit INTEGER DEFAULT 5000000`,
+      `ADD COLUMN IF NOT EXISTS ai_daily_token_limit INTEGER DEFAULT 2000000`,
+      `ADD COLUMN IF NOT EXISTS ai_monthly_token_limit INTEGER DEFAULT 60000000`,
       `ADD COLUMN IF NOT EXISTS ai_allowed_models JSONB DEFAULT '["openai/gpt-4o-mini","google/gemini-2.0-flash-001","anthropic/claude-3.5-sonnet"]'::jsonb`
     ]) {
       try {
@@ -312,6 +332,17 @@ async function initializeDatabase() {
       `);
     } catch (e) {
       console.log('ai_allowed_models default alter skipped:', e.message);
+    }
+
+    try {
+      await client.query(`
+        ALTER TABLE users ALTER COLUMN ai_daily_token_limit SET DEFAULT 2000000
+      `);
+      await client.query(`
+        ALTER TABLE users ALTER COLUMN ai_monthly_token_limit SET DEFAULT 60000000
+      `);
+    } catch (e) {
+      console.log('token limit column defaults alter skipped:', e.message);
     }
 
     console.log('AI Academy: courses & lessons...');
@@ -414,6 +445,7 @@ async function initializeDatabase() {
     await seedAcademyCatalog(client);
     await bootstrapAdminEmail(client);
     await mergeExistingUsersAiAllowedModels(client);
+    await bumpLegacyTokenLimits(client);
 
     console.log('Database initialization completed successfully');
   } catch (error) {
