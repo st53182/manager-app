@@ -67,6 +67,28 @@ function sanitizeArtifactHtml(html) {
   });
 }
 
+/** Models often use ```html instead of ```academy-html — detect report-like HTML for live preview. */
+function looksLikeRenderableHtmlArtifact(raw) {
+  const t = (raw || '').trim();
+  if (t.length < 24) return false;
+  if (/<!DOCTYPE\s+html\b/i.test(t)) return true;
+  if (/<html[\s>]/i.test(t)) return true;
+  if (/<body[\s>]/i.test(t)) return true;
+  if (t.length > 120 && /<(?:style|table|main|article|section)\b/i.test(t)) return true;
+  return false;
+}
+
+function suggestedHtmlDownloadName() {
+  const t = document.getElementById('conversationTitle')?.value?.trim();
+  if (!t) return `report-${Date.now()}.html`;
+  const slug = t
+    .replace(/[<>:"/\\|?*]+/g, '')
+    .replace(/\s+/g, '_')
+    .slice(0, 72);
+  const safe = slug || 'report';
+  return `${safe}.html`;
+}
+
 /**
  * Split assistant message into markdown + special fenced blocks (academy-html, mermaid, academy-image-spec).
  */
@@ -99,6 +121,12 @@ function parseAssistantContent(text) {
     const afterFence = close + 4;
     if (lang === 'academy-html') {
       segments.push({ type: 'html', html: body });
+    } else if (/^html$/i.test(lang) || /^htm$/i.test(lang)) {
+      if (looksLikeRenderableHtmlArtifact(body)) {
+        segments.push({ type: 'html', html: body });
+      } else {
+        segments.push({ type: 'markdown', text: s.slice(fenceStart, afterFence) });
+      }
     } else if (lang === 'mermaid') {
       segments.push({ type: 'mermaid', code: body });
     } else if (lang === 'academy-image-spec') {
@@ -144,18 +172,24 @@ async function fillAssistantBubble(root, content) {
       const wrap = document.createElement('div');
       wrap.className = 'my-3 border border-slate-600 rounded-lg overflow-hidden bg-slate-900/80';
       const header = document.createElement('div');
-      header.className = 'flex flex-wrap items-center gap-2 px-2 py-1.5 bg-slate-800 text-xs text-slate-400';
+      header.className =
+        'flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-1.5 bg-slate-800 text-xs text-slate-400';
       const label = document.createElement('span');
-      label.textContent = 'HTML-отчёт';
+      label.className = 'font-medium text-slate-300';
+      label.textContent = 'Превью HTML';
       header.appendChild(label);
       const openBtn = document.createElement('button');
       openBtn.type = 'button';
       openBtn.className = 'text-indigo-400 hover:text-indigo-300';
       openBtn.textContent = 'Открыть в новой вкладке';
+      const dlBtn = document.createElement('button');
+      dlBtn.type = 'button';
+      dlBtn.className = 'text-emerald-400 hover:text-emerald-300';
+      dlBtn.textContent = 'Скачать .html';
       const iframe = document.createElement('iframe');
       iframe.className = 'w-full min-h-[min(70vh,560px)] bg-white';
       iframe.setAttribute('sandbox', 'allow-popups allow-popups-to-escape-sandbox');
-      iframe.title = 'HTML-отчёт';
+      iframe.title = 'Превью отчёта';
       const safe = sanitizeArtifactHtml(seg.html);
       openBtn.addEventListener('click', () => {
         const blob = new Blob([safe], { type: 'text/html;charset=utf-8' });
@@ -163,10 +197,35 @@ async function fillAssistantBubble(root, content) {
         const w = window.open(url, '_blank', 'noopener,noreferrer');
         if (w) setTimeout(() => URL.revokeObjectURL(url), 60000);
       });
+      dlBtn.addEventListener('click', () => {
+        const blob = new Blob([safe], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = suggestedHtmlDownloadName();
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+      });
       iframe.srcdoc = safe;
       header.appendChild(openBtn);
+      header.appendChild(dlBtn);
       wrap.appendChild(header);
       wrap.appendChild(iframe);
+      const details = document.createElement('details');
+      details.className = 'border-t border-slate-700 bg-slate-900/90';
+      const summ = document.createElement('summary');
+      summ.className = 'cursor-pointer px-2 py-1.5 text-xs text-slate-500 hover:text-slate-300';
+      summ.textContent = 'Исходный код (после санитизации)';
+      const pre = document.createElement('pre');
+      pre.className =
+        'max-h-48 overflow-auto px-2 pb-2 text-[11px] leading-snug text-slate-400 whitespace-pre-wrap break-all';
+      pre.textContent = safe;
+      details.appendChild(summ);
+      details.appendChild(pre);
+      wrap.appendChild(details);
       root.appendChild(wrap);
     } else if (seg.type === 'mermaid') {
       const container = document.createElement('div');
