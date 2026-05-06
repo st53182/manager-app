@@ -86,15 +86,35 @@ function normalizeProfileBody(body = {}) {
 
 app.set('trust proxy', 1);
 
+/** Optional extra script hosts (comma-separated), e.g. AV browser injection URLs if they change subdomain. */
+const CSP_EXTRA_SCRIPT_SRC = (process.env.CSP_EXTRA_SCRIPT_SRC || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+/** Kaspersky (and similar) inject scripts into pages for «safe browsing»; CSP blocks them unless listed. */
+const CSP_ALLOW_KASPERSKY =
+  process.env.CSP_ALLOW_KASPERSKY_INJECTION !== 'false';
+
+const cspScriptSrc = [
+  "'self'",
+  "'unsafe-inline'",
+  "'unsafe-hashes'",
+  'https://cdn.tailwindcss.com',
+  'https://cdn.jsdelivr.net',
+  ...(CSP_ALLOW_KASPERSKY ? ['https://gc.kis.v2.scr.kaspersky-labs.com'] : []),
+  ...CSP_EXTRA_SCRIPT_SRC
+];
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-hashes'", "https://cdn.tailwindcss.com", "https://cdn.jsdelivr.net"],
+      scriptSrc: cspScriptSrc,
       scriptSrcAttr: ["'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
+      /** DevTools fetch *.js.map from CDNs; blocked requests were noisy (not required for the app). */
+      connectSrc: ["'self'", 'https://cdn.jsdelivr.net'],
       workerSrc: ["'self'", "blob:"],
       fontSrc: ["'self'", "https://cdn.jsdelivr.net"],
     },
