@@ -164,9 +164,54 @@ function renderConversationList() {
   ul.innerHTML = '';
   for (const c of state.conversations) {
     const li = document.createElement('li');
-    li.innerHTML = `<button type="button" class="w-full text-left truncate py-1 px-2 rounded hover:bg-slate-800 ${c.id === state.currentConversationId ? 'bg-slate-800 text-white' : 'text-slate-400'}" data-id="${c.id}">${escapeHtml(c.title || 'Чат')}</button>`;
-    li.querySelector('button').addEventListener('click', () => loadConversation(c.id));
+    li.className = 'flex items-center gap-0.5 rounded hover:bg-slate-800/40';
+
+    const sel = document.createElement('button');
+    sel.type = 'button';
+    sel.className = `flex-1 min-w-0 text-left truncate py-1 px-2 rounded text-sm ${
+      c.id === state.currentConversationId ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
+    }`;
+    sel.textContent = c.title || 'Чат';
+    sel.addEventListener('click', () => loadConversation(c.id));
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className =
+      'shrink-0 w-8 py-1 text-center text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded text-xl leading-none';
+    delBtn.title = 'Удалить диалог';
+    delBtn.setAttribute('aria-label', 'Удалить диалог');
+    delBtn.textContent = '×';
+    delBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteConversationById(c.id);
+    });
+
+    li.appendChild(sel);
+    li.appendChild(delBtn);
     ul.appendChild(li);
+  }
+}
+
+async function deleteConversationById(id) {
+  if (!confirm('Удалить этот диалог? Восстановить будет нельзя.')) return;
+  try {
+    await api(`/api/academy/conversations/${id}`, { method: 'DELETE' });
+    state.conversations = state.conversations.filter((x) => x.id !== id);
+    if (state.currentConversationId === id) {
+      state.currentConversationId = null;
+      document.getElementById('messagesContainer').innerHTML = '';
+      document.getElementById('conversationTitle').value = '';
+      document.getElementById('lessonHint').textContent = '';
+      const next = state.conversations[0];
+      if (next) {
+        await loadConversation(next.id);
+      } else {
+        updateModelHint();
+      }
+    }
+    renderConversationList();
+  } catch (e) {
+    alert(e.message || 'Не удалось удалить диалог');
   }
 }
 
