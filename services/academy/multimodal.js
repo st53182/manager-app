@@ -199,9 +199,47 @@ async function buildUserContentForApi(text, userId, meta) {
   return parts;
 }
 
+/**
+ * Footprint for rough quota checks (avoid counting full base64 as literal chars).
+ */
+function estimatePayloadFootprintForLimits(content) {
+  if (typeof content === 'string') return (content || '').length;
+  if (!Array.isArray(content)) {
+    try {
+      return JSON.stringify(content).length;
+    } catch {
+      return 0;
+    }
+  }
+  let n = 0;
+  for (const p of content) {
+    if (!p || !p.type) {
+      n += 500;
+      continue;
+    }
+    if (p.type === 'text') {
+      n += (p.text || '').length;
+    } else if (p.type === 'image_url') {
+      const u = p.image_url?.url || '';
+      n += Math.min(u.length, 180000);
+    } else if (p.type === 'file') {
+      const d = p.file?.file_data || '';
+      n += Math.min(d.length, 350000);
+    } else if (p.type === 'input_audio') {
+      const d = p.input_audio?.data || '';
+      n += Math.min(d.length, 250000);
+    } else if (p.type === 'video_url') {
+      const u = p.video_url?.url || '';
+      n += Math.min(u.length, 500000);
+    } else {
+      n += 2000;
+    }
+  }
+  return n;
+}
+
 function estimateContentChars(content) {
-  if (typeof content === 'string') return content.length;
-  return JSON.stringify(content).length;
+  return estimatePayloadFootprintForLimits(content);
 }
 
 module.exports = {
@@ -209,6 +247,7 @@ module.exports = {
   persistMulterFiles,
   buildUserContentForApi,
   estimateContentChars,
+  estimatePayloadFootprintForLimits,
   MAX_FILES,
   MAX_FILE_BYTES,
   ALLOWED_MIME

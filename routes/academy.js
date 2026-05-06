@@ -9,7 +9,7 @@ const { streamChatCompletion, estimateTokensFromText, estimateCostUsd } = requir
 const {
   persistMulterFiles,
   buildUserContentForApi,
-  estimateContentChars,
+  estimatePayloadFootprintForLimits,
   MAX_FILES,
   MAX_FILE_BYTES
 } = require('../services/academy/multimodal');
@@ -22,7 +22,8 @@ const upload = multer({
 
 const MAX_PROMPT_CHARS = parseInt(process.env.MAX_PROMPT_CHARS || '32000', 10);
 const MAX_CONTEXT_MESSAGES = parseInt(process.env.MAX_CONTEXT_MESSAGES || '40', 10);
-const MAX_CONTEXT_CHARS = parseInt(process.env.MAX_CONTEXT_CHARS || '120000', 10);
+/** Soft guard; PDF/audio/video base64 is capped in footprint calculation (see multimodal). */
+const MAX_CONTEXT_CHARS = parseInt(process.env.MAX_CONTEXT_CHARS || '500000', 10);
 
 function createRouter({ JWT_SECRET }) {
   const router = express.Router();
@@ -345,7 +346,7 @@ function createRouter({ JWT_SECRET }) {
           } else {
             content = m.content;
           }
-          totalChars += estimateContentChars(content);
+          totalChars += estimatePayloadFootprintForLimits(content);
           apiMessages.push({ role: m.role, content });
         }
 
