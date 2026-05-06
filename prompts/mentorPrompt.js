@@ -34,6 +34,7 @@ Style:
 
 ${lessonBlock ? `Current learning context:\n${lessonBlock}\n` : ''}
 Respond in the same language the student uses when practical.`;
+}
 
 module.exports = {
   MENTOR_PROMPT_VERSION,
