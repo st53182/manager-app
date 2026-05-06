@@ -29,6 +29,9 @@ const MAX_CONTEXT_MESSAGES = parseInt(process.env.MAX_CONTEXT_MESSAGES || '40', 
 /** Soft guard; PDF/audio/video base64 is capped in footprint calculation (see multimodal). */
 const MAX_CONTEXT_CHARS = parseInt(process.env.MAX_CONTEXT_CHARS || '500000', 10);
 
+/** When true, HTML artifacts may contain scripts (Angular/CDN). XSS risk — enable only in trusted environments. */
+const ARTIFACT_ALLOW_SCRIPTS = process.env.ACADEMY_ARTIFACT_ALLOW_SCRIPTS === 'true';
+
 function createRouter({ JWT_SECRET }) {
   const router = express.Router();
 
@@ -176,7 +179,8 @@ function createRouter({ JWT_SECRET }) {
         },
         allowed_models: allowedModels,
         default_model: getDefaultModel(),
-        model_catalog: getModelCatalog()
+        model_catalog: getModelCatalog(),
+        artifact_allow_scripts: ARTIFACT_ALLOW_SCRIPTS
       });
     } catch (e) {
       console.error(e);

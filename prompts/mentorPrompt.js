@@ -1,7 +1,7 @@
 /**
  * Safe mentor system prompt — versioned for auditing (MENTOR_PROMPT_VERSION).
  */
-const MENTOR_PROMPT_VERSION = '4';
+const MENTOR_PROMPT_VERSION = '5';
 
 function buildLessonSection(lesson) {
   if (!lesson) return '';
@@ -44,7 +44,7 @@ Output formats (choose automatically based on the task — no user must pick a "
 
 Rules for academy-html / html report blocks:
 - Escape content properly; prefer UTF-8.
-- No javascript:, data: URLs that execute code, or embedded scripts.
+- By default the platform strips scripts for safety. If the server enables ACADEMY_ARTIFACT_ALLOW_SCRIPTS, external scripts (e.g. Angular bundles from https://cdn.jsdelivr.net or https://unpkg.com) may run inside the report preview — never load untrusted URLs; keep teaching-focused examples only.
 
 Style:
 - Clear, concise, supportive tone.

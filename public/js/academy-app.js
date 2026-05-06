@@ -59,9 +59,87 @@ function renderMarkdown(text) {
 /** Allowed stylesheet for Material-like reports (same-origin only). */
 const ALLOWED_REPORT_STYLESHEET = '/css/academy-report-material.css';
 
-/** Full HTML documents from the model: strip scripts / interactive vectors before iframe srcdoc. */
-function sanitizeArtifactHtml(html) {
+/**
+ * Full HTML from the model before iframe srcdoc.
+ * @param {boolean} allowScripts — from ACADEMY_ARTIFACT_ALLOW_SCRIPTS (trusted deploys only).
+ */
+function sanitizeArtifactHtml(html, allowScripts) {
   if (!html || typeof DOMPurify === 'undefined') return '';
+
+  if (allowScripts) {
+    return DOMPurify.sanitize(html.trim(), {
+      WHOLE_DOCUMENT: true,
+      ADD_TAGS: [
+        'script',
+        'link',
+        'style',
+        'meta',
+        'title',
+        'thead',
+        'tbody',
+        'tfoot',
+        'colgroup',
+        'col',
+        'template',
+        'svg',
+        'path',
+        'circle',
+        'rect',
+        'line',
+        'polyline',
+        'polygon',
+        'g',
+        'defs',
+        'clipPath',
+        'mask',
+        'use',
+        'text',
+        'tspan'
+      ],
+      ADD_ATTR: [
+        'charset',
+        'name',
+        'content',
+        'media',
+        'colspan',
+        'rowspan',
+        'scope',
+        'rel',
+        'href',
+        'class',
+        'id',
+        'src',
+        'type',
+        'crossorigin',
+        'integrity',
+        'defer',
+        'async',
+        'nomodule',
+        'referrerpolicy',
+        'importance',
+        'loading',
+        'viewBox',
+        'xmlns',
+        'xmlns:xlink',
+        'fill',
+        'stroke',
+        'd',
+        'x',
+        'y',
+        'width',
+        'height',
+        'rx',
+        'cx',
+        'cy',
+        'r',
+        'points',
+        'transform',
+        'aria-hidden',
+        'role'
+      ],
+      FORBID_TAGS: ['iframe', 'object', 'embed', 'base']
+    });
+  }
 
   function stripUnsafeLink(node) {
     if (!node || node.tagName !== 'LINK') return;
@@ -87,6 +165,10 @@ function sanitizeArtifactHtml(html) {
       DOMPurify.removeHook('uponSanitizeElement', stripUnsafeLink);
     }
   }
+}
+
+function artifactAllowScripts() {
+  return Boolean(state.usage?.artifact_allow_scripts);
 }
 
 /** Models often use ```html instead of ```academy-html — detect report-like HTML for live preview. */
@@ -198,7 +280,7 @@ async function fillAssistantBubble(root, content) {
         'flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-1.5 bg-slate-800 text-xs text-slate-400';
       const label = document.createElement('span');
       label.className = 'font-medium text-slate-300';
-      label.textContent = 'Превью HTML';
+      label.textContent = artifactAllowScripts() ? 'Превью HTML · JS разрешён' : 'Превью HTML';
       header.appendChild(label);
       const openBtn = document.createElement('button');
       openBtn.type = 'button';
@@ -210,9 +292,15 @@ async function fillAssistantBubble(root, content) {
       dlBtn.textContent = 'Скачать .html';
       const iframe = document.createElement('iframe');
       iframe.className = 'w-full min-h-[min(70vh,560px)] bg-white';
-      iframe.setAttribute('sandbox', 'allow-popups allow-popups-to-escape-sandbox');
+      const allowJs = artifactAllowScripts();
+      iframe.setAttribute(
+        'sandbox',
+        allowJs
+          ? 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
+          : 'allow-popups allow-popups-to-escape-sandbox'
+      );
       iframe.title = 'Превью отчёта';
-      const safe = sanitizeArtifactHtml(seg.html);
+      const safe = sanitizeArtifactHtml(seg.html, allowJs);
       openBtn.addEventListener('click', () => {
         const blob = new Blob([safe], { type: 'text/html;charset=utf-8' });
         const url = URL.createObjectURL(blob);
@@ -240,7 +328,9 @@ async function fillAssistantBubble(root, content) {
       details.className = 'border-t border-slate-700 bg-slate-900/90';
       const summ = document.createElement('summary');
       summ.className = 'cursor-pointer px-2 py-1.5 text-xs text-slate-500 hover:text-slate-300';
-      summ.textContent = 'Исходный код (после санитизации)';
+      summ.textContent = allowJs
+        ? 'Исходный код (скрипты разрешены — см. env)'
+        : 'Исходный код (после санитизации)';
       const pre = document.createElement('pre');
       pre.className =
         'max-h-48 overflow-auto px-2 pb-2 text-[11px] leading-snug text-slate-400 whitespace-pre-wrap break-all';
