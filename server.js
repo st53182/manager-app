@@ -10,6 +10,11 @@ const rateLimit = require('express-rate-limit');
 const OpenAI = require('openai');
 require('dotenv').config();
 
+const LEGACY_MANAGER_UI_ENABLED = process.env.LEGACY_MANAGER_UI_ENABLED === 'true';
+
+const { createRouter: createAcademyRouter } = require('./routes/academy');
+const { createRouter: createAdminRouter } = require('./routes/admin');
+
 const { 
   initializeDatabase,
   createTeam,
@@ -125,6 +130,21 @@ function authenticateToken(req, res, next) {
   });
 }
 
+app.get('/', (req, res) => {
+  if (!LEGACY_MANAGER_UI_ENABLED) {
+    return res.redirect('/academy');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/academy', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'academy.html'));
+});
+
+app.get('/academy/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'academy-admin.html'));
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/api/register', authLimiter, async (req, res) => {
@@ -144,9 +164,15 @@ app.post('/api/register', authLimiter, async (req, res) => {
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
     const user = await createUser(email, passwordHash, name);
-    
+    const fullUser = await getUserById(user.id);
+
     const token = jwt.sign(
-      { userId: user.id, email: user.email, name: user.name },
+      {
+        userId: fullUser.id,
+        email: fullUser.email,
+        name: fullUser.name,
+        role: fullUser.role || 'student'
+      },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -154,7 +180,12 @@ app.post('/api/register', authLimiter, async (req, res) => {
     res.json({
       message: 'User registered successfully',
       token,
-      user: { id: user.id, email: user.email, name: user.name }
+      user: {
+        id: fullUser.id,
+        email: fullUser.email,
+        name: fullUser.name,
+        role: fullUser.role || 'student'
+      }
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -208,13 +239,27 @@ app.post('/api/login', authLimiter, async (req, res) => {
     }
     
     await updateUserLastLogin(user.id);
-    
-    const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-    
+
+    const token = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role || 'student'
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     res.json({
       success: true,
       token: token,
-      user: { id: user.id, email: user.email, name: user.name }
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role || 'student'
+      }
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -392,10 +437,6 @@ app.delete('/api/employees/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
@@ -405,16 +446,28 @@ app.get('/register', (req, res) => {
 });
 
 app.get('/dashboard', (req, res) => {
+  if (!LEGACY_MANAGER_UI_ENABLED) {
+    return res.redirect('/academy');
+  }
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
 app.get('/employee/:id', (req, res) => {
+  if (!LEGACY_MANAGER_UI_ENABLED) {
+    return res.redirect('/academy');
+  }
   res.sendFile(path.join(__dirname, 'public', 'employee.html'));
 });
 
 app.get('/team/:id', (req, res) => {
+  if (!LEGACY_MANAGER_UI_ENABLED) {
+    return res.redirect('/academy');
+  }
   res.sendFile(path.join(__dirname, 'public', 'team.html'));
 });
+
+app.use('/api/academy', createAcademyRouter({ JWT_SECRET }));
+app.use('/api/admin', createAdminRouter({ JWT_SECRET }));
 
 app.get('/api/employee/:id', authenticateToken, async (req, res) => {
   try {

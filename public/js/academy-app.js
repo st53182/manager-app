@@ -1,0 +1,472 @@
+const apiBase = '';
+
+function getToken() {
+  return localStorage.getItem('auth_token');
+}
+
+function getAuthHeaders() {
+  const token = getToken();
+  return {
+    Authorization: token ? `Bearer ${token}` : '',
+    'Content-Type': 'application/json'
+  };
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(`${apiBase}${path}`, {
+    ...opts,
+    headers: { ...getAuthHeaders(), ...opts.headers }
+  });
+  const ct = res.headers.get('content-type') || '';
+  const body = ct.includes('application/json') ? await res.json() : await res.text();
+  if (!res.ok) {
+    const err = new Error(body.error || body.message || res.statusText || 'Request failed');
+    err.status = res.status;
+    throw err;
+  }
+  return body;
+}
+
+function configureMarked() {
+  if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') return;
+  marked.setOptions({
+    gfm: true,
+    breaks: true,
+    highlight(code, lang) {
+      if (typeof hljs !== 'undefined' && lang && hljs.getLanguage(lang)) {
+        try {
+          return hljs.highlight(code, { language: lang }).value;
+        } catch (_) {}
+      }
+      if (typeof hljs !== 'undefined') {
+        try {
+          return hljs.highlightAuto(code).value;
+        } catch (_) {}
+      }
+      return code;
+    }
+  });
+}
+
+function renderMarkdown(text) {
+  const raw = marked.parse(text || '');
+  return DOMPurify.sanitize(raw, { ADD_ATTR: ['target'] });
+}
+
+const state = {
+  catalog: null,
+  conversations: [],
+  currentConversationId: null,
+  currentLessonId: null,
+  usage: null,
+  streaming: false,
+  selectedModel: null,
+  lastFailedPayload: null
+};
+
+function showGate() {
+  document.getElementById('authGate').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
+}
+
+function showApp() {
+  document.getElementById('authGate').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+}
+
+function parseUser() {
+  try {
+    return JSON.parse(localStorage.getItem('user_info') || '{}');
+  } catch {
+    return {};
+  }
+}
+
+async function init() {
+  configureMarked();
+  if (!getToken()) {
+    showGate();
+    return;
+  }
+
+  const user = parseUser();
+  document.getElementById('userEmail').textContent = user.email || '';
+
+  if (user.role === 'admin') {
+    document.getElementById('adminLink').classList.remove('hidden');
+  }
+
+  try {
+    state.catalog = await api('/api/academy/catalog');
+    state.usage = await api('/api/academy/usage');
+    state.conversations = (await api('/api/academy/conversations')).conversations;
+    renderUsage();
+    renderCourseTree();
+    renderConversationList();
+    populateModels();
+    showApp();
+  } catch (e) {
+    if (e.status === 401 || e.status === 403) {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_info');
+      showGate();
+      return;
+    }
+    alert(e.message || 'Ошибка загрузки');
+  }
+
+  wireUi();
+}
+
+function renderUsage() {
+  const u = state.usage;
+  if (!u) return;
+  const d = u.daily;
+  const dayPct = Math.min(100, Math.round((d.used_tokens / d.limit_tokens) * 100));
+  document.getElementById('usageBadge').textContent = `День: ${dayPct}% · ${d.used_tokens}/${d.limit_tokens} tok`;
+}
+
+function renderCourseTree() {
+  const root = document.getElementById('courseTree');
+  root.innerHTML = '';
+  const byCourse = {};
+  for (const l of state.catalog.lessons) {
+    if (!byCourse[l.course_id]) byCourse[l.course_id] = [];
+    byCourse[l.course_id].push(l);
+  }
+  for (const c of state.catalog.courses) {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `<div class="font-medium text-slate-300 mb-1">${escapeHtml(c.title)}</div>`;
+    const ul = document.createElement('ul');
+    ul.className = 'space-y-0.5 ml-1 border-l border-slate-800 pl-2';
+    for (const l of byCourse[c.id] || []) {
+      const li = document.createElement('li');
+      const prog = state.catalog.progress[l.id];
+      const check = prog?.status === 'completed' ? '✓ ' : '';
+      li.innerHTML = `<button type="button" class="text-left w-full hover:text-indigo-400 py-0.5 truncate text-slate-400" data-lesson="${l.id}">${check}${escapeHtml(l.title)}</button>`;
+      li.querySelector('button').addEventListener('click', () => selectLesson(l));
+      ul.appendChild(li);
+    }
+    wrap.appendChild(ul);
+    root.appendChild(wrap);
+  }
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function renderConversationList() {
+  const ul = document.getElementById('conversationList');
+  ul.innerHTML = '';
+  for (const c of state.conversations) {
+    const li = document.createElement('li');
+    li.innerHTML = `<button type="button" class="w-full text-left truncate py-1 px-2 rounded hover:bg-slate-800 ${c.id === state.currentConversationId ? 'bg-slate-800 text-white' : 'text-slate-400'}" data-id="${c.id}">${escapeHtml(c.title || 'Чат')}</button>`;
+    li.querySelector('button').addEventListener('click', () => loadConversation(c.id));
+    ul.appendChild(li);
+  }
+}
+
+function populateModels() {
+  const sel = document.getElementById('modelSelect');
+  sel.innerHTML = '';
+  const models = state.usage?.allowed_models || ['openai/gpt-4o-mini'];
+  const def = state.usage?.default_model || models[0];
+  for (const m of models) {
+    const o = document.createElement('option');
+    o.value = m;
+    o.textContent = m.split('/').pop();
+    if (m === def) o.selected = true;
+    sel.appendChild(o);
+  }
+  state.selectedModel = sel.value;
+}
+
+async function selectLesson(lesson) {
+  state.currentLessonId = lesson.id;
+  document.getElementById('lessonEmpty').classList.add('hidden');
+  document.getElementById('lessonContent').classList.remove('hidden');
+  document.getElementById('lessonContent').innerHTML = renderMarkdown(lesson.content_md || '');
+  document.getElementById('lessonHint').textContent = `${lesson.course_title || ''} · ${lesson.title}`;
+  const asn = lesson.assignment;
+  if (asn) {
+    document.getElementById('assignmentBlock').classList.remove('hidden');
+    document.getElementById('assignmentText').textContent = asn.instructions_md || '';
+  } else {
+    document.getElementById('assignmentBlock').classList.add('hidden');
+  }
+
+  const conv = await api('/api/academy/conversations', {
+    method: 'POST',
+    body: JSON.stringify({
+      lessonId: lesson.id,
+      courseId: lesson.course_id,
+      title: lesson.title,
+      model: document.getElementById('modelSelect').value
+    })
+  });
+  state.conversations.unshift(conv);
+  state.currentConversationId = conv.id;
+  renderConversationList();
+  await loadConversation(conv.id, { skipFetchList: true });
+}
+
+async function loadConversation(id, opts = {}) {
+  state.currentConversationId = id;
+  const data = await api(`/api/academy/conversations/${id}`);
+  document.getElementById('conversationTitle').value = data.conversation.title || '';
+  document.getElementById('modelSelect').value = data.conversation.model || state.selectedModel;
+  state.selectedModel = document.getElementById('modelSelect').value;
+  if (data.conversation.lesson_id) {
+    const lesson = state.catalog.lessons.find((l) => l.id === data.conversation.lesson_id);
+    if (lesson) {
+      document.getElementById('lessonHint').textContent = `${lesson.course_title} · ${lesson.title}`;
+    }
+  }
+  renderMessages(data.messages || []);
+  if (!opts.skipFetchList) {
+    renderConversationList();
+  }
+}
+
+function renderMessages(messages) {
+  const box = document.getElementById('messagesContainer');
+  box.innerHTML = '';
+  for (const m of messages) {
+    box.appendChild(renderMessageEl(m));
+  }
+  box.scrollTop = box.scrollHeight;
+}
+
+function renderMessageEl(m) {
+  const wrap = document.createElement('div');
+  wrap.className = `flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`;
+  const bubble = document.createElement('div');
+  bubble.className = `max-w-[85%] rounded-2xl px-4 py-2 text-sm ${m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-100'}`;
+  if (m.role === 'assistant') {
+    bubble.innerHTML = renderMarkdown(m.content);
+    bubble.querySelectorAll('pre code').forEach((block) => {
+      if (typeof hljs !== 'undefined') hljs.highlightElement(block);
+    });
+  } else {
+    bubble.textContent = m.content;
+  }
+  const actions = document.createElement('div');
+  actions.className = 'flex gap-2 mt-1 text-xs text-slate-500';
+  const copyBtn = document.createElement('button');
+  copyBtn.type = 'button';
+  copyBtn.className = 'hover:text-white';
+  copyBtn.textContent = 'Копировать';
+  copyBtn.addEventListener('click', () => navigator.clipboard.writeText(m.content));
+  actions.appendChild(copyBtn);
+  const inner = document.createElement('div');
+  inner.appendChild(bubble);
+  inner.appendChild(actions);
+  wrap.appendChild(inner);
+  return wrap;
+}
+
+function appendStreamingBubble() {
+  const box = document.getElementById('messagesContainer');
+  const wrap = document.createElement('div');
+  wrap.className = 'flex justify-start';
+  wrap.id = 'streamingBubble';
+  const bubble = document.createElement('div');
+  bubble.className = 'max-w-[85%] rounded-2xl px-4 py-2 text-sm bg-slate-800 text-slate-100';
+  bubble.innerHTML = '';
+  wrap.appendChild(bubble);
+  box.appendChild(wrap);
+  return bubble;
+}
+
+async function streamChat(payload) {
+  state.lastFailedPayload = payload;
+  document.getElementById('composerError').classList.add('hidden');
+  document.getElementById('retryBtn').classList.add('hidden');
+  document.getElementById('typingRow').classList.add('hidden');
+  state.streaming = true;
+  setComposerBusy(true);
+
+  const res = await fetch(`${apiBase}/api/academy/chat`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    state.streaming = false;
+    setComposerBusy(false);
+    document.getElementById('composerError').textContent = errBody.error || res.statusText;
+    document.getElementById('composerError').classList.remove('hidden');
+    document.getElementById('retryBtn').classList.remove('hidden');
+    throw new Error(errBody.error);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  let bubble = null;
+  let assembled = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const chunks = buf.split('\n\n');
+    buf = chunks.pop() || '';
+    for (const block of chunks) {
+      const line = block.trim();
+      if (!line.startsWith('data:')) continue;
+      const json = JSON.parse(line.slice(5).trim());
+      if (json.type === 'start') {
+        if (json.conversationId) {
+          state.currentConversationId = json.conversationId;
+        }
+        bubble = appendStreamingBubble();
+      }
+      if (json.type === 'chunk' && bubble) {
+        assembled += json.text || '';
+        bubble.innerHTML = renderMarkdown(assembled);
+        bubble.querySelectorAll('pre code').forEach((block) => {
+          if (typeof hljs !== 'undefined') hljs.highlightElement(block);
+        });
+        const box = document.getElementById('messagesContainer');
+        box.scrollTop = box.scrollHeight;
+      }
+      if (json.type === 'done') {
+        state.usage = await api('/api/academy/usage').catch(() => state.usage);
+        renderUsage();
+      }
+      if (json.type === 'error') {
+        document.getElementById('composerError').textContent = json.error || 'Ошибка';
+        document.getElementById('composerError').classList.remove('hidden');
+        document.getElementById('retryBtn').classList.remove('hidden');
+      }
+    }
+  }
+
+  document.getElementById('streamingBubble')?.remove();
+  state.streaming = false;
+  setComposerBusy(false);
+
+  if (state.currentConversationId) {
+    const data = await api(`/api/academy/conversations/${state.currentConversationId}`);
+    renderMessages(data.messages || []);
+    state.conversations = (await api('/api/academy/conversations')).conversations;
+    renderConversationList();
+  }
+}
+
+function setComposerBusy(busy) {
+  document.getElementById('sendBtn').disabled = busy;
+  document.getElementById('composer').disabled = busy;
+}
+
+function wireUi() {
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_info');
+    window.location.href = '/login';
+  });
+
+  document.getElementById('newChatBtn').addEventListener('click', async () => {
+    state.currentLessonId = null;
+    const conv = await api('/api/academy/conversations', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: 'New chat',
+        model: document.getElementById('modelSelect').value
+      })
+    });
+    state.conversations.unshift(conv);
+    state.currentConversationId = conv.id;
+    renderConversationList();
+    document.getElementById('messagesContainer').innerHTML = '';
+    document.getElementById('conversationTitle').value = '';
+    document.getElementById('lessonHint').textContent = '';
+    document.getElementById('lessonEmpty').classList.remove('hidden');
+    document.getElementById('lessonContent').classList.add('hidden');
+    document.getElementById('assignmentBlock').classList.add('hidden');
+  });
+
+  document.getElementById('sendBtn').addEventListener('click', sendHandler);
+
+  document.getElementById('composer').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendHandler();
+    }
+  });
+
+  document.getElementById('modelSelect').addEventListener('change', () => {
+    state.selectedModel = document.getElementById('modelSelect').value;
+  });
+
+  document.getElementById('conversationTitle').addEventListener('change', async () => {
+    if (!state.currentConversationId) return;
+    await api(`/api/academy/conversations/${state.currentConversationId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ title: document.getElementById('conversationTitle').value })
+    });
+    state.conversations = (await api('/api/academy/conversations')).conversations;
+    renderConversationList();
+  });
+
+  document.getElementById('regenerateBtn').addEventListener('click', async () => {
+    if (!state.currentConversationId || state.streaming) return;
+    document.getElementById('typingRow').classList.remove('hidden');
+    await streamChat({
+      conversationId: state.currentConversationId,
+      regenerate: true,
+      model: document.getElementById('modelSelect').value
+    }).catch(() => {});
+    document.getElementById('typingRow').classList.add('hidden');
+  });
+
+  document.getElementById('retryBtn').addEventListener('click', async () => {
+    if (!state.lastFailedPayload || state.streaming) return;
+    document.getElementById('typingRow').classList.remove('hidden');
+    await streamChat(state.lastFailedPayload).catch(() => {});
+    document.getElementById('typingRow').classList.add('hidden');
+  });
+
+  document.getElementById('markDoneBtn').addEventListener('click', async () => {
+    if (!state.currentLessonId) return;
+    await api('/api/academy/progress', {
+      method: 'POST',
+      body: JSON.stringify({ lessonId: state.currentLessonId, status: 'completed' })
+    });
+    state.catalog = await api('/api/academy/catalog');
+    renderCourseTree();
+  });
+}
+
+async function sendHandler() {
+  if (state.streaming) return;
+  const text = document.getElementById('composer').value.trim();
+  if (!text) return;
+
+  document.getElementById('typingRow').classList.remove('hidden');
+
+  const payload = {
+    conversationId: state.currentConversationId || undefined,
+    lessonId: state.currentLessonId || undefined,
+    message: text,
+    model: document.getElementById('modelSelect').value
+  };
+
+  document.getElementById('composer').value = '';
+
+  try {
+    await streamChat(payload);
+  } catch (_) {
+    /* streamed errors handled */
+  }
+
+  document.getElementById('typingRow').classList.add('hidden');
+}
+
+init();

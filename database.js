@@ -5,6 +5,89 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
+async function bootstrapAdminEmail(client) {
+  const email = process.env.BOOTSTRAP_ADMIN_EMAIL;
+  if (!email || !email.trim()) return;
+  await client.query(
+    `UPDATE users SET role = 'admin' WHERE lower(trim(email)) = lower(trim($1))`,
+    [email]
+  );
+}
+
+async function seedAcademyCatalog(client) {
+  const courses = [
+    { slug: 'ai-basics', title: 'Основы AI', description: 'Что такое нейросети и как они работают', sort_order: 1 },
+    { slug: 'prompting-basics', title: 'Основы промптинга', description: 'Формулировки, контекст, few-shot', sort_order: 2 },
+    { slug: 'ai-work', title: 'AI для работы', description: 'Письма, резюме, исследования', sort_order: 3 },
+    { slug: 'ai-content', title: 'AI для контента', description: 'Тексты, сценарии, редактура', sort_order: 4 },
+    { slug: 'ai-analytics', title: 'AI для аналитики', description: 'Данные, таблицы, выводы', sort_order: 5 },
+    { slug: 'ai-business', title: 'AI для бизнеса', description: 'Стратегия, метрики, коммуникации', sort_order: 6 }
+  ];
+
+  for (const c of courses) {
+    await client.query(
+      `INSERT INTO academy_courses (slug, title, description, sort_order)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (slug) DO UPDATE SET title = EXCLUDED.title, description = EXCLUDED.description, sort_order = EXCLUDED.sort_order`,
+      [c.slug, c.title, c.description, c.sort_order]
+    );
+  }
+
+  const lessonSeeds = [
+    { courseSlug: 'ai-basics', title: 'Введение: модели и токены', scenario_key: 'ai-basics-intro', sort_order: 1,
+      content_md: 'Изучите базовые понятия: модель, контекстное окно, токены. Задайте вопросы наставнику в чате.',
+      assignment_title: 'Практика', assignment_instructions: 'Спросите у наставника простыми словами, чем отличается обучение модели от inference.' },
+    { courseSlug: 'ai-basics', title: 'Ограничения и галлюцинации', scenario_key: 'ai-basics-limits', sort_order: 2,
+      content_md: 'Поймите риски: галлюцинации, устаревшие знания, необходимость проверки источников.',
+      assignment_title: 'Критическое мышление', assignment_instructions: 'Попросите наставника объяснить, как проверять ответы AI на факты.' },
+    { courseSlug: 'prompting-basics', title: 'Структура хорошего промпта', scenario_key: 'prompt-structure', sort_order: 1,
+      content_md: 'Роль, контекст, формат вывода, критерии успеха.',
+      assignment_title: 'Написать промпт', assignment_instructions: 'Составьте промпт для задачи «краткое резюме статьи» и попросите наставника оценить его.' },
+    { courseSlug: 'prompting-basics', title: 'Итерации и уточнения', scenario_key: 'prompt-iterate', sort_order: 2,
+      content_md: 'Как улучшать результат вторым и третьим сообщением.',
+      assignment_title: 'Итерация', assignment_instructions: 'Выполните одну задачу в два шага: черновик → уточнение.' },
+    { courseSlug: 'ai-work', title: 'Деловая переписка', scenario_key: 'work-email', sort_order: 1,
+      content_md: 'Тон, ясность, призыв к действию.',
+      assignment_title: 'Черновик письма', assignment_instructions: 'Попросите наставника помочь спланировать письмо клиенту, но напишите финальный текст сами.' },
+    { courseSlug: 'ai-content', title: 'Идея и структура', scenario_key: 'content-outline', sort_order: 1,
+      content_md: 'Заголовки, лиды, структура поста.',
+      assignment_title: 'План поста', assignment_instructions: 'Создайте структуру поста на заданную тему и попросите обратную связь по структуре.' },
+    { courseSlug: 'ai-analytics', title: 'Формулировка вопроса к данным', scenario_key: 'analytics-question', sort_order: 1,
+      content_md: 'Как спросить про метрики без ошибочных интерпретаций.',
+      assignment_title: 'Вопрос к данным', assignment_instructions: 'Опишите вымышленный датасет и попросите наставника помочь сформулировать 3 аналитических вопроса.' },
+    { courseSlug: 'ai-business', title: 'Гипотезы и проверка', scenario_key: 'business-hypothesis', sort_order: 1,
+      content_md: 'От гипотезы к эксперименту и метрикам.',
+      assignment_title: 'Гипотеза', assignment_instructions: 'Сформулируйте бизнес-гипотезу и попросите наставника указать слабые места.' }
+  ];
+
+  for (const L of lessonSeeds) {
+    const cr = await client.query(`SELECT id FROM academy_courses WHERE slug = $1`, [L.courseSlug]);
+    if (!cr.rows[0]) continue;
+    const courseId = cr.rows[0].id;
+    const ins = await client.query(
+      `INSERT INTO academy_lessons (course_id, title, content_md, scenario_key, sort_order)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (course_id, scenario_key) DO UPDATE SET
+         title = EXCLUDED.title,
+         content_md = EXCLUDED.content_md,
+         sort_order = EXCLUDED.sort_order
+       RETURNING id`,
+      [courseId, L.title, L.content_md, L.scenario_key, L.sort_order]
+    );
+    const lessonId = ins.rows[0]?.id;
+    if (lessonId) {
+      await client.query(
+        `INSERT INTO academy_assignments (lesson_id, title, instructions_md)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (lesson_id) DO UPDATE SET
+           title = EXCLUDED.title,
+           instructions_md = EXCLUDED.instructions_md`,
+        [lessonId, L.assignment_title, L.assignment_instructions]
+      );
+    }
+  }
+}
+
 async function initializeDatabase() {
   console.log('Starting database initialization...');
   console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set (length: ' + process.env.DATABASE_URL.length + ')' : 'NOT SET');
@@ -176,6 +259,121 @@ async function initializeDatabase() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    console.log('AI Academy: extending users table...');
+    for (const col of [
+      `ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'student'`,
+      `ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true`,
+      `ADD COLUMN IF NOT EXISTS ai_daily_token_limit INTEGER DEFAULT 100000`,
+      `ADD COLUMN IF NOT EXISTS ai_monthly_token_limit INTEGER DEFAULT 5000000`,
+      `ADD COLUMN IF NOT EXISTS ai_allowed_models JSONB DEFAULT '["openai/gpt-4o-mini"]'::jsonb`
+    ]) {
+      try {
+        await client.query(`ALTER TABLE users ${col}`);
+      } catch (e) {
+        console.log('users alter skipped:', e.message);
+      }
+    }
+
+    console.log('AI Academy: courses & lessons...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS academy_courses (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        slug VARCHAR(100) UNIQUE NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        sort_order INTEGER DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS academy_lessons (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        course_id UUID NOT NULL REFERENCES academy_courses(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        content_md TEXT,
+        scenario_key VARCHAR(100),
+        sort_order INTEGER DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_academy_lessons_course_scenario
+      ON academy_lessons(course_id, scenario_key);
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS academy_assignments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        lesson_id UUID NOT NULL REFERENCES academy_lessons(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        instructions_md TEXT,
+        rubric_json JSONB DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_academy_assignments_lesson ON academy_assignments(lesson_id);
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS academy_user_lesson_progress (
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        lesson_id UUID NOT NULL REFERENCES academy_lessons(id) ON DELETE CASCADE,
+        status VARCHAR(30) DEFAULT 'not_started',
+        score NUMERIC(5,2),
+        completed_at TIMESTAMPTZ,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, lesson_id)
+      );
+    `);
+
+    console.log('AI Academy: conversations & usage...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ai_conversations (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        lesson_id UUID REFERENCES academy_lessons(id) ON DELETE SET NULL,
+        course_id UUID REFERENCES academy_courses(id) ON DELETE SET NULL,
+        title VARCHAR(500) DEFAULT 'New chat',
+        model VARCHAR(200),
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ai_messages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        conversation_id UUID NOT NULL REFERENCES ai_conversations(id) ON DELETE CASCADE,
+        role VARCHAR(20) NOT NULL,
+        content TEXT NOT NULL,
+        meta JSONB DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ai_usage_events (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        conversation_id UUID REFERENCES ai_conversations(id) ON DELETE SET NULL,
+        model VARCHAR(200),
+        prompt_tokens INTEGER DEFAULT 0,
+        completion_tokens INTEGER DEFAULT 0,
+        cost_usd NUMERIC(14, 8),
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_ai_messages_conv_created ON ai_messages(conversation_id, created_at);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_ai_conv_user_updated ON ai_conversations(user_id, updated_at DESC);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_ai_usage_user_created ON ai_usage_events(user_id, created_at DESC);
+    `);
+
+    await seedAcademyCatalog(client);
+    await bootstrapAdminEmail(client);
 
     console.log('Database initialization completed successfully');
   } catch (error) {
@@ -545,6 +743,354 @@ async function getCustomSkillTrees(managerId) {
   }
 }
 
+async function getAcademyCatalog() {
+  const client = await pool.connect();
+  try {
+    const courses = await client.query(
+      `SELECT * FROM academy_courses ORDER BY sort_order ASC, title ASC`
+    );
+    const lessons = await client.query(
+      `SELECT l.*, c.slug AS course_slug, c.title AS course_title
+       FROM academy_lessons l
+       JOIN academy_courses c ON c.id = l.course_id
+       ORDER BY c.sort_order, l.sort_order`
+    );
+    const assigns = await client.query(`SELECT * FROM academy_assignments`);
+    const byLesson = {};
+    for (const a of assigns.rows) byLesson[a.lesson_id] = a;
+    return {
+      courses: courses.rows,
+      lessons: lessons.rows.map((l) => ({
+        ...l,
+        assignment: byLesson[l.id] || null
+      }))
+    };
+  } finally {
+    client.release();
+  }
+}
+
+async function getLessonById(lessonId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT l.*, c.slug AS course_slug, c.title AS course_title
+       FROM academy_lessons l
+       JOIN academy_courses c ON c.id = l.course_id
+       WHERE l.id = $1`,
+      [lessonId]
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function createAiConversation(userId, { lessonId = null, courseId = null, title = 'New chat', model = null }) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `INSERT INTO ai_conversations (user_id, lesson_id, course_id, title, model)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [userId, lessonId, courseId, title, model]
+    );
+    return r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function listAiConversations(userId, limit = 50) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT * FROM ai_conversations WHERE user_id = $1 ORDER BY updated_at DESC LIMIT $2`,
+      [userId, limit]
+    );
+    return r.rows;
+  } finally {
+    client.release();
+  }
+}
+
+async function getAiConversationForUser(conversationId, userId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT * FROM ai_conversations WHERE id = $1 AND user_id = $2`,
+      [conversationId, userId]
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function updateAiConversation(userId, conversationId, { title, model }) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `UPDATE ai_conversations SET
+        title = COALESCE($3, title),
+        model = COALESCE($4, model),
+        updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND user_id = $2 RETURNING *`,
+      [conversationId, userId, title ?? null, model ?? null]
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function touchConversationUpdated(conversationId) {
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `UPDATE ai_conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      [conversationId]
+    );
+  } finally {
+    client.release();
+  }
+}
+
+async function deleteAiConversation(userId, conversationId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `DELETE FROM ai_conversations WHERE id = $1 AND user_id = $2 RETURNING id`,
+      [conversationId, userId]
+    );
+    return !!r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function addAiMessage(conversationId, role, content, meta = {}) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `INSERT INTO ai_messages (conversation_id, role, content, meta)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [conversationId, role, content, JSON.stringify(meta)]
+    );
+    await client.query(
+      `UPDATE ai_conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      [conversationId]
+    );
+    return r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function listAiMessagesAsc(conversationId, limit = 200) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT * FROM ai_messages WHERE conversation_id = $1 ORDER BY created_at ASC LIMIT $2`,
+      [conversationId, limit]
+    );
+    return r.rows;
+  } finally {
+    client.release();
+  }
+}
+
+async function deleteLastAssistantMessage(conversationId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `DELETE FROM ai_messages WHERE id = (
+        SELECT id FROM ai_messages WHERE conversation_id = $1 AND role = 'assistant'
+        ORDER BY created_at DESC LIMIT 1
+      ) RETURNING id`,
+      [conversationId]
+    );
+    return !!r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function sumAiTokensForUser(userId, start, end) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT
+        COALESCE(SUM(prompt_tokens), 0)::bigint AS prompt_tokens,
+        COALESCE(SUM(completion_tokens), 0)::bigint AS completion_tokens,
+        COALESCE(SUM(cost_usd), 0)::numeric AS cost_usd
+       FROM ai_usage_events
+       WHERE user_id = $1 AND created_at >= $2 AND created_at < $3`,
+      [userId, start, end]
+    );
+    return r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function recordAiUsage({ userId, conversationId, model, promptTokens, completionTokens, costUsd }) {
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `INSERT INTO ai_usage_events (user_id, conversation_id, model, prompt_tokens, completion_tokens, cost_usd)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [userId, conversationId, model, promptTokens, completionTokens, costUsd]
+    );
+  } finally {
+    client.release();
+  }
+}
+
+async function upsertLessonProgress(userId, lessonId, { status, score = null }) {
+  const client = await pool.connect();
+  try {
+    const completedAt = status === 'completed' ? new Date() : null;
+    await client.query(
+      `INSERT INTO academy_user_lesson_progress (user_id, lesson_id, status, score, completed_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, lesson_id) DO UPDATE SET
+         status = EXCLUDED.status,
+         score = COALESCE(EXCLUDED.score, academy_user_lesson_progress.score),
+         completed_at = COALESCE(EXCLUDED.completed_at, academy_user_lesson_progress.completed_at),
+         updated_at = CURRENT_TIMESTAMP`,
+      [userId, lessonId, status, score, completedAt]
+    );
+  } finally {
+    client.release();
+  }
+}
+
+async function getLessonProgressForUser(userId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT * FROM academy_user_lesson_progress WHERE user_id = $1`,
+      [userId]
+    );
+    return r.rows;
+  } finally {
+    client.release();
+  }
+}
+
+async function listUsersForAdmin(limit = 100, offset = 0) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT id, email, name, role, is_active, ai_daily_token_limit, ai_monthly_token_limit, ai_allowed_models,
+              created_at, last_login
+       FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    return r.rows;
+  } finally {
+    client.release();
+  }
+}
+
+async function adminUpdateUser(userId, patch) {
+  const client = await pool.connect();
+  try {
+    const allowed = ['role', 'is_active', 'ai_daily_token_limit', 'ai_monthly_token_limit', 'ai_allowed_models'];
+    const sets = [];
+    const vals = [];
+    let i = 1;
+    for (const k of allowed) {
+      if (typeof patch[k] !== 'undefined') {
+        sets.push(`${k} = $${i++}`);
+        if (k === 'ai_allowed_models') {
+          vals.push(JSON.stringify(patch[k]));
+        } else {
+          vals.push(patch[k]);
+        }
+      }
+    }
+    if (!sets.length) return getUserById(userId);
+    vals.push(userId);
+    const r = await client.query(
+      `UPDATE users SET ${sets.join(', ')} WHERE id = $${i} RETURNING *`,
+      vals
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function adminListAllConversations(limit = 100, offset = 0, filterUserId = null) {
+  const client = await pool.connect();
+  try {
+    const params = filterUserId ? [filterUserId, limit, offset] : [limit, offset];
+    const q = filterUserId
+      ? `SELECT c.*, u.email AS user_email FROM ai_conversations c
+         JOIN users u ON u.id = c.user_id WHERE c.user_id = $1
+         ORDER BY c.updated_at DESC LIMIT $2 OFFSET $3`
+      : `SELECT c.*, u.email AS user_email FROM ai_conversations c
+         JOIN users u ON u.id = c.user_id
+         ORDER BY c.updated_at DESC LIMIT $1 OFFSET $2`;
+    const r = await client.query(q, params);
+    return r.rows;
+  } finally {
+    client.release();
+  }
+}
+
+async function adminGetConversation(conversationId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT c.*, u.email AS user_email FROM ai_conversations c
+       JOIN users u ON u.id = c.user_id WHERE c.id = $1`,
+      [conversationId]
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function adminExportUsage(start, end) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT e.*, u.email AS user_email
+       FROM ai_usage_events e
+       JOIN users u ON u.id = e.user_id
+       WHERE e.created_at >= $1 AND e.created_at < $2
+       ORDER BY e.created_at DESC`,
+      [start, end]
+    );
+    return r.rows;
+  } finally {
+    client.release();
+  }
+}
+
+async function adminSumUsageByUser(start, end) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT u.id, u.email, u.name,
+        COALESCE(SUM(e.prompt_tokens), 0)::bigint AS prompt_tokens,
+        COALESCE(SUM(e.completion_tokens), 0)::bigint AS completion_tokens,
+        COALESCE(SUM(e.cost_usd), 0)::numeric AS cost_usd
+       FROM users u
+       LEFT JOIN ai_usage_events e ON e.user_id = u.id AND e.created_at >= $1 AND e.created_at < $2
+       GROUP BY u.id, u.email, u.name
+       ORDER BY u.email`,
+      [start, end]
+    );
+    return r.rows;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   initializeDatabase,
   createTeam,
@@ -568,5 +1114,26 @@ module.exports = {
   addSkillDevelopmentHistory,
   getSkillDevelopmentHistory,
   createCustomSkillTree,
-  getCustomSkillTrees
+  getCustomSkillTrees,
+  getAcademyCatalog,
+  getLessonById,
+  createAiConversation,
+  listAiConversations,
+  getAiConversationForUser,
+  updateAiConversation,
+  touchConversationUpdated,
+  deleteAiConversation,
+  addAiMessage,
+  listAiMessagesAsc,
+  deleteLastAssistantMessage,
+  sumAiTokensForUser,
+  recordAiUsage,
+  upsertLessonProgress,
+  getLessonProgressForUser,
+  listUsersForAdmin,
+  adminUpdateUser,
+  adminListAllConversations,
+  adminGetConversation,
+  adminExportUsage,
+  adminSumUsageByUser
 };
