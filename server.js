@@ -95,6 +95,7 @@ app.use(helmet({
       scriptSrcAttr: ["'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'"],
+      workerSrc: ["'self'", "blob:"],
       fontSrc: ["'self'", "https://cdn.jsdelivr.net"],
     },
   },
