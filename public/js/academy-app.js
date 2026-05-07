@@ -633,15 +633,26 @@ function updateModelHint() {
 
 function populateKnowledgeBases() {
   const sel = document.getElementById('knowledgeBaseSelect');
+  const actionSel = document.getElementById('kbActionSelect');
   if (!sel) return;
   sel.innerHTML = `<option value="">${tr('academy.controls.no_kb', 'Без базы знаний')}</option>`;
+  if (actionSel) {
+    actionSel.innerHTML = '<option value="">Выберите базу знаний</option>';
+  }
   for (const kb of state.knowledgeBases) {
     const o = document.createElement('option');
     o.value = kb.id;
     o.textContent = kb.name;
     sel.appendChild(o);
+    if (actionSel) {
+      const actionOption = document.createElement('option');
+      actionOption.value = kb.id;
+      actionOption.textContent = kb.name;
+      actionSel.appendChild(actionOption);
+    }
   }
   if (state.selectedKnowledgeBaseId) sel.value = state.selectedKnowledgeBaseId;
+  if (actionSel && state.selectedKnowledgeBaseId) actionSel.value = state.selectedKnowledgeBaseId;
 }
 
 function populatePersonas() {
@@ -840,6 +851,24 @@ function appendStreamingBubble() {
   wrap.appendChild(bubble);
   box.appendChild(wrap);
   return bubble;
+}
+
+function appendOptimisticUserMessage(message, files = []) {
+  const box = document.getElementById('messagesContainer');
+  if (!box) return;
+  const meta = files.length
+    ? {
+        files: files.map((file) => ({ name: file.name, size: file.size }))
+      }
+    : undefined;
+  box.appendChild(
+    renderMessageEl({
+      role: 'user',
+      content: message || '',
+      meta
+    })
+  );
+  box.scrollTop = box.scrollHeight;
 }
 
 async function streamChat(payload) {
@@ -1227,6 +1256,33 @@ function wireUi() {
       state.knowledgeDocuments = [];
       renderKnowledgeBases();
     }
+    await refreshKbStatus();
+  });
+  document.getElementById('kbActionSelect')?.addEventListener('change', async () => {
+    const selected = document.getElementById('kbActionSelect').value || null;
+    state.selectedKnowledgeBaseId = selected;
+    state.activeKnowledgeBaseId = selected;
+    const kbControl = document.getElementById('knowledgeBaseSelect');
+    if (kbControl) kbControl.value = selected || '';
+    if (selected) {
+      await openKnowledgeBase(selected);
+    } else {
+      state.knowledgeDocuments = [];
+      renderKnowledgeBases();
+    }
+    await refreshKbStatus();
+  });
+  document.getElementById('openSelectedKbBtn')?.addEventListener('click', async () => {
+    const selected = document.getElementById('kbActionSelect')?.value || state.selectedKnowledgeBaseId;
+    if (!selected) {
+      alert('Сначала выберите базу знаний.');
+      return;
+    }
+    state.selectedKnowledgeBaseId = selected;
+    state.activeKnowledgeBaseId = selected;
+    const kbControl = document.getElementById('knowledgeBaseSelect');
+    if (kbControl) kbControl.value = selected;
+    await openKnowledgeBase(selected);
     await refreshKbStatus();
   });
 
@@ -1685,6 +1741,10 @@ async function sendHandler() {
   const hasFiles = fileInput?.files?.length > 0;
   if (!text && !hasFiles) return;
 
+  const selectedFiles = fileInput?.files ? Array.from(fileInput.files) : [];
+  appendOptimisticUserMessage(text, selectedFiles);
+  const typingLabel = document.getElementById('typingLabel');
+  if (typingLabel) typingLabel.textContent = 'Нейросеть обрабатывает запрос...';
   document.getElementById('typingRow').classList.remove('hidden');
 
   const payload = {

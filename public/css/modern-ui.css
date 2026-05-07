@@ -235,6 +235,7 @@ body.academy-theme #newChatBtn,
 body.academy-theme #sendBtn,
 body.academy-theme #createKbBtn,
 body.academy-theme #uploadKbBtn,
+body.academy-theme #openSelectedKbBtn,
 body.academy-theme #savePromptBtn,
 body.academy-theme #evaluatePromptBtn,
 body.academy-theme #runCompareBtn,
@@ -273,6 +274,7 @@ body.academy-theme #createAssistantBtn,
 body.academy-theme #runWorkflowBtn,
 body.academy-theme #hallucinationAttemptBtn,
 body.academy-theme #generateCertBtn,
+body.academy-theme #openSelectedKbBtn,
 body.academy-theme #regenerateBtn {
   color: #cbd5e1 !important;
   border-color: var(--modern-border) !important;
@@ -280,6 +282,7 @@ body.academy-theme #regenerateBtn {
 }
 
 body.academy-theme #regenerateBtn:hover,
+body.academy-theme #openSelectedKbBtn:hover,
 body.academy-theme #savePromptBtn:hover,
 body.academy-theme #evaluatePromptBtn:hover,
 body.academy-theme #runCompareBtn:hover,
