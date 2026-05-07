@@ -142,15 +142,15 @@ async function fillAssistantBubble(root, content) {
       root.appendChild(el);
     } else if (seg.type === 'html') {
       const wrap = document.createElement('div');
-      wrap.className = 'my-3 border border-slate-600 rounded-lg overflow-hidden bg-slate-900/80';
+      wrap.className = 'my-3 border border-slate-300 rounded-lg overflow-hidden bg-white';
       const header = document.createElement('div');
-      header.className = 'flex flex-wrap items-center gap-2 px-2 py-1.5 bg-slate-800 text-xs text-slate-400';
+      header.className = 'flex flex-wrap items-center gap-2 px-2 py-1.5 bg-slate-100 text-xs text-slate-600';
       const label = document.createElement('span');
       label.textContent = 'HTML-отчёт';
       header.appendChild(label);
       const openBtn = document.createElement('button');
       openBtn.type = 'button';
-      openBtn.className = 'text-indigo-400 hover:text-indigo-300';
+      openBtn.className = 'text-indigo-600 hover:text-indigo-500';
       openBtn.textContent = 'Открыть в новой вкладке';
       const iframe = document.createElement('iframe');
       iframe.className = 'w-full min-h-[min(70vh,560px)] bg-white';
@@ -170,7 +170,7 @@ async function fillAssistantBubble(root, content) {
       root.appendChild(wrap);
     } else if (seg.type === 'mermaid') {
       const container = document.createElement('div');
-      container.className = 'my-3 p-3 bg-slate-900 rounded-lg border border-slate-600 overflow-x-auto';
+      container.className = 'my-3 p-3 bg-white rounded-lg border border-slate-300 overflow-x-auto';
       const graphEl = document.createElement('pre');
       graphEl.className = 'mermaid';
       graphEl.textContent = seg.code.trim();
@@ -178,7 +178,7 @@ async function fillAssistantBubble(root, content) {
       root.appendChild(container);
     } else if (seg.type === 'imageSpec') {
       const wrap = document.createElement('div');
-      wrap.className = 'my-3 p-3 rounded-lg border border-violet-700/40 bg-violet-950/30 text-sm space-y-2';
+      wrap.className = 'my-3 p-3 rounded-lg border border-violet-300 bg-violet-50 text-sm space-y-2';
       const title = document.createElement('div');
       title.className = 'text-xs font-medium text-violet-300';
       title.textContent = 'Спецификация инфографики (academy-image-spec)';
@@ -195,12 +195,12 @@ async function fillAssistantBubble(root, content) {
             ? spec.text
             : '';
       const preview = document.createElement('pre');
-      preview.className = 'text-xs text-slate-400 whitespace-pre-wrap max-h-32 overflow-y-auto';
+      preview.className = 'text-xs text-slate-600 whitespace-pre-wrap max-h-32 overflow-y-auto';
       preview.textContent = seg.jsonText;
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className =
-        'text-xs bg-violet-800 hover:bg-violet-700 rounded px-3 py-1.5 text-violet-100 border border-violet-600';
+        'text-xs bg-violet-600 hover:bg-violet-500 rounded px-3 py-1.5 text-white border border-violet-500';
       btn.textContent = 'Сгенерировать картинку';
       btn.addEventListener('click', () => {
         const combined = [prompt, typeof spec.style_notes === 'string' ? spec.style_notes : '']
@@ -312,14 +312,14 @@ function renderCourseTree() {
   }
   for (const c of state.catalog.courses) {
     const wrap = document.createElement('div');
-    wrap.innerHTML = `<div class="font-medium text-slate-300 mb-1">${escapeHtml(c.title)}</div>`;
+    wrap.innerHTML = `<div class="font-medium text-slate-800 mb-1">${escapeHtml(c.title)}</div>`;
     const ul = document.createElement('ul');
-    ul.className = 'space-y-0.5 ml-1 border-l border-slate-800 pl-2';
+    ul.className = 'space-y-0.5 ml-1 border-l border-slate-300 pl-2';
     for (const l of byCourse[c.id] || []) {
       const li = document.createElement('li');
       const prog = state.catalog.progress[l.id];
       const check = prog?.status === 'completed' ? '✓ ' : '';
-      li.innerHTML = `<button type="button" class="text-left w-full hover:text-indigo-400 py-0.5 truncate text-slate-400" data-lesson="${l.id}">${check}${escapeHtml(l.title)}</button>`;
+      li.innerHTML = `<button type="button" class="text-left w-full hover:text-indigo-600 py-0.5 truncate text-slate-600" data-lesson="${l.id}">${check}${escapeHtml(l.title)}</button>`;
       li.querySelector('button').addEventListener('click', () => selectLesson(l));
       ul.appendChild(li);
     }
@@ -339,12 +339,12 @@ function renderConversationList() {
   ul.innerHTML = '';
   for (const c of state.conversations) {
     const li = document.createElement('li');
-    li.className = 'flex items-center gap-0.5 rounded hover:bg-slate-800/40';
+    li.className = 'flex items-center gap-0.5 rounded hover:bg-slate-100';
 
     const sel = document.createElement('button');
     sel.type = 'button';
     sel.className = `flex-1 min-w-0 text-left truncate py-1 px-2 rounded text-sm ${
-      c.id === state.currentConversationId ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
+      c.id === state.currentConversationId ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:text-slate-900'
     }`;
     sel.textContent = c.title || 'Чат';
     sel.addEventListener('click', () => loadConversation(c.id));
@@ -352,7 +352,7 @@ function renderConversationList() {
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className =
-      'shrink-0 w-8 py-1 text-center text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded text-xl leading-none';
+      'shrink-0 w-8 py-1 text-center text-slate-500 hover:text-red-500 hover:bg-slate-100 rounded text-xl leading-none';
     delBtn.title = 'Удалить диалог';
     delBtn.setAttribute('aria-label', 'Удалить диалог');
     delBtn.textContent = '×';
@@ -488,7 +488,7 @@ function renderMessageEl(m) {
   const wrap = document.createElement('div');
   wrap.className = `flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`;
   const bubble = document.createElement('div');
-  bubble.className = `max-w-[85%] rounded-2xl px-4 py-2 text-sm ${m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-100'}`;
+  bubble.className = `max-w-[85%] rounded-2xl px-4 py-2 text-sm ${m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-900'}`;
   if (m.role === 'assistant') {
     bubble.innerHTML = '';
     fillAssistantBubble(bubble, m.content).catch(() => {
@@ -512,7 +512,7 @@ function renderMessageEl(m) {
     bubble.appendChild(textDiv);
   }
   const actions = document.createElement('div');
-  actions.className = 'flex gap-2 mt-1 text-xs text-slate-500';
+  actions.className = 'flex gap-2 mt-1 text-xs text-slate-600';
   const copyBtn = document.createElement('button');
   copyBtn.type = 'button';
   copyBtn.className = 'hover:text-white';
@@ -532,7 +532,7 @@ function appendStreamingBubble() {
   wrap.className = 'flex justify-start';
   wrap.id = 'streamingBubble';
   const bubble = document.createElement('div');
-  bubble.className = 'max-w-[85%] rounded-2xl px-4 py-2 text-sm bg-slate-800 text-slate-100';
+  bubble.className = 'max-w-[85%] rounded-2xl px-4 py-2 text-sm bg-white border border-slate-200 text-slate-900';
   bubble.innerHTML = '';
   wrap.appendChild(bubble);
   box.appendChild(wrap);
