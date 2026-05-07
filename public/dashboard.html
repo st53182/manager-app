@@ -6,8 +6,9 @@
     <title data-translate="dashboard.title">Панель управления - Менеджер Команд</title>
     <meta name="title-key" content="dashboard.title">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/modern-ui.css">
     <style>
-        :root { color-scheme: light; }
+        :root { color-scheme: dark; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
@@ -28,18 +29,18 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <nav class="bg-white shadow-sm border-b">
+<body class="modern-theme min-h-screen">
+    <nav class="modern-navbar">
         <div class="container mx-auto px-4 py-3">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                    <a href="/" class="text-xl font-bold text-blue-600" data-translate="nav.title">Менеджер Команд</a>
+                    <a href="/" class="text-xl font-bold modern-brand" data-translate="nav.title">Менеджер Команд</a>
                 </div>
                 <div class="flex items-center space-x-6">
                     <div id="languageSwitcher"></div>
                     <div class="flex items-center space-x-4">
-                        <span id="userName" class="text-gray-700"></span>
-                        <button id="logoutBtn" class="text-gray-600 hover:text-red-600 transition-colors" data-translate="nav.logout">Выйти</button>
+                        <span id="userName" class="modern-muted"></span>
+                        <button id="logoutBtn" class="modern-nav-link transition-colors" data-translate="nav.logout">Выйти</button>
                     </div>
                 </div>
             </div>
@@ -49,25 +50,25 @@
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-6xl mx-auto">
             <div class="mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 mb-2" data-translate="dashboard.heading">Панель управления</h1>
-                <p class="text-gray-600">
+                <h1 class="text-3xl font-bold modern-title mb-2" data-translate="dashboard.heading">Панель управления</h1>
+                <p class="modern-muted">
                     <span data-translate="dashboard.welcome">Добро пожаловать</span>, 
                     <span id="welcomeUserName" class="font-semibold"></span>!
                 </p>
             </div>
 
             <!-- Teams Section -->
-            <div class="mb-12">
+            <div class="mb-12 modern-card p-6">
                 <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl font-semibold text-gray-900" data-translate="dashboard.teams_section">Мои команды</h2>
-                    <button id="createTeamBtn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors" data-translate="dashboard.create_team">
+                    <h2 class="text-2xl font-semibold modern-title" data-translate="dashboard.teams_section">Мои команды</h2>
+                    <button id="createTeamBtn" class="modern-btn modern-btn-primary" data-translate="dashboard.create_team">
                         Создать команду
                     </button>
                 </div>
 
                 <div id="teamsLoading" class="text-center py-8">
                     <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    <p class="mt-2 text-gray-600" data-translate="dashboard.loading">Загрузка...</p>
+                    <p class="mt-2 modern-muted" data-translate="dashboard.loading">Загрузка...</p>
                 </div>
 
                 <div id="teamsContainer" class="hidden">
@@ -80,9 +81,9 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.196-2.121l-.004-.003A3 3 0 0117 20zM9 12a4 4 0 100-8 4 4 0 000 8zm8 0a4 4 0 100-8 4 4 0 000 8z" />
                             </svg>
                         </div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2" data-translate="dashboard.no_teams">У вас пока нет команд</h3>
-                        <p class="text-gray-600 mb-4" data-translate="dashboard.create_first_team">Создайте свою первую команду</p>
-                        <button id="createFirstTeamBtn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors" data-translate="dashboard.create_team">
+                        <h3 class="text-lg font-medium modern-title mb-2" data-translate="dashboard.no_teams">У вас пока нет команд</h3>
+                        <p class="modern-muted mb-4" data-translate="dashboard.create_first_team">Создайте свою первую команду</p>
+                        <button id="createFirstTeamBtn" class="modern-btn modern-btn-primary" data-translate="dashboard.create_team">
                             Создать команду
                         </button>
                     </div>
@@ -90,17 +91,17 @@
             </div>
 
             <!-- Employees Section -->
-            <div class="mb-12">
+            <div class="mb-12 modern-card p-6">
                 <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl font-semibold text-gray-900" data-translate="dashboard.employees_section">Мои сотрудники</h2>
-                    <button id="createEmployeeBtn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors" data-translate="dashboard.create_employee">
+                    <h2 class="text-2xl font-semibold modern-title" data-translate="dashboard.employees_section">Мои сотрудники</h2>
+                    <button id="createEmployeeBtn" class="modern-btn modern-btn-success" data-translate="dashboard.create_employee">
                         Добавить сотрудника
                     </button>
                 </div>
 
                 <div id="employeesLoading" class="text-center py-8">
                     <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                    <p class="mt-2 text-gray-600" data-translate="dashboard.loading">Загрузка...</p>
+                    <p class="mt-2 modern-muted" data-translate="dashboard.loading">Загрузка...</p>
                 </div>
 
                 <div id="employeesContainer" class="hidden">
@@ -113,16 +114,16 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                         </div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2" data-translate="dashboard.no_employees">У вас пока нет сотрудников</h3>
-                        <p class="text-gray-600 mb-4" data-translate="dashboard.add_first_employee">Добавьте первого сотрудника</p>
-                        <button id="createFirstEmployeeBtn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors" data-translate="dashboard.create_employee">
+                        <h3 class="text-lg font-medium modern-title mb-2" data-translate="dashboard.no_employees">У вас пока нет сотрудников</h3>
+                        <p class="modern-muted mb-4" data-translate="dashboard.add_first_employee">Добавьте первого сотрудника</p>
+                        <button id="createFirstEmployeeBtn" class="modern-btn modern-btn-success" data-translate="dashboard.create_employee">
                             Добавить сотрудника
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div id="error" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+            <div id="error" class="hidden mt-4 p-4 modern-alert">
                 <p class="text-red-800" id="errorMessage"></p>
             </div>
         </div>
@@ -130,10 +131,10 @@
 
     <!-- Team Modal -->
     <div id="teamModal" class="modal">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+        <div class="modern-card p-6 w-full max-w-md mx-4">
             <div class="flex items-center justify-between mb-4">
-                <h3 id="teamModalTitle" class="text-lg font-semibold text-gray-900" data-translate="teams.create_team">Создать команду</h3>
-                <button id="closeTeamModal" class="text-gray-400 hover:text-gray-600">
+                <h3 id="teamModalTitle" class="text-lg font-semibold modern-title" data-translate="teams.create_team">Создать команду</h3>
+                <button id="closeTeamModal" class="modern-nav-link">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -142,7 +143,7 @@
             
             <form id="teamForm" class="space-y-4">
                 <div>
-                    <label for="teamName" class="block text-sm font-medium text-gray-700 mb-2" data-translate="teams.team_name">
+                    <label for="teamName" class="block text-sm font-medium modern-muted mb-2" data-translate="teams.team_name">
                         Название команды
                     </label>
                     <input 
@@ -152,12 +153,12 @@
                         required
                         placeholder="Введите название команды"
                         data-translate="teams.team_name_placeholder"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="modern-input px-3 py-2"
                     />
                 </div>
 
                 <div>
-                    <label for="teamDescription" class="block text-sm font-medium text-gray-700 mb-2" data-translate="teams.team_description">
+                    <label for="teamDescription" class="block text-sm font-medium modern-muted mb-2" data-translate="teams.team_description">
                         Описание команды
                     </label>
                     <textarea 
@@ -166,14 +167,14 @@
                         rows="3"
                         placeholder="Введите описание команды (необязательно)"
                         data-translate="teams.team_description_placeholder"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="modern-textarea px-3 py-2"
                     ></textarea>
                 </div>
 
                 <div class="flex space-x-3">
                     <button 
                         type="submit" 
-                        class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                        class="flex-1 modern-btn modern-btn-primary py-2 px-4"
                         data-translate="teams.save_team"
                     >
                         Сохранить команду
@@ -181,7 +182,7 @@
                     <button 
                         type="button" 
                         id="cancelTeamBtn"
-                        class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+                        class="flex-1 modern-btn modern-btn-secondary py-2 px-4"
                         data-translate="teams.cancel"
                     >
                         Отмена
@@ -193,10 +194,10 @@
 
     <!-- Employee Modal -->
     <div id="employeeModal" class="modal">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+        <div class="modern-card p-6 w-full max-w-md mx-4">
             <div class="flex items-center justify-between mb-4">
-                <h3 id="employeeModalTitle" class="text-lg font-semibold text-gray-900" data-translate="employees.create_employee">Добавить сотрудника</h3>
-                <button id="closeEmployeeModal" class="text-gray-400 hover:text-gray-600">
+                <h3 id="employeeModalTitle" class="text-lg font-semibold modern-title" data-translate="employees.create_employee">Добавить сотрудника</h3>
+                <button id="closeEmployeeModal" class="modern-nav-link">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -205,7 +206,7 @@
             
             <form id="employeeForm" class="space-y-4">
                 <div>
-                    <label for="employeeName" class="block text-sm font-medium text-gray-700 mb-2" data-translate="employees.employee_name">
+                    <label for="employeeName" class="block text-sm font-medium modern-muted mb-2" data-translate="employees.employee_name">
                         Имя сотрудника
                     </label>
                     <input 
@@ -215,12 +216,12 @@
                         required
                         placeholder="Введите имя сотрудника"
                         data-translate="employees.employee_name_placeholder"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="modern-input px-3 py-2"
                     />
                 </div>
 
                 <div>
-                    <label for="employeeEmail" class="block text-sm font-medium text-gray-700 mb-2" data-translate="employees.employee_email">
+                    <label for="employeeEmail" class="block text-sm font-medium modern-muted mb-2" data-translate="employees.employee_email">
                         Email сотрудника
                     </label>
                     <input 
@@ -229,12 +230,12 @@
                         name="email" 
                         placeholder="Введите email сотрудника (необязательно)"
                         data-translate="employees.employee_email_placeholder"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="modern-input px-3 py-2"
                     />
                 </div>
 
                 <div>
-                    <label for="employeePosition" class="block text-sm font-medium text-gray-700 mb-2" data-translate="employees.employee_position">
+                    <label for="employeePosition" class="block text-sm font-medium modern-muted mb-2" data-translate="employees.employee_position">
                         Должность
                     </label>
                     <input 
@@ -243,25 +244,25 @@
                         name="position" 
                         placeholder="Введите должность (необязательно)"
                         data-translate="employees.employee_position_placeholder"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="modern-input px-3 py-2"
                     />
                 </div>
 
                 <div>
-                    <label for="employeeTeam" class="block text-sm font-medium text-gray-700 mb-2" data-translate="employees.employee_team">
+                    <label for="employeeTeam" class="block text-sm font-medium modern-muted mb-2" data-translate="employees.employee_team">
                         Команда
                     </label>
                     <select 
                         id="employeeTeam" 
                         name="teamId"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="modern-select px-3 py-2"
                     >
                         <option value="" data-translate="employees.no_team">Без команды</option>
                     </select>
                 </div>
 
                 <div>
-                    <label for="employeePhone" class="block text-sm font-medium text-gray-700 mb-2" data-translate="employees.employee_phone">
+                    <label for="employeePhone" class="block text-sm font-medium modern-muted mb-2" data-translate="employees.employee_phone">
                         Телефон
                     </label>
                     <input 
@@ -270,26 +271,26 @@
                         name="phone" 
                         placeholder="Введите телефон (необязательно)"
                         data-translate="employees.employee_phone_placeholder"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="modern-input px-3 py-2"
                     />
                 </div>
 
                 <div>
-                    <label for="employeeHireDate" class="block text-sm font-medium text-gray-700 mb-2" data-translate="employees.hire_date">
+                    <label for="employeeHireDate" class="block text-sm font-medium modern-muted mb-2" data-translate="employees.hire_date">
                         Дата найма
                     </label>
                     <input 
                         type="date" 
                         id="employeeHireDate" 
                         name="hireDate"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="modern-input px-3 py-2"
                     />
                 </div>
 
                 <div class="flex space-x-3">
                     <button 
                         type="submit" 
-                        class="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+                        class="flex-1 modern-btn modern-btn-success py-2 px-4"
                         data-translate="employees.save_employee"
                     >
                         Сохранить сотрудника
@@ -297,7 +298,7 @@
                     <button 
                         type="button" 
                         id="cancelEmployeeBtn"
-                        class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+                        class="flex-1 modern-btn modern-btn-secondary py-2 px-4"
                         data-translate="employees.cancel"
                     >
                         Отмена

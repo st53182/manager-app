@@ -5,21 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Academy — Workspace</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/modern-ui.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github.min.css">
   <style>
-    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color-scheme: light; }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color-scheme: dark; }
     :root {
-      --cursor-bg: #f8fafc;
-      --cursor-surface: #ffffff;
-      --cursor-surface-alt: #f1f5f9;
-      --cursor-border: #dbe2ea;
-      --cursor-text: #0f172a;
-      --cursor-muted: #64748b;
-      --cursor-primary: #4f8cff;
-      --cursor-primary-hover: #6ea5ff;
-      --academy-text-strong: #0f172a;
-      --academy-text: #1f2937;
-      --academy-text-muted: #475569;
+      --cursor-bg: transparent;
+      --cursor-surface: rgba(15, 23, 42, 0.8);
+      --cursor-surface-alt: rgba(30, 41, 59, 0.55);
+      --cursor-border: rgba(148, 163, 184, 0.26);
+      --cursor-text: #e2e8f0;
+      --cursor-muted: #9fb0cb;
+      --cursor-primary: #3b82f6;
+      --cursor-primary-hover: #60a5fa;
+      --academy-text-strong: #f8fafc;
+      --academy-text: #dbeafe;
+      --academy-text-muted: #9fb0cb;
     }
     #app {
       --left-pane-width: 18rem;
@@ -40,17 +41,7 @@
     #markDoneBtn:hover {
       background: #35383e !important;
     }
-    .splitter {
-      width: 8px;
-      cursor: col-resize;
-      background: var(--cursor-border);
-      transition: background-color 0.2s ease;
-      flex: 0 0 8px;
-    }
-    .splitter:hover,
-    .splitter.is-dragging {
-      background: #94a3b8;
-    }
+    .splitter { width: 8px; cursor: col-resize; transition: background-color 0.2s ease; flex: 0 0 8px; }
     .tool-tab {
       border: 1px solid var(--cursor-border);
       background: var(--cursor-surface-alt);
@@ -74,7 +65,7 @@
     @keyframes typingPulse { 0%, 80%, 100% { opacity: 0.3; } 40% { opacity: 1; } }
   </style>
 </head>
-<body class="min-h-screen" style="background: var(--cursor-bg); color: var(--cursor-text);">
+<body class="min-h-screen academy-theme" style="background: var(--cursor-bg); color: var(--cursor-text);">
   <div id="authGate" class="hidden max-w-md mx-auto px-4 py-24 text-center">
     <h1 class="text-2xl font-semibold mb-4">Вход в AI Academy</h1>
     <p class="text-slate-600 mb-6">Требуется авторизация.</p>
@@ -162,7 +153,10 @@
         <div id="rightSplitter" class="splitter hidden lg:block" aria-hidden="true"></div>
 
         <section id="toolsPanel" class="w-full lg:w-96 lg:shrink-0 overflow-y-auto border-t lg:border-t-0 lg:border-l p-4 text-sm text-slate-700" style="background: var(--cursor-surface); border-color: var(--cursor-border);">
-          <h2 class="text-slate-900 font-semibold mb-3" data-i18n="academy.tools.title">Инструменты</h2>
+          <div class="mb-3">
+            <h2 class="text-slate-900 font-semibold" data-i18n="academy.tools.title">Инструменты</h2>
+            <p class="text-xs mt-1" style="color: var(--cursor-muted);">Управляйте знаниями, промптами и экспериментами в единой панели.</p>
+          </div>
           <div id="toolsTabs" class="grid grid-cols-2 gap-2 mb-3 text-xs">
             <button type="button" class="tool-tab is-active rounded px-2 py-1.5" data-tool-tab="kb">База знаний</button>
             <button type="button" class="tool-tab rounded px-2 py-1.5" data-tool-tab="prompts">Промпты</button>
@@ -173,10 +167,12 @@
           <div class="tool-panel is-active" data-tool-panel="kb">
             <h3 id="kbHeading" class="text-slate-900 font-medium mb-2">База знаний</h3>
             <div class="space-y-2">
-              <input id="kbNameInput" type="text" placeholder="Название базы знаний" class="w-full rounded px-2 py-1.5 text-xs text-slate-800" style="background: #ffffff; border: 1px solid var(--cursor-border);" />
-              <button type="button" id="createKbBtn" class="text-xs rounded px-3 py-1.5 text-slate-800" style="background: var(--cursor-surface-alt); border: 1px solid var(--cursor-border);">Создать KB</button>
+              <input id="kbNameInput" type="text" placeholder="Название базы знаний" class="w-full rounded px-2 py-1.5 text-xs text-slate-800" style="border: 1px solid var(--cursor-border);" />
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button type="button" id="createKbBtn" class="text-xs rounded px-3 py-2 text-slate-800">Создать KB</button>
+                <button type="button" id="uploadKbBtn" class="text-xs rounded px-3 py-2 text-slate-800">Загрузить документы</button>
+              </div>
               <input type="file" id="kbUploadInput" class="w-full text-xs text-slate-700" multiple />
-              <button type="button" id="uploadKbBtn" class="text-xs rounded px-3 py-1.5 text-slate-800" style="background: var(--cursor-surface-alt); border: 1px solid var(--cursor-border);">Загрузить документы</button>
               <p class="text-[11px] text-slate-500">Управление: открыть, переименовать, поиск, скачивание и удаление файлов.</p>
               <div id="kbStatusList" class="text-xs text-slate-600 space-y-1"></div>
               <ul id="knowledgeBaseList" class="space-y-2 pt-1"></ul>
@@ -184,27 +180,35 @@
           </div>
           <div class="tool-panel" data-tool-panel="prompts">
             <h3 id="promptsHeading" class="text-slate-900 font-medium mb-2">Инструменты промптов</h3>
-            <button type="button" id="savePromptBtn" class="text-xs rounded px-3 py-1.5 mr-2 text-slate-800" style="background: var(--cursor-surface-alt); border: 1px solid var(--cursor-border);">Сохранить prompt</button>
-            <button type="button" id="evaluatePromptBtn" class="text-xs rounded px-3 py-1.5 text-slate-800" style="background: var(--cursor-surface-alt); border: 1px solid var(--cursor-border);">Оценить prompt</button>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" id="savePromptBtn" class="text-xs rounded px-3 py-1.5 text-slate-800">Сохранить prompt</button>
+              <button type="button" id="evaluatePromptBtn" class="text-xs rounded px-3 py-1.5 text-slate-800">Оценить prompt</button>
+            </div>
             <pre id="promptEvalOutput" class="mt-2 text-xs text-slate-600 whitespace-pre-wrap"></pre>
           </div>
           <div class="tool-panel" data-tool-panel="models">
             <h3 id="modelsHeading" class="text-slate-900 font-medium mb-2">Сравнение моделей и Playground</h3>
-            <input id="compareModelsInput" type="text" placeholder="model1,model2" class="w-full rounded px-2 py-1.5 text-xs mb-2 text-slate-800" style="background: #ffffff; border: 1px solid var(--cursor-border);" />
-            <button type="button" id="runCompareBtn" class="text-xs rounded px-3 py-1.5 mr-2 text-slate-800" style="background: var(--cursor-surface-alt); border: 1px solid var(--cursor-border);">Сравнить</button>
-            <button type="button" id="runPlaygroundBtn" class="text-xs rounded px-3 py-1.5 text-slate-800" style="background: var(--cursor-surface-alt); border: 1px solid var(--cursor-border);">Запуск в Playground</button>
+            <input id="compareModelsInput" type="text" placeholder="model1,model2" class="w-full rounded px-2 py-1.5 text-xs mb-2 text-slate-800" style="border: 1px solid var(--cursor-border);" />
+            <div class="flex flex-wrap gap-2">
+              <button type="button" id="runCompareBtn" class="text-xs rounded px-3 py-1.5 text-slate-800">Сравнить</button>
+              <button type="button" id="runPlaygroundBtn" class="text-xs rounded px-3 py-1.5 text-slate-800">Запуск в Playground</button>
+            </div>
             <pre id="compareOutput" class="mt-2 text-xs text-slate-600 whitespace-pre-wrap max-h-48 overflow-y-auto"></pre>
           </div>
           <div class="tool-panel" data-tool-panel="assistant">
             <h3 id="assistantHeading" class="text-slate-900 font-medium mb-2">Ассистенты и workflow</h3>
-            <button type="button" id="createAssistantBtn" class="text-xs rounded px-3 py-1.5 mr-2 text-slate-800" style="background: var(--cursor-surface-alt); border: 1px solid var(--cursor-border);">Создать ассистента</button>
-            <button type="button" id="runWorkflowBtn" class="text-xs rounded px-3 py-1.5 text-slate-800" style="background: var(--cursor-surface-alt); border: 1px solid var(--cursor-border);">Запустить workflow</button>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" id="createAssistantBtn" class="text-xs rounded px-3 py-1.5 text-slate-800">Создать ассистента</button>
+              <button type="button" id="runWorkflowBtn" class="text-xs rounded px-3 py-1.5 text-slate-800">Запустить workflow</button>
+            </div>
             <pre id="builderOutput" class="mt-2 text-xs text-slate-600 whitespace-pre-wrap max-h-48 overflow-y-auto"></pre>
           </div>
           <div class="tool-panel" data-tool-panel="training">
             <h3 id="trainingHeading" class="text-slate-900 font-medium mb-2">Тренировка галлюцинаций и сертификат</h3>
-            <button type="button" id="hallucinationAttemptBtn" class="text-xs rounded px-3 py-1.5 mr-2 text-slate-800" style="background: var(--cursor-surface-alt); border: 1px solid var(--cursor-border);">Отправить попытку</button>
-            <button type="button" id="generateCertBtn" class="text-xs rounded px-3 py-1.5 text-slate-800" style="background: var(--cursor-surface-alt); border: 1px solid var(--cursor-border);">Сгенерировать сертификат</button>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" id="hallucinationAttemptBtn" class="text-xs rounded px-3 py-1.5 text-slate-800">Отправить попытку</button>
+              <button type="button" id="generateCertBtn" class="text-xs rounded px-3 py-1.5 text-slate-800">Сгенерировать сертификат</button>
+            </div>
             <pre id="trainingOutput" class="mt-2 text-xs text-slate-600 whitespace-pre-wrap"></pre>
           </div>
         </section>

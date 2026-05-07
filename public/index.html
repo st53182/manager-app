@@ -6,6 +6,7 @@
     <title data-translate="index.title">AI Academy - Главная</title>
     <meta name="title-key" content="index.title">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/modern-ui.css">
     <style>
         :root { color-scheme: light; }
         body {
@@ -13,23 +14,23 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <nav class="bg-white shadow-sm border-b">
+<body class="modern-theme min-h-screen">
+    <nav class="modern-navbar">
         <div class="container mx-auto px-4 py-3">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                    <a href="/" class="text-xl font-bold text-blue-600" data-translate="nav.title">AI Academy</a>
+                    <a href="/" class="text-xl font-bold modern-brand" data-translate="nav.title">AI Academy</a>
                 </div>
                 <div class="flex items-center space-x-6">
                     <div id="languageSwitcher"></div>
                     <div id="authButtons">
-                        <a href="/login" class="text-gray-600 hover:text-blue-600 transition-colors mr-4" data-translate="nav.login">Войти</a>
-                        <a href="/register" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors" data-translate="nav.register">Регистрация</a>
+                        <a href="/login" class="modern-nav-link transition-colors mr-4" data-translate="nav.login">Войти</a>
+                        <a href="/register" class="modern-btn modern-btn-primary" data-translate="nav.register">Регистрация</a>
                     </div>
                     <div id="userMenu" class="hidden flex items-center space-x-4">
                         <span id="userName" class="text-gray-700"></span>
-                        <a href="/academy" class="text-gray-600 hover:text-blue-600 transition-colors" data-translate="nav.dashboard">Панель управления</a>
-                        <button id="logoutBtn" class="text-gray-600 hover:text-red-600 transition-colors" data-translate="nav.logout">Выйти</button>
+                        <a href="/academy" class="modern-nav-link transition-colors" data-translate="nav.dashboard">Панель управления</a>
+                        <button id="logoutBtn" class="modern-nav-link transition-colors" data-translate="nav.logout">Выйти</button>
                     </div>
                 </div>
             </div>
@@ -38,12 +39,12 @@
     
     <div class="container mx-auto px-4 py-16">
         <div class="max-w-5xl mx-auto text-center">
-            <h1 class="text-5xl font-bold text-gray-900 mb-6" data-translate="index.heading">AI Academy</h1>
-            <p class="text-xl text-gray-600 mb-12" data-translate="index.subtitle">Обучающая платформа с AI-наставником, уроками и практикой</p>
+            <h1 class="text-5xl font-bold modern-title mb-6" data-translate="index.heading">AI Academy</h1>
+            <p class="text-xl modern-muted mb-12" data-translate="index.subtitle">Обучающая платформа с AI-наставником, уроками и практикой</p>
             
             <div id="guestContent" class="space-y-8">
-                <div class="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-                    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Что есть в платформе</h2>
+                <div class="modern-card p-8">
+                    <h2 class="text-2xl font-semibold modern-title mb-4">Что есть в платформе</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
                         <div class="flex items-start space-x-3">
                             <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -52,8 +53,8 @@
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="font-semibold text-gray-900">AI-диалоги по теме урока</h3>
-                                <p class="text-gray-600">Задавайте вопросы, получайте объяснения и примеры в чате</p>
+                                <h3 class="font-semibold modern-title">AI-диалоги по теме урока</h3>
+                                <p class="modern-muted">Задавайте вопросы, получайте объяснения и примеры в чате</p>
                             </div>
                         </div>
                         <div class="flex items-start space-x-3">
@@ -63,8 +64,8 @@
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="font-semibold text-gray-900">Структурированные курсы</h3>
-                                <p class="text-gray-600">Проходите уроки по шагам и отслеживайте прогресс</p>
+                                <h3 class="font-semibold modern-title">Структурированные курсы</h3>
+                                <p class="modern-muted">Проходите уроки по шагам и отслеживайте прогресс</p>
                             </div>
                         </div>
                         <div class="flex items-start space-x-3">
@@ -74,8 +75,8 @@
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="font-semibold text-gray-900">Практические задания</h3>
-                                <p class="text-gray-600">Закрепляйте материал с помощью упражнений и чекпоинтов</p>
+                                <h3 class="font-semibold modern-title">Практические задания</h3>
+                                <p class="modern-muted">Закрепляйте материал с помощью упражнений и чекпоинтов</p>
                             </div>
                         </div>
                         <div class="flex items-start space-x-3">
@@ -85,45 +86,45 @@
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="font-semibold text-gray-900">Управление доступом и лимитами</h3>
-                                <p class="text-gray-600">Гибкая админ-панель для пользователей и моделей</p>
+                                <h3 class="font-semibold modern-title">Управление доступом и лимитами</h3>
+                                <p class="modern-muted">Гибкая админ-панель для пользователей и моделей</p>
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="space-y-4">
-                    <a href="/register" class="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors" data-translate="index.get_started">
+                    <a href="/register" class="inline-block modern-btn modern-btn-primary px-8 py-3 text-lg" data-translate="index.get_started">
                         Начать работу
                     </a>
-                    <p class="text-gray-600">
+                    <p class="modern-muted">
                         <span data-translate="index.login_to_continue">Войдите для продолжения</span>
-                        <a href="/login" class="text-blue-600 hover:text-blue-700 ml-1" data-translate="nav.login">Войти</a>
+                        <a href="/login" class="ml-1 modern-nav-link" data-translate="nav.login">Войти</a>
                     </p>
                 </div>
             </div>
 
             <div id="userContent" class="hidden">
-                <div class="bg-white rounded-lg shadow-lg p-8">
-                    <h2 class="text-2xl font-semibold text-gray-900 mb-6" data-translate="dashboard.welcome">Добро пожаловать</h2>
+                <div class="modern-card p-8">
+                    <h2 class="text-2xl font-semibold modern-title mb-6" data-translate="dashboard.welcome">Добро пожаловать</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <a href="/academy" class="block bg-blue-50 hover:bg-blue-100 rounded-lg p-6 transition-colors">
+                        <a href="/academy" class="block modern-card-soft rounded-lg p-6 transition-colors">
                             <div class="text-blue-600 mb-3">
                                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 012-2h2a2 2 0 002 2v2a2 2 0 002 2h6a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2-2V3a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 002 2h2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2v-4z"></path>
                                 </svg>
                             </div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Рабочее пространство</h3>
-                            <p class="text-gray-600">Перейдите к чатам, урокам и заданиям</p>
+                            <h3 class="text-lg font-semibold modern-title mb-2">Рабочее пространство</h3>
+                            <p class="modern-muted">Перейдите к чатам, урокам и заданиям</p>
                         </a>
-                        <a href="/academy/admin" class="block bg-green-50 hover:bg-green-100 rounded-lg p-6 transition-colors">
+                        <a href="/academy/admin" class="block modern-card-soft rounded-lg p-6 transition-colors">
                             <div class="text-green-600 mb-3">
                                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.196-2.121l-.004-.003A3 3 0 0117 20zM9 12a4 4 0 100-8 4 4 0 000 8zm8 0a4 4 0 100-8 4 4 0 000 8z"></path>
                                 </svg>
                             </div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Панель администратора</h3>
-                            <p class="text-gray-600">Управление пользователями, чатами и usage</p>
+                            <h3 class="text-lg font-semibold modern-title mb-2">Панель администратора</h3>
+                            <p class="modern-muted">Управление пользователями, чатами и usage</p>
                         </a>
                     </div>
                 </div>

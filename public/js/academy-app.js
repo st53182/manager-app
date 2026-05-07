@@ -656,34 +656,57 @@ function populatePersonas() {
   }
 }
 
+function normalizeKbStatus(rawStatus) {
+  const status = String(rawStatus || '').toLowerCase();
+  if (/ready|indexed|completed|done|ok|available|success/.test(status)) {
+    return { css: 'status-ready', label: 'готово' };
+  }
+  if (/error|failed|failure/.test(status)) {
+    return { css: 'status-error', label: 'ошибка' };
+  }
+  return { css: 'status-pending', label: status || 'в обработке' };
+}
+
 async function refreshKbStatus() {
   const box = document.getElementById('kbStatusList');
   if (!box) return;
   box.innerHTML = '';
   if (!state.selectedKnowledgeBaseId) {
-    box.textContent = tr('academy.kb.select_for_status', 'Выберите базу знаний для просмотра статусов.');
+    const empty = document.createElement('div');
+    empty.className = 'kb-empty';
+    empty.textContent = tr('academy.kb.select_for_status', 'Выберите базу знаний для просмотра статусов.');
+    box.appendChild(empty);
     return;
   }
   const rows = (await api(`/api/academy/knowledge-bases/${state.selectedKnowledgeBaseId}/documents`)).documents || [];
   if (!rows.length) {
-    box.textContent = tr('academy.kb.no_docs', 'Документов пока нет.');
+    const empty = document.createElement('div');
+    empty.className = 'kb-empty';
+    empty.textContent = tr('academy.kb.no_docs', 'Документов пока нет.');
+    box.appendChild(empty);
     return;
   }
   rows.slice(0, 12).forEach((d) => {
     const row = document.createElement('div');
-    row.className = 'flex items-center gap-2';
+    row.className = 'kb-status-row';
     const displayName = d.original_name || d.name || 'document';
+    const statusInfo = normalizeKbStatus(d.status);
+    const statusPill = document.createElement('span');
+    statusPill.className = `kb-status-pill ${statusInfo.css}`;
+    statusPill.textContent = statusInfo.label;
+    statusPill.title = `Статус: ${d.status || 'unknown'}`;
     const text = document.createElement('span');
-    text.className = 'flex-1 truncate';
-    text.title = displayName;
-    text.textContent = `${displayName} — ${d.status}${d.error_message ? ` (${d.error_message})` : ''}`;
+    text.className = 'kb-status-text';
+    text.title = d.error_message ? `${displayName} (${d.error_message})` : displayName;
+    text.textContent = displayName;
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
-    delBtn.className = 'text-red-500 hover:text-red-600 px-1';
+    delBtn.className = 'icon-btn danger';
     delBtn.textContent = '×';
     delBtn.title = 'Удалить файл';
     delBtn.setAttribute('aria-label', `Удалить файл ${displayName}`);
     delBtn.addEventListener('click', () => deleteDocumentHandler(d.id));
+    row.appendChild(statusPill);
     row.appendChild(text);
     row.appendChild(delBtn);
     box.appendChild(row);
@@ -954,7 +977,11 @@ function initToolTabs() {
   const panels = Array.from(document.querySelectorAll('[data-tool-panel]'));
   if (!tabs.length || !panels.length) return;
   const activate = (id) => {
-    tabs.forEach((tab) => tab.classList.toggle('is-active', tab.dataset.toolTab === id));
+    tabs.forEach((tab) => {
+      const active = tab.dataset.toolTab === id;
+      tab.classList.toggle('is-active', active);
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
     panels.forEach((panel) => panel.classList.toggle('is-active', panel.dataset.toolPanel === id));
   };
   tabs.forEach((tab) => {
@@ -1430,30 +1457,29 @@ function renderKnowledgeBases() {
   ul.innerHTML = '';
   if (!state.knowledgeBases.length) {
     const li = document.createElement('li');
-    li.className = 'text-slate-500 text-xs';
+    li.className = 'kb-empty';
     li.textContent = 'Нет баз знаний';
     ul.appendChild(li);
     return;
   }
   for (const kb of state.knowledgeBases) {
     const li = document.createElement('li');
-    li.className = 'border rounded p-2 bg-white';
-    li.style.borderColor = 'var(--cursor-border)';
     const isActive = state.activeKnowledgeBaseId === kb.id;
+    li.className = `kb-card ${isActive ? 'is-active' : ''}`;
     li.innerHTML = `
-      <div class="flex items-center gap-1">
-        <button type="button" data-open-kb="${kb.id}" class="flex-1 text-left text-xs ${isActive ? 'text-indigo-700 font-medium' : 'text-slate-700'} truncate">${escapeHtml(kb.name)}</button>
-        <span class="text-[10px] text-slate-500">${kb.documents_count || 0}</span>
-        <button type="button" data-del-kb="${kb.id}" class="text-red-500 hover:text-red-600 px-1">×</button>
+      <div class="kb-header">
+        <button type="button" data-open-kb="${kb.id}" class="kb-open-btn ${isActive ? 'font-semibold' : ''} truncate">${escapeHtml(kb.name)}</button>
+        <span class="kb-meta">${kb.documents_count || 0}</span>
+        <button type="button" data-del-kb="${kb.id}" class="icon-btn danger">×</button>
       </div>
-      <div id="kb-docs-${kb.id}" class="${isActive ? '' : 'hidden'} mt-2 space-y-1"></div>
-      <div id="kb-actions-${kb.id}" class="${isActive ? '' : 'hidden'} mt-2 space-y-1">
+      <div id="kb-docs-${kb.id}" class="${isActive ? 'kb-docs' : 'hidden kb-docs'}"></div>
+      <div id="kb-actions-${kb.id}" class="${isActive ? 'kb-actions' : 'hidden kb-actions'}">
         <div class="flex gap-1">
-          <input type="text" data-rename-kb="${kb.id}" value="${escapeHtml(kb.name)}" class="flex-1 bg-white border rounded px-1 py-0.5 text-[10px] text-slate-700" style="border-color: var(--cursor-border);" />
-          <button type="button" data-save-kb="${kb.id}" class="text-[10px] px-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700">OK</button>
+          <input type="text" data-rename-kb="${kb.id}" value="${escapeHtml(kb.name)}" class="flex-1 border rounded px-1 py-1 text-[10px]" />
+          <button type="button" data-save-kb="${kb.id}" class="icon-btn">OK</button>
         </div>
-        <input type="text" data-search-kb="${kb.id}" placeholder="Поиск документов..." class="w-full bg-white border rounded px-2 py-1 text-[10px] text-slate-700" style="border-color: var(--cursor-border);" />
-        <input type="file" data-upload-kb="${kb.id}" class="text-[10px] text-slate-600 w-full" multiple />
+        <input type="text" data-search-kb="${kb.id}" placeholder="Поиск документов..." class="w-full border rounded px-2 py-1 text-[10px]" />
+        <input type="file" data-upload-kb="${kb.id}" class="text-[10px] w-full" multiple />
       </div>
     `;
     ul.appendChild(li);
@@ -1483,17 +1509,17 @@ function renderKnowledgeDocuments(kbId) {
   if (!box) return;
   box.innerHTML = '';
   if (!state.knowledgeDocuments.length) {
-    box.innerHTML = '<div class="text-[10px] text-slate-500">Документов пока нет</div>';
+    box.innerHTML = '<div class="kb-empty">Документов пока нет</div>';
     return;
   }
   for (const d of state.knowledgeDocuments) {
     const row = document.createElement('div');
-    row.className = 'flex items-center gap-1 text-[10px] text-slate-600';
+    row.className = 'kb-doc-row';
     row.innerHTML = `
-      <span class="flex-1 truncate" title="${escapeHtml(d.original_name)}">${escapeHtml(d.original_name)}</span>
-      <span class="text-slate-500">${formatBytes(d.size_bytes)}</span>
-      <button type="button" data-download-doc="${d.id}" class="text-indigo-600 hover:text-indigo-700 px-1">↓</button>
-      <button type="button" data-del-doc="${d.id}" class="text-red-500 hover:text-red-600 px-1">×</button>
+      <span class="name" title="${escapeHtml(d.original_name)}">${escapeHtml(d.original_name)}</span>
+      <span class="kb-meta">${formatBytes(d.size_bytes)}</span>
+      <button type="button" data-download-doc="${d.id}" class="icon-btn" title="Скачать">↓</button>
+      <button type="button" data-del-doc="${d.id}" class="icon-btn danger" title="Удалить">×</button>
     `;
     box.appendChild(row);
   }

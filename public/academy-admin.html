@@ -5,37 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Academy — Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/modern-ui.css">
   <style>
-        :root { color-scheme: light; }
+        :root { color-scheme: dark; }
     body { font-family: ui-sans-serif, system-ui, sans-serif; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-900 min-h-screen">
+<body class="modern-theme text-slate-900 min-h-screen">
   <div id="gate" class="hidden max-w-md mx-auto px-4 py-24 text-center">
-    <p class="text-slate-600 mb-4">Требуется вход администратора.</p>
-    <a href="/login" class="text-indigo-400 hover:text-indigo-300">Войти</a>
-    <a href="/academy" class="block mt-4 text-slate-500 hover:text-slate-700">← Workspace</a>
+    <div class="modern-card p-8">
+      <p class="modern-muted mb-4">Требуется вход администратора.</p>
+      <a href="/login" class="modern-btn modern-btn-primary inline-block">Войти</a>
+      <a href="/academy" class="block mt-4 modern-nav-link">← Workspace</a>
+    </div>
   </div>
 
   <div id="denied" class="hidden max-w-md mx-auto px-4 py-24 text-center">
-    <p class="text-red-400 mb-4">Доступ только для администратора.</p>
-    <a href="/academy" class="text-indigo-400">В Workspace</a>
+    <div class="modern-card p-8">
+      <p class="text-red-400 mb-4">Доступ только для администратора.</p>
+      <a href="/academy" class="modern-nav-link">В Workspace</a>
+    </div>
   </div>
 
   <div id="app" class="hidden container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-8">
-      <h1 class="text-2xl font-semibold">Admin · AI Academy</h1>
+      <h1 class="text-2xl font-semibold modern-title">Admin · AI Academy</h1>
       <div class="flex items-center gap-3">
         <div id="languageSwitcher"></div>
-        <a href="/academy" class="text-sm text-indigo-400 hover:text-indigo-300">← Workspace</a>
+        <a href="/academy" class="text-sm modern-nav-link">← Workspace</a>
       </div>
     </div>
 
-    <section class="mb-10">
-      <h2 class="text-lg font-medium mb-4 text-slate-900">Пользователи</h2>
-      <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <section class="mb-10 modern-card p-5">
+      <h2 class="text-lg font-medium mb-4 modern-title">Пользователи</h2>
+      <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white/5">
         <table class="min-w-full text-sm text-left">
-          <thead class="bg-slate-100 text-slate-600">
+          <thead class="bg-white/5 text-slate-600">
             <tr>
               <th class="px-3 py-2">Email</th>
               <th class="px-3 py-2">Роль</th>
@@ -51,23 +56,23 @@
       </div>
     </section>
 
-    <section class="mb-10">
-      <h2 class="text-lg font-medium mb-4 text-slate-900">Чаты</h2>
+    <section class="mb-10 modern-card p-5">
+      <h2 class="text-lg font-medium mb-4 modern-title">Чаты</h2>
       <div class="flex gap-2 mb-3">
-        <input id="filterUserId" type="text" placeholder="User UUID (фильтр)" class="bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 max-w-md" />
-        <button type="button" id="reloadChats" class="bg-white hover:bg-slate-100 border border-slate-300 rounded-lg px-4 py-2 text-sm">Обновить</button>
+        <input id="filterUserId" type="text" placeholder="User UUID (фильтр)" class="modern-input px-3 py-2 text-sm flex-1 max-w-md" />
+        <button type="button" id="reloadChats" class="modern-btn modern-btn-secondary text-sm">Обновить</button>
       </div>
       <ul id="chatList" class="space-y-2 text-sm"></ul>
     </section>
 
-    <section class="mb-10">
-      <h2 class="text-lg font-medium mb-4 text-slate-900">Usage · экспорт</h2>
+    <section class="mb-10 modern-card p-5">
+      <h2 class="text-lg font-medium mb-4 modern-title">Usage · экспорт</h2>
       <div class="flex flex-wrap gap-2 items-center">
-        <input id="usageStart" type="date" class="bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm" />
-        <input id="usageEnd" type="date" class="bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm" />
-        <a id="exportCsv" href="#" class="bg-indigo-600 hover:bg-indigo-500 rounded-lg px-4 py-2 text-sm font-medium">Скачать CSV</a>
+        <input id="usageStart" type="date" class="modern-input px-3 py-2 text-sm" />
+        <input id="usageEnd" type="date" class="modern-input px-3 py-2 text-sm" />
+        <a id="exportCsv" href="#" class="modern-btn modern-btn-primary text-sm">Скачать CSV</a>
       </div>
-      <pre id="usageSummary" class="mt-4 text-xs text-slate-700 overflow-auto max-h-64 bg-white rounded-xl p-4 border border-slate-200"></pre>
+      <pre id="usageSummary" class="mt-4 text-xs text-slate-700 overflow-auto max-h-64 bg-black/20 rounded-xl p-4 border border-slate-200/30"></pre>
     </section>
   </div>
 
