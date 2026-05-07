@@ -485,7 +485,6 @@ async function init() {
     state.knowledgeBases = (await api('/api/academy/knowledge-bases')).knowledgeBases || [];
     state.personas = (await api('/api/academy/personas')).personas || [];
     renderUsage();
-    renderCourseTree();
     renderConversationList();
     renderKnowledgeBases();
     populateModels();
@@ -670,11 +669,24 @@ async function refreshKbStatus() {
     box.textContent = tr('academy.kb.no_docs', 'Документов пока нет.');
     return;
   }
-  rows.slice(0, 8).forEach((d) => {
-    const div = document.createElement('div');
+  rows.slice(0, 12).forEach((d) => {
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2';
     const displayName = d.original_name || d.name || 'document';
-    div.textContent = `${displayName} — ${d.status}${d.error_message ? ` (${d.error_message})` : ''}`;
-    box.appendChild(div);
+    const text = document.createElement('span');
+    text.className = 'flex-1 truncate';
+    text.title = displayName;
+    text.textContent = `${displayName} — ${d.status}${d.error_message ? ` (${d.error_message})` : ''}`;
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'text-red-500 hover:text-red-600 px-1';
+    delBtn.textContent = '×';
+    delBtn.title = 'Удалить файл';
+    delBtn.setAttribute('aria-label', `Удалить файл ${displayName}`);
+    delBtn.addEventListener('click', () => deleteDocumentHandler(d.id));
+    row.appendChild(text);
+    row.appendChild(delBtn);
+    box.appendChild(row);
   });
 }
 
@@ -958,16 +970,36 @@ function initResizableLayout() {
   const rightSplitter = document.getElementById('rightSplitter');
   if (!app || !leftSidebar || !toolsPanel || !leftSplitter || !rightSplitter) return;
 
-  function setWidths(leftPx, rightPx) {
-    app.style.setProperty('--left-pane-width', `${leftPx}px`);
-    app.style.setProperty('--right-pane-width', `${rightPx}px`);
+  function getClampedWidths(leftPx, rightPx) {
+    const appWidth = app.getBoundingClientRect().width || window.innerWidth;
+    let nextLeft = leftPx;
+    let nextRight = rightPx;
     if (window.innerWidth >= 768) {
-      leftSidebar.style.width = `${leftPx}px`;
-      leftSidebar.style.flexBasis = `${leftPx}px`;
+      nextLeft = Math.max(240, Math.min(460, leftPx));
     }
     if (window.innerWidth >= 1024) {
-      toolsPanel.style.width = `${rightPx}px`;
-      toolsPanel.style.flexBasis = `${rightPx}px`;
+      const minCenterWidth = 520;
+      const totalSplitters = 16;
+      const maxRightByViewport = Math.max(300, appWidth - nextLeft - minCenterWidth - totalSplitters);
+      nextRight = Math.max(300, Math.min(Math.min(560, maxRightByViewport), rightPx));
+    }
+    return { left: nextLeft, right: nextRight };
+  }
+
+  function setWidths(leftPx, rightPx) {
+    const { left, right } = getClampedWidths(leftPx, rightPx);
+    app.style.setProperty('--left-pane-width', `${left}px`);
+    app.style.setProperty('--right-pane-width', `${right}px`);
+    if (window.innerWidth >= 768) {
+      leftSidebar.style.width = `${left}px`;
+      leftSidebar.style.flexBasis = `${left}px`;
+    } else {
+      leftSidebar.style.width = '';
+      leftSidebar.style.flexBasis = '';
+    }
+    if (window.innerWidth >= 1024) {
+      toolsPanel.style.width = `${right}px`;
+      toolsPanel.style.flexBasis = `${right}px`;
     } else {
       toolsPanel.style.width = '';
       toolsPanel.style.flexBasis = '';
