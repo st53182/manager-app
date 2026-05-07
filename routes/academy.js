@@ -499,7 +499,9 @@ function createRouter({ JWT_SECRET }) {
       if (!req.files?.length) return res.status(400).json({ error: 'No files uploaded' });
       const saved = persistMulterFiles(req.dbUser.id, req.files);
       const out = [];
-      for (const f of saved) {
+      for (let i = 0; i < saved.length; i += 1) {
+        const f = saved[i];
+        const sourceFile = req.files[i];
         const doc = await practicum.createKnowledgeDocument({
           knowledgeBaseId: req.params.id,
           userId: req.dbUser.id,
@@ -507,7 +509,8 @@ function createRouter({ JWT_SECRET }) {
           mimeType: f.mime,
           sourceType: 'file',
           storagePath: f.path,
-          status: 'uploaded'
+          status: 'uploaded',
+          sizeBytes: sourceFile?.size || 0
         });
         const job = await practicum.createIndexJob({
           userId: req.dbUser.id,

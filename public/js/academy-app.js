@@ -687,6 +687,11 @@ function hasPendingKbStatus(rows) {
   });
 }
 
+function isTerminalKbStatus(statusRaw) {
+  const status = String(statusRaw || '').toLowerCase();
+  return ['indexed', 'ready', 'failed', 'error'].includes(status);
+}
+
 function stopKbStatusPolling() {
   if (kbStatusPollTimer) {
     clearInterval(kbStatusPollTimer);
@@ -737,7 +742,14 @@ async function refreshKbStatus() {
     box.appendChild(empty);
     return { rows, pending: false };
   }
-  rows.slice(0, 12).forEach((d) => {
+  const nonTerminalRows = rows.filter((d) => !isTerminalKbStatus(d.status));
+  if (!nonTerminalRows.length) {
+    const info = document.createElement('div');
+    info.className = 'kb-empty';
+    info.textContent = 'Все документы обработаны. Текущие файлы смотрите в списке базы ниже.';
+    box.appendChild(info);
+  }
+  nonTerminalRows.slice(0, 12).forEach((d) => {
     const row = document.createElement('div');
     row.className = 'kb-status-row';
     const displayName = d.original_name || d.name || 'document';

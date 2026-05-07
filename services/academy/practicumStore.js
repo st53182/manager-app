@@ -40,6 +40,10 @@ async function initializePracticumSchema() {
       )
     `);
     await client.query(`
+      ALTER TABLE knowledge_documents
+      ADD COLUMN IF NOT EXISTS size_bytes BIGINT DEFAULT 0
+    `);
+    await client.query(`
       CREATE TABLE IF NOT EXISTS knowledge_chunks (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         document_id UUID NOT NULL REFERENCES knowledge_documents(id) ON DELETE CASCADE,
@@ -232,8 +236,8 @@ async function listKnowledgeBases(userId) {
 async function createKnowledgeDocument(input) {
   const rows = await q(
     `INSERT INTO knowledge_documents
-    (knowledge_base_id, user_id, name, mime_type, source_type, source_url, storage_path, status)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    (knowledge_base_id, user_id, name, mime_type, source_type, source_url, storage_path, status, size_bytes)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
     [
       input.knowledgeBaseId,
       input.userId,
@@ -242,7 +246,8 @@ async function createKnowledgeDocument(input) {
       input.sourceType || 'file',
       input.sourceUrl || null,
       input.storagePath || null,
-      input.status || 'uploaded'
+      input.status || 'uploaded',
+      Number.isFinite(Number(input.sizeBytes)) ? Number(input.sizeBytes) : 0
     ]
   );
   return rows[0];
