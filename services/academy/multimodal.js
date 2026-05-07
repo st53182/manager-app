@@ -36,6 +36,10 @@ const ALLOWED_MIME = new Set([
 ]);
 
 function uploadsRoot() {
+  const configured = process.env.ACADEMY_UPLOADS_ROOT;
+  if (configured && String(configured).trim()) {
+    return path.resolve(String(configured).trim());
+  }
   return path.join(__dirname, '..', '..', 'uploads', 'academy');
 }
 
@@ -379,6 +383,7 @@ function estimateContentChars(content) {
 
 module.exports = {
   uploadsRoot,
+  userUploadDir,
   persistMulterFiles,
   buildUserContentForApi,
   estimateContentChars,

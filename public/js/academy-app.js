@@ -409,7 +409,9 @@ const state = {
   lastFailedPayload: null,
   knowledgeBases: [],
   personas: [],
-  selectedKnowledgeBaseId: null
+  selectedKnowledgeBaseId: null,
+  activeKnowledgeBaseId: null,
+  knowledgeDocuments: []
 };
 
 function currentLang() {
@@ -485,6 +487,7 @@ async function init() {
     renderUsage();
     renderCourseTree();
     renderConversationList();
+    renderKnowledgeBases();
     populateModels();
     populateKnowledgeBases();
     populatePersonas();
@@ -1372,6 +1375,228 @@ function wireUi() {
     state.catalog = await api('/api/academy/catalog');
     renderCourseTree();
   });
+}
+
+function formatBytes(bytes) {
+  const b = Number(bytes) || 0;
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${Math.round(b / 1024)} KB`;
+  return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function renderKnowledgeBases() {
+  const ul = document.getElementById('knowledgeBaseList');
+  if (!ul) return;
+  ul.innerHTML = '';
+  if (!state.knowledgeBases.length) {
+    const li = document.createElement('li');
+    li.className = 'text-slate-500';
+    li.textContent = 'Нет баз знаний';
+    ul.appendChild(li);
+    return;
+  }
+  for (const kb of state.knowledgeBases) {
+    const li = document.createElement('li');
+    li.className = 'border border-slate-800 rounded p-2 bg-slate-900/60';
+    const isActive = state.activeKnowledgeBaseId === kb.id;
+    li.innerHTML = `
+      <div class="flex items-center gap-1">
+        <button type="button" data-open-kb="${kb.id}" class="flex-1 text-left ${isActive ? 'text-indigo-300' : 'text-slate-200'} truncate">${escapeHtml(kb.name)}</button>
+        <span class="text-[10px] text-slate-500">${kb.documents_count || 0}</span>
+        <button type="button" data-del-kb="${kb.id}" class="text-red-400 hover:text-red-300 px-1">×</button>
+      </div>
+      <div id="kb-docs-${kb.id}" class="${isActive ? '' : 'hidden'} mt-2 space-y-1"></div>
+      <div id="kb-actions-${kb.id}" class="${isActive ? '' : 'hidden'} mt-2 space-y-1">
+        <div class="flex gap-1">
+          <input type="text" data-rename-kb="${kb.id}" value="${escapeHtml(kb.name)}" class="flex-1 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-[10px]" />
+          <button type="button" data-save-kb="${kb.id}" class="text-[10px] px-1.5 rounded bg-slate-800 hover:bg-slate-700">OK</button>
+        </div>
+        <input type="text" data-search-kb="${kb.id}" placeholder="Поиск документов..." class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[10px]" />
+        <input type="file" data-upload-kb="${kb.id}" class="text-[10px] text-slate-400 w-full" multiple />
+      </div>
+    `;
+    ul.appendChild(li);
+  }
+  ul.querySelectorAll('[data-open-kb]').forEach((btn) => {
+    btn.addEventListener('click', () => openKnowledgeBase(btn.getAttribute('data-open-kb')));
+  });
+  ul.querySelectorAll('[data-del-kb]').forEach((btn) => {
+    btn.addEventListener('click', () => deleteKnowledgeBaseHandler(btn.getAttribute('data-del-kb')));
+  });
+  ul.querySelectorAll('[data-upload-kb]').forEach((input) => {
+    input.addEventListener('change', () => uploadDocumentsHandler(input.getAttribute('data-upload-kb'), input));
+  });
+  ul.querySelectorAll('[data-save-kb]').forEach((btn) => {
+    btn.addEventListener('click', () => renameKnowledgeBaseHandler(btn.getAttribute('data-save-kb')));
+  });
+  ul.querySelectorAll('[data-search-kb]').forEach((input) => {
+    input.addEventListener('input', () => searchKnowledgeDocumentsHandler(input.getAttribute('data-search-kb'), input.value));
+  });
+  if (state.activeKnowledgeBaseId) {
+    renderKnowledgeDocuments(state.activeKnowledgeBaseId);
+  }
+}
+
+function renderKnowledgeDocuments(kbId) {
+  const box = document.getElementById(`kb-docs-${kbId}`);
+  if (!box) return;
+  box.innerHTML = '';
+  if (!state.knowledgeDocuments.length) {
+    box.innerHTML = '<div class="text-[10px] text-slate-500">Документов пока нет</div>';
+    return;
+  }
+  for (const d of state.knowledgeDocuments) {
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-1 text-[10px] text-slate-400';
+    row.innerHTML = `
+      <span class="flex-1 truncate" title="${escapeHtml(d.original_name)}">${escapeHtml(d.original_name)}</span>
+      <span class="text-slate-500">${formatBytes(d.size_bytes)}</span>
+      <button type="button" data-download-doc="${d.id}" class="text-indigo-400 hover:text-indigo-300 px-1">↓</button>
+      <button type="button" data-del-doc="${d.id}" class="text-red-400 hover:text-red-300 px-1">×</button>
+    `;
+    box.appendChild(row);
+  }
+  box.querySelectorAll('[data-download-doc]').forEach((btn) => {
+    btn.addEventListener('click', () => downloadDocumentHandler(btn.getAttribute('data-download-doc')));
+  });
+  box.querySelectorAll('[data-del-doc]').forEach((btn) => {
+    btn.addEventListener('click', () => deleteDocumentHandler(btn.getAttribute('data-del-doc')));
+  });
+}
+
+async function createKnowledgeBaseHandler() {
+  const input = document.getElementById('kbNameInput');
+  const name = input?.value?.trim();
+  if (!name) return;
+  try {
+    await api('/api/academy/knowledge-bases', {
+      method: 'POST',
+      body: JSON.stringify({ name })
+    });
+    input.value = '';
+    state.knowledgeBases = (await api('/api/academy/knowledge-bases')).knowledgeBases || [];
+    renderKnowledgeBases();
+  } catch (e) {
+    alert(e.message || 'Не удалось создать базу знаний');
+  }
+}
+
+async function openKnowledgeBase(kbId) {
+  state.activeKnowledgeBaseId = kbId;
+  try {
+    const docs = await api(`/api/academy/knowledge-bases/${kbId}/documents`);
+    state.knowledgeDocuments = docs.documents || [];
+    renderKnowledgeBases();
+  } catch (e) {
+    alert(e.message || 'Не удалось загрузить документы');
+  }
+}
+
+async function deleteKnowledgeBaseHandler(kbId) {
+  if (!confirm('Удалить базу знаний и все документы?')) return;
+  try {
+    await api(`/api/academy/knowledge-bases/${kbId}`, { method: 'DELETE' });
+    state.knowledgeBases = (await api('/api/academy/knowledge-bases')).knowledgeBases || [];
+    if (state.activeKnowledgeBaseId === kbId) {
+      state.activeKnowledgeBaseId = null;
+      state.knowledgeDocuments = [];
+    }
+    renderKnowledgeBases();
+  } catch (e) {
+    alert(e.message || 'Не удалось удалить базу знаний');
+  }
+}
+
+async function uploadDocumentsHandler(kbId, inputEl) {
+  if (!inputEl?.files?.length) return;
+  const fd = new FormData();
+  for (let i = 0; i < inputEl.files.length; i += 1) {
+    fd.append('files', inputEl.files[i]);
+  }
+  try {
+    const token = getToken();
+    const res = await fetch(`${apiBase}/api/academy/knowledge-bases/${kbId}/documents`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: fd
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || res.statusText);
+    inputEl.value = '';
+    await openKnowledgeBase(kbId);
+    state.knowledgeBases = (await api('/api/academy/knowledge-bases')).knowledgeBases || [];
+    renderKnowledgeBases();
+  } catch (e) {
+    alert(e.message || 'Не удалось загрузить документы');
+  }
+}
+
+async function renameKnowledgeBaseHandler(kbId) {
+  const input = document.querySelector(`[data-rename-kb="${kbId}"]`);
+  const name = input?.value?.trim();
+  if (!name) return;
+  try {
+    await api(`/api/academy/knowledge-bases/${kbId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name })
+    });
+    state.knowledgeBases = (await api('/api/academy/knowledge-bases')).knowledgeBases || [];
+    renderKnowledgeBases();
+  } catch (e) {
+    alert(e.message || 'Не удалось переименовать базу знаний');
+  }
+}
+
+async function searchKnowledgeDocumentsHandler(kbId, query) {
+  if (state.activeKnowledgeBaseId !== kbId) return;
+  try {
+    const params = new URLSearchParams();
+    if (query?.trim()) params.set('q', query.trim());
+    const url = `/api/academy/knowledge-bases/${kbId}/documents/search${params.toString() ? `?${params}` : ''}`;
+    const docs = await api(url);
+    state.knowledgeDocuments = docs.documents || [];
+    renderKnowledgeDocuments(kbId);
+  } catch (e) {
+    alert(e.message || 'Не удалось выполнить поиск');
+  }
+}
+
+async function downloadDocumentHandler(documentId) {
+  try {
+    const token = getToken();
+    const res = await fetch(`${apiBase}/api/academy/knowledge-documents/${documentId}/download`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || res.statusText);
+    }
+    const blob = await res.blob();
+    const cd = res.headers.get('content-disposition') || '';
+    const match = cd.match(/filename="?([^"]+)"?/i);
+    const filename = match?.[1] || 'document';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  } catch (e) {
+    alert(e.message || 'Не удалось скачать документ');
+  }
+}
+
+async function deleteDocumentHandler(documentId) {
+  if (!confirm('Удалить документ?')) return;
+  try {
+    await api(`/api/academy/knowledge-documents/${documentId}`, { method: 'DELETE' });
+    if (state.activeKnowledgeBaseId) {
+      await openKnowledgeBase(state.activeKnowledgeBaseId);
+    }
+    state.knowledgeBases = (await api('/api/academy/knowledge-bases')).knowledgeBases || [];
+    renderKnowledgeBases();
+  } catch (e) {
+    alert(e.message || 'Не удалось удалить документ');
+  }
 }
 
 async function sendHandler() {
