@@ -1140,6 +1140,24 @@ async function deleteKnowledgeBase(userId, knowledgeBaseId) {
   }
 }
 
+async function updateKnowledgeBase(userId, knowledgeBaseId, { name, description }) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `UPDATE knowledge_bases
+       SET name = COALESCE($3, name),
+           description = COALESCE($4, description),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND user_id = $2
+       RETURNING *`,
+      [knowledgeBaseId, userId, name ?? null, description ?? null]
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
 async function addKnowledgeDocument(userId, knowledgeBaseId, fileMeta) {
   const client = await pool.connect();
   try {
@@ -1172,6 +1190,25 @@ async function listKnowledgeDocuments(userId, knowledgeBaseId) {
        WHERE user_id = $1 AND knowledge_base_id = $2
        ORDER BY created_at DESC`,
       [userId, knowledgeBaseId]
+    );
+    return r.rows;
+  } finally {
+    client.release();
+  }
+}
+
+async function searchKnowledgeDocuments(userId, knowledgeBaseId, queryText) {
+  const client = await pool.connect();
+  try {
+    const q = `%${String(queryText || '').trim()}%`;
+    const r = await client.query(
+      `SELECT *
+       FROM knowledge_documents
+       WHERE user_id = $1
+         AND knowledge_base_id = $2
+         AND (original_name ILIKE $3 OR mime_type ILIKE $3)
+       ORDER BY created_at DESC`,
+      [userId, knowledgeBaseId, q]
     );
     return r.rows;
   } finally {
@@ -1366,9 +1403,11 @@ module.exports = {
   createKnowledgeBase,
   listKnowledgeBases,
   getKnowledgeBaseForUser,
+  updateKnowledgeBase,
   deleteKnowledgeBase,
   addKnowledgeDocument,
   listKnowledgeDocuments,
+  searchKnowledgeDocuments,
   getKnowledgeDocumentForUser,
   deleteKnowledgeDocument
 };

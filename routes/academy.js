@@ -147,6 +147,26 @@ function createRouter({ JWT_SECRET }) {
     }
   });
 
+  router.patch('/knowledge-bases/:id', authenticateAcademy, async (req, res) => {
+    try {
+      const kb = await db.getKnowledgeBaseForUser(req.dbUser.id, req.params.id);
+      if (!kb) return res.status(404).json({ error: 'Knowledge base not found' });
+      const name = typeof req.body?.name === 'string' ? req.body.name.trim() : null;
+      const description = typeof req.body?.description === 'string' ? req.body.description.trim() : null;
+      if (name !== null && !name) {
+        return res.status(400).json({ error: 'Knowledge base name cannot be empty' });
+      }
+      const updated = await db.updateKnowledgeBase(req.dbUser.id, kb.id, {
+        name,
+        description
+      });
+      res.json(updated);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to update knowledge base' });
+    }
+  });
+
   router.get('/knowledge-bases/:id/documents', authenticateAcademy, async (req, res) => {
     try {
       const kb = await db.getKnowledgeBaseForUser(req.dbUser.id, req.params.id);
@@ -156,6 +176,23 @@ function createRouter({ JWT_SECRET }) {
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: 'Failed to load documents' });
+    }
+  });
+
+  router.get('/knowledge-bases/:id/documents/search', authenticateAcademy, async (req, res) => {
+    try {
+      const kb = await db.getKnowledgeBaseForUser(req.dbUser.id, req.params.id);
+      if (!kb) return res.status(404).json({ error: 'Knowledge base not found' });
+      const q = String(req.query.q || '').trim();
+      if (!q) {
+        const docs = await db.listKnowledgeDocuments(req.dbUser.id, kb.id);
+        return res.json({ documents: docs });
+      }
+      const docs = await db.searchKnowledgeDocuments(req.dbUser.id, kb.id, q);
+      res.json({ documents: docs });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to search documents' });
     }
   });
 
@@ -208,6 +245,22 @@ function createRouter({ JWT_SECRET }) {
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: 'Failed to delete document' });
+    }
+  });
+
+  router.get('/knowledge-documents/:id/download', authenticateAcademy, async (req, res) => {
+    try {
+      const doc = await db.getKnowledgeDocumentForUser(req.dbUser.id, req.params.id);
+      if (!doc) return res.status(404).json({ error: 'Document not found' });
+      const abs = path.join(userUploadDir(req.dbUser.id), doc.stored_name);
+      if (!fs.existsSync(abs)) {
+        return res.status(404).json({ error: 'Stored file not found' });
+      }
+      res.setHeader('Content-Type', doc.mime_type || 'application/octet-stream');
+      return res.download(abs, doc.original_name);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to download document' });
     }
   });
 

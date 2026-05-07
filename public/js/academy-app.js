@@ -844,6 +844,11 @@ function renderKnowledgeBases() {
       </div>
       <div id="kb-docs-${kb.id}" class="${isActive ? '' : 'hidden'} mt-2 space-y-1"></div>
       <div id="kb-actions-${kb.id}" class="${isActive ? '' : 'hidden'} mt-2 space-y-1">
+        <div class="flex gap-1">
+          <input type="text" data-rename-kb="${kb.id}" value="${escapeHtml(kb.name)}" class="flex-1 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-[10px]" />
+          <button type="button" data-save-kb="${kb.id}" class="text-[10px] px-1.5 rounded bg-slate-800 hover:bg-slate-700">OK</button>
+        </div>
+        <input type="text" data-search-kb="${kb.id}" placeholder="Поиск документов..." class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[10px]" />
         <input type="file" data-upload-kb="${kb.id}" class="text-[10px] text-slate-400 w-full" multiple />
       </div>
     `;
@@ -857,6 +862,12 @@ function renderKnowledgeBases() {
   });
   ul.querySelectorAll('[data-upload-kb]').forEach((input) => {
     input.addEventListener('change', () => uploadDocumentsHandler(input.getAttribute('data-upload-kb'), input));
+  });
+  ul.querySelectorAll('[data-save-kb]').forEach((btn) => {
+    btn.addEventListener('click', () => renameKnowledgeBaseHandler(btn.getAttribute('data-save-kb')));
+  });
+  ul.querySelectorAll('[data-search-kb]').forEach((input) => {
+    input.addEventListener('input', () => searchKnowledgeDocumentsHandler(input.getAttribute('data-search-kb'), input.value));
   });
   if (state.activeKnowledgeBaseId) {
     renderKnowledgeDocuments(state.activeKnowledgeBaseId);
@@ -877,10 +888,14 @@ function renderKnowledgeDocuments(kbId) {
     row.innerHTML = `
       <span class="flex-1 truncate" title="${escapeHtml(d.original_name)}">${escapeHtml(d.original_name)}</span>
       <span class="text-slate-500">${formatBytes(d.size_bytes)}</span>
+      <button type="button" data-download-doc="${d.id}" class="text-indigo-400 hover:text-indigo-300 px-1">↓</button>
       <button type="button" data-del-doc="${d.id}" class="text-red-400 hover:text-red-300 px-1">×</button>
     `;
     box.appendChild(row);
   }
+  box.querySelectorAll('[data-download-doc]').forEach((btn) => {
+    btn.addEventListener('click', () => downloadDocumentHandler(btn.getAttribute('data-download-doc')));
+  });
   box.querySelectorAll('[data-del-doc]').forEach((btn) => {
     btn.addEventListener('click', () => deleteDocumentHandler(btn.getAttribute('data-del-doc')));
   });
@@ -950,6 +965,60 @@ async function uploadDocumentsHandler(kbId, inputEl) {
     renderKnowledgeBases();
   } catch (e) {
     alert(e.message || 'Не удалось загрузить документы');
+  }
+}
+
+async function renameKnowledgeBaseHandler(kbId) {
+  const input = document.querySelector(`[data-rename-kb="${kbId}"]`);
+  const name = input?.value?.trim();
+  if (!name) return;
+  try {
+    await api(`/api/academy/knowledge-bases/${kbId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name })
+    });
+    state.knowledgeBases = (await api('/api/academy/knowledge-bases')).knowledgeBases || [];
+    renderKnowledgeBases();
+  } catch (e) {
+    alert(e.message || 'Не удалось переименовать базу знаний');
+  }
+}
+
+async function searchKnowledgeDocumentsHandler(kbId, query) {
+  if (state.activeKnowledgeBaseId !== kbId) return;
+  try {
+    const params = new URLSearchParams();
+    if (query?.trim()) params.set('q', query.trim());
+    const url = `/api/academy/knowledge-bases/${kbId}/documents/search${params.toString() ? `?${params}` : ''}`;
+    const docs = await api(url);
+    state.knowledgeDocuments = docs.documents || [];
+    renderKnowledgeDocuments(kbId);
+  } catch (e) {
+    alert(e.message || 'Не удалось выполнить поиск');
+  }
+}
+
+async function downloadDocumentHandler(documentId) {
+  try {
+    const token = getToken();
+    const res = await fetch(`${apiBase}/api/academy/knowledge-documents/${documentId}/download`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || res.statusText);
+    }
+    const blob = await res.blob();
+    const cd = res.headers.get('content-disposition') || '';
+    const match = cd.match(/filename="?([^"]+)"?/i);
+    const filename = match?.[1] || 'document';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  } catch (e) {
+    alert(e.message || 'Не удалось скачать документ');
   }
 }
 
