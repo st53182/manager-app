@@ -1,20 +1,20 @@
 {
   "nav": {
-    "title": "Team Manager",
+    "title": "AI Academy",
     "login": "Login",
     "register": "Register",
     "logout": "Logout",
-    "dashboard": "Dashboard"
+    "dashboard": "Workspace"
   },
   "index": {
-    "title": "Team Manager - Home",
-    "heading": "Team Manager",
-    "subtitle": "Manage your teams and employees",
+    "title": "AI Academy - Home",
+    "heading": "AI Academy",
+    "subtitle": "Learning platform with an AI tutor, lessons, and hands-on practice",
     "get_started": "Get Started",
     "login_to_continue": "Login to continue"
   },
   "login": {
-    "title": "Login - Team Manager",
+    "title": "Login - AI Academy",
     "heading": "Login",
     "subtitle": "Sign in to your account",
     "email": "Email",
@@ -28,7 +28,7 @@
     "login_error": "Login error"
   },
   "register": {
-    "title": "Register - Team Manager",
+    "title": "Register - AI Academy",
     "heading": "Register",
     "subtitle": "Create an account to manage teams",
     "name": "Name",

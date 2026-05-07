@@ -9,11 +9,11 @@
     body { font-family: ui-sans-serif, system-ui, sans-serif; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen">
+<body class="bg-slate-100 text-slate-900 min-h-screen">
   <div id="gate" class="hidden max-w-md mx-auto px-4 py-24 text-center">
-    <p class="text-slate-400 mb-4">Требуется вход администратора.</p>
+    <p class="text-slate-600 mb-4">Требуется вход администратора.</p>
     <a href="/login" class="text-indigo-400 hover:text-indigo-300">Войти</a>
-    <a href="/academy" class="block mt-4 text-slate-500 hover:text-slate-300">← Workspace</a>
+    <a href="/academy" class="block mt-4 text-slate-500 hover:text-slate-700">← Workspace</a>
   </div>
 
   <div id="denied" class="hidden max-w-md mx-auto px-4 py-24 text-center">
@@ -28,10 +28,10 @@
     </div>
 
     <section class="mb-10">
-      <h2 class="text-lg font-medium mb-4 text-white">Пользователи</h2>
-      <div class="overflow-x-auto rounded-xl border border-slate-800">
+      <h2 class="text-lg font-medium mb-4 text-slate-900">Пользователи</h2>
+      <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table class="min-w-full text-sm text-left">
-          <thead class="bg-slate-900 text-slate-400">
+          <thead class="bg-slate-100 text-slate-600">
             <tr>
               <th class="px-3 py-2">Email</th>
               <th class="px-3 py-2">Роль</th>
@@ -48,22 +48,22 @@
     </section>
 
     <section class="mb-10">
-      <h2 class="text-lg font-medium mb-4 text-white">Чаты</h2>
+      <h2 class="text-lg font-medium mb-4 text-slate-900">Чаты</h2>
       <div class="flex gap-2 mb-3">
-        <input id="filterUserId" type="text" placeholder="User UUID (фильтр)" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm flex-1 max-w-md" />
-        <button type="button" id="reloadChats" class="bg-slate-800 hover:bg-slate-700 rounded-lg px-4 py-2 text-sm">Обновить</button>
+        <input id="filterUserId" type="text" placeholder="User UUID (фильтр)" class="bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 max-w-md" />
+        <button type="button" id="reloadChats" class="bg-white hover:bg-slate-100 border border-slate-300 rounded-lg px-4 py-2 text-sm">Обновить</button>
       </div>
       <ul id="chatList" class="space-y-2 text-sm"></ul>
     </section>
 
     <section class="mb-10">
-      <h2 class="text-lg font-medium mb-4 text-white">Usage · экспорт</h2>
+      <h2 class="text-lg font-medium mb-4 text-slate-900">Usage · экспорт</h2>
       <div class="flex flex-wrap gap-2 items-center">
-        <input id="usageStart" type="date" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm" />
-        <input id="usageEnd" type="date" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm" />
+        <input id="usageStart" type="date" class="bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm" />
+        <input id="usageEnd" type="date" class="bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm" />
         <a id="exportCsv" href="#" class="bg-indigo-600 hover:bg-indigo-500 rounded-lg px-4 py-2 text-sm font-medium">Скачать CSV</a>
       </div>
-      <pre id="usageSummary" class="mt-4 text-xs text-slate-400 overflow-auto max-h-64 bg-slate-900 rounded-xl p-4 border border-slate-800"></pre>
+      <pre id="usageSummary" class="mt-4 text-xs text-slate-700 overflow-auto max-h-64 bg-white rounded-xl p-4 border border-slate-200"></pre>
     </section>
   </div>
 
