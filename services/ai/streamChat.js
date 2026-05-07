@@ -5,7 +5,9 @@
 async function* streamChatCompletion(openai, {
   model,
   messages,
-  maxTokens = 4096
+  maxTokens = 4096,
+  temperature,
+  topP
 }) {
   let stream;
   try {
@@ -14,6 +16,8 @@ async function* streamChatCompletion(openai, {
       messages,
       stream: true,
       max_tokens: maxTokens,
+      temperature,
+      top_p: topP,
       stream_options: { include_usage: true }
     });
   } catch (firstErr) {
@@ -21,7 +25,9 @@ async function* streamChatCompletion(openai, {
       model,
       messages,
       stream: true,
-      max_tokens: maxTokens
+      max_tokens: maxTokens,
+      temperature,
+      top_p: topP
     });
   }
 
