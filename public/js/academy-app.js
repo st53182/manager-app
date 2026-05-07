@@ -413,6 +413,8 @@ const state = {
   activeKnowledgeBaseId: null,
   knowledgeDocuments: []
 };
+let kbStatusPollTimer = null;
+let kbStatusPollBusy = false;
 
 function currentLang() {
   return window.translationManager?.currentLanguage || localStorage.getItem('language') || 'ru';
@@ -678,24 +680,62 @@ function normalizeKbStatus(rawStatus) {
   return { css: 'status-pending', label: status || 'в обработке' };
 }
 
+function hasPendingKbStatus(rows) {
+  return (rows || []).some((d) => {
+    const status = String(d?.status || '').toLowerCase();
+    return ['uploaded', 'queued', 'processing', 'indexing', 'pending'].includes(status);
+  });
+}
+
+function stopKbStatusPolling() {
+  if (kbStatusPollTimer) {
+    clearInterval(kbStatusPollTimer);
+    kbStatusPollTimer = null;
+  }
+}
+
+function ensureKbStatusPolling() {
+  if (kbStatusPollTimer) return;
+  kbStatusPollTimer = setInterval(async () => {
+    if (kbStatusPollBusy || !state.selectedKnowledgeBaseId) return;
+    kbStatusPollBusy = true;
+    try {
+      const result = await refreshKbStatus();
+      if (!result.pending) {
+        stopKbStatusPolling();
+      }
+    } catch (_) {
+      /* keep timer; next tick can recover */
+    } finally {
+      kbStatusPollBusy = false;
+    }
+  }, 3500);
+}
+
 async function refreshKbStatus() {
   const box = document.getElementById('kbStatusList');
-  if (!box) return;
+  if (!box) return { rows: [], pending: false };
   box.innerHTML = '';
   if (!state.selectedKnowledgeBaseId) {
+    stopKbStatusPolling();
     const empty = document.createElement('div');
     empty.className = 'kb-empty';
     empty.textContent = tr('academy.kb.select_for_status', 'Выберите базу знаний для просмотра статусов.');
     box.appendChild(empty);
-    return;
+    return { rows: [], pending: false };
   }
   const rows = (await api(`/api/academy/knowledge-bases/${state.selectedKnowledgeBaseId}/documents`)).documents || [];
+  if (state.activeKnowledgeBaseId === state.selectedKnowledgeBaseId) {
+    state.knowledgeDocuments = rows;
+    renderKnowledgeDocuments(state.selectedKnowledgeBaseId);
+  }
   if (!rows.length) {
+    stopKbStatusPolling();
     const empty = document.createElement('div');
     empty.className = 'kb-empty';
     empty.textContent = tr('academy.kb.no_docs', 'Документов пока нет.');
     box.appendChild(empty);
-    return;
+    return { rows, pending: false };
   }
   rows.slice(0, 12).forEach((d) => {
     const row = document.createElement('div');
@@ -722,6 +762,10 @@ async function refreshKbStatus() {
     row.appendChild(delBtn);
     box.appendChild(row);
   });
+  const pending = hasPendingKbStatus(rows);
+  if (pending) ensureKbStatusPolling();
+  else stopKbStatusPolling();
+  return { rows, pending };
 }
 
 function parseMsgMeta(raw) {
@@ -1644,7 +1688,7 @@ async function uploadDocumentsHandler(kbId, inputEl) {
   }
   try {
     const token = getToken();
-    const res = await fetch(`${apiBase}/api/academy/knowledge-bases/${kbId}/documents`, {
+    const res = await fetch(`${apiBase}/api/academy/knowledge-bases/${kbId}/documents/upload`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: fd
