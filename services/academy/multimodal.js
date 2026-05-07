@@ -284,11 +284,13 @@ function persistMulterFiles(userId, multerFiles) {
       throw new Error(`Файл слишком большой (макс. ${MAX_FILE_BYTES / (1024 * 1024)} MB)`);
     }
     const stored = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}-${sanitizeStoredName(f.originalname)}`;
-    fs.writeFileSync(path.join(dir, stored), buf);
+    const absPath = path.join(dir, stored);
+    fs.writeFileSync(absPath, buf);
     saved.push({
       stored,
       name: f.originalname || stored,
-      mime: f.mimetype
+      mime: f.mimetype,
+      path: absPath
     });
   }
   return saved;
