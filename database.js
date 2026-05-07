@@ -425,6 +425,7 @@ async function initializeDatabase() {
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         conversation_id UUID REFERENCES ai_conversations(id) ON DELETE SET NULL,
         model VARCHAR(200),
+        feature_mode VARCHAR(80) DEFAULT 'chat_general',
         prompt_tokens INTEGER DEFAULT 0,
         completion_tokens INTEGER DEFAULT 0,
         cost_usd NUMERIC(14, 8),
@@ -1005,13 +1006,13 @@ async function sumAiTokensForUser(userId, start, end) {
   }
 }
 
-async function recordAiUsage({ userId, conversationId, model, promptTokens, completionTokens, costUsd }) {
+async function recordAiUsage({ userId, conversationId, model, promptTokens, completionTokens, costUsd, featureMode = 'chat_general' }) {
   const client = await pool.connect();
   try {
     await client.query(
-      `INSERT INTO ai_usage_events (user_id, conversation_id, model, prompt_tokens, completion_tokens, cost_usd)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [userId, conversationId, model, promptTokens, completionTokens, costUsd]
+      `INSERT INTO ai_usage_events (user_id, conversation_id, model, feature_mode, prompt_tokens, completion_tokens, cost_usd)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [userId, conversationId, model, featureMode, promptTokens, completionTokens, costUsd]
     );
   } finally {
     client.release();

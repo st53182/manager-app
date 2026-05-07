@@ -15,6 +15,15 @@ const {
 } = require('../services/academy/multimodal');
 const { getModelCatalog } = require('../services/academy/modelCatalog');
 const { generateImageForEducation, getImageModel } = require('../services/ai/imageGeneration');
+const practicum = require('../services/academy/practicumStore');
+const {
+  parseDocumentText,
+  chunkText,
+  embedTextSimple,
+  buildRetrieval,
+  strictNoSourceMessage
+} = require('../services/academy/knowledgeService');
+const { randomUUID } = require('crypto');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -28,6 +37,9 @@ const MAX_PROMPT_CHARS = parseInt(process.env.MAX_PROMPT_CHARS || '32000', 10);
 const MAX_CONTEXT_MESSAGES = parseInt(process.env.MAX_CONTEXT_MESSAGES || '40', 10);
 /** Soft guard; PDF/audio/video base64 is capped in footprint calculation (see multimodal). */
 const MAX_CONTEXT_CHARS = parseInt(process.env.MAX_CONTEXT_CHARS || '500000', 10);
+
+/** When true, HTML artifacts may contain scripts (Angular/CDN). XSS risk — enable only in trusted environments. */
+const ARTIFACT_ALLOW_SCRIPTS = process.env.ACADEMY_ARTIFACT_ALLOW_SCRIPTS === 'true';
 
 function createRouter({ JWT_SECRET }) {
   const router = express.Router();
@@ -61,6 +73,50 @@ function createRouter({ JWT_SECRET }) {
         return res.status(500).json({ error: 'Auth failed' });
       }
     });
+  }
+
+  /**
+   * Builds OpenRouter messages; truncates long assistant replies for token budget and drops
+   * oldest turns until under MAX_CONTEXT_CHARS (CSV/HTML-heavy chats).
+   */
+  async function buildMessagesWithBudget(rows, lessonForPrompt, req) {
+    const maxAssist = parseInt(process.env.MAX_ASSISTANT_CHARS_IN_CONTEXT || '42000', 10);
+    let subset = [...rows];
+    let droppedTurns = 0;
+
+    async function rebuild() {
+      const apiMessages = [];
+      apiMessages.push({
+        role: 'system',
+        content: getMentorSystemPrompt({ lesson: lessonForPrompt })
+      });
+      let totalChars = estimatePayloadFootprintForLimits(apiMessages[0].content);
+      for (const m of subset) {
+        if (m.role !== 'user' && m.role !== 'assistant') continue;
+        let content;
+        if (m.role === 'user') {
+          content = await buildUserContentForApi(m.content, req.dbUser.id, m.meta);
+        } else {
+          const raw = m.content || '';
+          content =
+            typeof raw === 'string' && raw.length > maxAssist
+              ? raw.slice(0, maxAssist) +
+                '\n\n[… предыдущий ответ обрезан в контексте (длинный отчёт/HTML); полный текст — в истории чата …]'
+              : raw;
+        }
+        totalChars += estimatePayloadFootprintForLimits(content);
+        apiMessages.push({ role: m.role, content });
+      }
+      return { apiMessages, totalChars };
+    }
+
+    let { apiMessages, totalChars } = await rebuild();
+    while (totalChars > MAX_CONTEXT_CHARS && subset.length > 1) {
+      subset = subset.slice(1);
+      droppedTurns += 1;
+      ({ apiMessages, totalChars } = await rebuild());
+    }
+    return { apiMessages, totalChars, droppedTurns };
   }
 
   router.get('/catalog', authenticateAcademy, async (req, res) => {
@@ -132,12 +188,443 @@ function createRouter({ JWT_SECRET }) {
         },
         allowed_models: allowedModels,
         default_model: getDefaultModel(),
-        model_catalog: getModelCatalog()
+        model_catalog: getModelCatalog(),
+        artifact_allow_scripts: ARTIFACT_ALLOW_SCRIPTS
       });
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: 'Usage unavailable' });
     }
+  });
+
+  router.get('/usage/education', authenticateAcademy, async (req, res) => {
+    try {
+      const now = new Date();
+      const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+      const usageRows = await db.adminExportUsage(monthStart, monthEnd);
+      const mine = usageRows.filter((r) => r.user_id === req.dbUser.id);
+      const byModel = {};
+      for (const r of mine) {
+        if (!byModel[r.model]) byModel[r.model] = { model: r.model, tokens: 0, cost_usd: 0 };
+        byModel[r.model].tokens += Number(r.prompt_tokens || 0) + Number(r.completion_tokens || 0);
+        byModel[r.model].cost_usd += Number(r.cost_usd || 0);
+      }
+      const sorted = Object.values(byModel).sort((a, b) => b.cost_usd - a.cost_usd);
+      const cheapest = sorted[sorted.length - 1] || null;
+      const expensive = sorted[0] || null;
+      res.json({
+        by_model: sorted,
+        guidance: [
+          'Use concise prompts and shorter context when possible.',
+          'Choose lower-cost models for drafting, expensive models for final pass.',
+          'Use Knowledge Base retrieval to avoid re-sending large source texts.'
+        ],
+        cheapest_model: cheapest,
+        expensive_model: expensive
+      });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to build educational usage insights' });
+    }
+  });
+
+  async function recordFeatureUsage(req, data) {
+    await db.recordAiUsage({
+      userId: req.dbUser.id,
+      conversationId: data.conversationId || null,
+      model: data.model,
+      promptTokens: data.promptTokens || 0,
+      completionTokens: data.completionTokens || 0,
+      costUsd: data.costUsd || 0,
+      featureMode: data.featureMode || 'chat_general'
+    });
+  }
+
+  router.get('/knowledge-bases', authenticateAcademy, async (req, res) => {
+    try {
+      const bases = await practicum.listKnowledgeBases(req.dbUser.id);
+      res.json({ knowledgeBases: bases });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to load knowledge bases' });
+    }
+  });
+
+  router.post('/knowledge-bases', authenticateAcademy, async (req, res) => {
+    try {
+      const name = String(req.body?.name || '').trim();
+      if (!name) return res.status(400).json({ error: 'name required' });
+      const kb = await practicum.createKnowledgeBase(req.dbUser.id, name, String(req.body?.description || ''));
+      res.json(kb);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to create knowledge base' });
+    }
+  });
+
+  router.get('/knowledge-bases/:id/documents', authenticateAcademy, async (req, res) => {
+    try {
+      const docs = await practicum.listKnowledgeDocuments(req.dbUser.id, req.params.id);
+      res.json({ documents: docs });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to load documents' });
+    }
+  });
+
+  router.post('/knowledge-bases/:id/documents/url', authenticateAcademy, async (req, res) => {
+    try {
+      const sourceUrl = String(req.body?.url || '').trim();
+      if (!sourceUrl) return res.status(400).json({ error: 'url required' });
+      const doc = await practicum.createKnowledgeDocument({
+        knowledgeBaseId: req.params.id,
+        userId: req.dbUser.id,
+        name: sourceUrl,
+        sourceType: 'url',
+        sourceUrl,
+        status: 'uploaded'
+      });
+      const job = await practicum.createIndexJob({
+        userId: req.dbUser.id,
+        knowledgeBaseId: req.params.id,
+        documentId: doc.id
+      });
+      setImmediate(async () => {
+        try {
+          await practicum.setIndexJobStatus(job.id, 'processing');
+          await practicum.clearChunksForDocument(doc.id);
+          const text = await parseDocumentText(doc);
+          const chunks = chunkText(text);
+          let i = 0;
+          for (const c of chunks) {
+            await practicum.addKnowledgeChunk({
+              documentId: doc.id,
+              userId: req.dbUser.id,
+              chunkIndex: i++,
+              content: c,
+              embedding: embedTextSimple(c)
+            });
+          }
+          await practicum.updateKnowledgeDocument(doc.id, req.dbUser.id, { status: 'indexed', chunkCount: chunks.length });
+          await practicum.setIndexJobStatus(job.id, 'indexed');
+        } catch (err) {
+          await practicum.updateKnowledgeDocument(doc.id, req.dbUser.id, { status: 'failed', errorMessage: err.message });
+          await practicum.setIndexJobStatus(job.id, 'failed', err.message);
+        }
+      });
+      res.json({ document: doc, job });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to add URL source' });
+    }
+  });
+
+  router.post('/knowledge-bases/:id/documents/upload', authenticateAcademy, upload.array('files', MAX_FILES), async (req, res) => {
+    try {
+      if (!req.files?.length) return res.status(400).json({ error: 'No files uploaded' });
+      const saved = persistMulterFiles(req.dbUser.id, req.files);
+      const out = [];
+      for (const f of saved) {
+        const doc = await practicum.createKnowledgeDocument({
+          knowledgeBaseId: req.params.id,
+          userId: req.dbUser.id,
+          name: f.name,
+          mimeType: f.mime,
+          sourceType: 'file',
+          storagePath: f.path,
+          status: 'uploaded'
+        });
+        const job = await practicum.createIndexJob({
+          userId: req.dbUser.id,
+          knowledgeBaseId: req.params.id,
+          documentId: doc.id
+        });
+        out.push({ document: doc, job });
+        setImmediate(async () => {
+          try {
+            await practicum.setIndexJobStatus(job.id, 'processing');
+            await practicum.updateKnowledgeDocument(doc.id, req.dbUser.id, { status: 'processing' });
+            await practicum.clearChunksForDocument(doc.id);
+            const text = await parseDocumentText(doc);
+            const chunks = chunkText(text);
+            let i = 0;
+            for (const c of chunks) {
+              await practicum.addKnowledgeChunk({
+                documentId: doc.id,
+                userId: req.dbUser.id,
+                chunkIndex: i++,
+                content: c,
+                embedding: embedTextSimple(c)
+              });
+            }
+            await practicum.updateKnowledgeDocument(doc.id, req.dbUser.id, { status: 'indexed', chunkCount: chunks.length });
+            await practicum.setIndexJobStatus(job.id, 'indexed');
+          } catch (err) {
+            await practicum.updateKnowledgeDocument(doc.id, req.dbUser.id, { status: 'failed', errorMessage: err.message });
+            await practicum.setIndexJobStatus(job.id, 'failed', err.message);
+          }
+        });
+      }
+      res.json({ items: out });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Upload failed' });
+    }
+  });
+
+  router.get('/personas', authenticateAcademy, async (req, res) => {
+    const personas = await practicum.listPersonas(req.dbUser.id);
+    res.json({ personas });
+  });
+
+  router.post('/personas', authenticateAcademy, async (req, res) => {
+    const persona = await practicum.createPersona(req.dbUser.id, req.body || {});
+    res.json(persona);
+  });
+
+  router.get('/prompts', authenticateAcademy, async (req, res) => {
+    const prompts = await practicum.listPromptTemplates(req.dbUser.id, req.query.category || null);
+    res.json({ prompts });
+  });
+
+  router.post('/prompts', authenticateAcademy, async (req, res) => {
+    const prompt = await practicum.createPromptTemplate(req.dbUser.id, req.body || {});
+    res.json(prompt);
+  });
+
+  router.patch('/prompts/:id', authenticateAcademy, async (req, res) => {
+    const prompt = await practicum.updatePromptTemplate(req.dbUser.id, req.params.id, req.body || {});
+    if (!prompt) return res.status(404).json({ error: 'prompt not found' });
+    res.json(prompt);
+  });
+
+  router.post('/prompts/:id/duplicate', authenticateAcademy, async (req, res) => {
+    const prompt = await practicum.duplicatePromptTemplate(req.dbUser.id, req.params.id);
+    if (!prompt) return res.status(404).json({ error: 'prompt not found' });
+    res.json(prompt);
+  });
+
+  router.post('/prompt-evaluate', authenticateAcademy, aiChatLimiter, async (req, res) => {
+    const openai = createOpenRouterClient();
+    const promptText = String(req.body?.prompt || '').trim();
+    if (!promptText) return res.status(400).json({ error: 'prompt required' });
+    const model = pickModel(req.body?.model, req.dbUser);
+    await assertQuota(req, estimateTokensFromText(promptText));
+    const evalPrompt = `Evaluate this prompt as teaching feedback.\nPrompt:\n${promptText}\n\nReturn JSON with: score(1-10), strengths[], weaknesses[], improved_prompt, explanation.`;
+    const gen = streamChatCompletion(openai, {
+      model,
+      messages: [{ role: 'system', content: 'You are a prompt engineering tutor. Return compact JSON only.' }, { role: 'user', content: evalPrompt }],
+      maxTokens: 800
+    });
+    let text = '';
+    let usage = null;
+    for await (const part of gen) {
+      if (part.type === 'chunk') text += part.text;
+      if (part.type === 'done') usage = part.usage;
+    }
+    let parsed = null;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = { score: 6, strengths: ['Intent provided'], weaknesses: ['Output format unclear'], improved_prompt: promptText, explanation: text };
+    }
+    await recordFeatureUsage(req, {
+      model,
+      promptTokens: usage?.prompt_tokens || estimateTokensFromText(evalPrompt),
+      completionTokens: usage?.completion_tokens || estimateTokensFromText(text),
+      costUsd: estimateCostUsd(usage?.prompt_tokens || 0, usage?.completion_tokens || 0, model),
+      featureMode: 'prompt_evaluation'
+    });
+    res.json(parsed);
+  });
+
+  router.post('/model-compare', authenticateAcademy, aiChatLimiter, async (req, res) => {
+    const openai = createOpenRouterClient();
+    const promptText = String(req.body?.prompt || '').trim();
+    const models = Array.isArray(req.body?.models) ? req.body.models.slice(0, 4) : [];
+    if (!promptText || !models.length) return res.status(400).json({ error: 'prompt and models required' });
+    const results = [];
+    for (const m of models) {
+      const model = pickModel(m, req.dbUser);
+      const started = Date.now();
+      const gen = streamChatCompletion(openai, {
+        model,
+        messages: [{ role: 'user', content: promptText }],
+        maxTokens: 1000
+      });
+      let text = '';
+      let usage = null;
+      for await (const part of gen) {
+        if (part.type === 'chunk') text += part.text;
+        if (part.type === 'done') usage = part.usage;
+      }
+      const latency = Date.now() - started;
+      const pt = usage?.prompt_tokens || estimateTokensFromText(promptText);
+      const ct = usage?.completion_tokens || estimateTokensFromText(text);
+      const cost = estimateCostUsd(pt, ct, model);
+      await recordFeatureUsage(req, {
+        model,
+        promptTokens: pt,
+        completionTokens: ct,
+        costUsd: cost,
+        featureMode: 'model_compare'
+      });
+      results.push({
+        model,
+        response: text,
+        latency_ms: latency,
+        input_tokens: pt,
+        output_tokens: ct,
+        estimated_cost: cost,
+        quality_note: text.length > 500 ? 'Detailed response with good coverage.' : 'Concise response.'
+      });
+    }
+    res.json({ results });
+  });
+
+  router.post('/playground', authenticateAcademy, aiChatLimiter, async (req, res) => {
+    const openai = createOpenRouterClient();
+    const input = String(req.body?.prompt || '').trim();
+    if (!input) return res.status(400).json({ error: 'prompt required' });
+    const model = pickModel(req.body?.model, req.dbUser);
+    const temperature = Number.isFinite(Number(req.body?.temperature)) ? Number(req.body.temperature) : 0.7;
+    const topP = Number.isFinite(Number(req.body?.top_p)) ? Number(req.body.top_p) : 1;
+    const maxTokens = Number.isFinite(Number(req.body?.max_tokens)) ? Number(req.body.max_tokens) : 1200;
+    const systemPrompt = String(req.body?.system_prompt || 'You are a helpful assistant.');
+    await assertQuota(req, estimateTokensFromText(input + systemPrompt));
+    const gen = streamChatCompletion(openai, {
+      model,
+      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: input }],
+      maxTokens,
+      temperature,
+      topP
+    });
+    let text = '';
+    let usage = null;
+    for await (const part of gen) {
+      if (part.type === 'chunk') text += part.text;
+      if (part.type === 'done') usage = part.usage;
+    }
+    await recordFeatureUsage(req, {
+      model,
+      promptTokens: usage?.prompt_tokens || estimateTokensFromText(input + systemPrompt),
+      completionTokens: usage?.completion_tokens || estimateTokensFromText(text),
+      costUsd: estimateCostUsd(usage?.prompt_tokens || 0, usage?.completion_tokens || 0, model),
+      featureMode: 'playground'
+    });
+    res.json({ response: text });
+  });
+
+  router.get('/assistants', authenticateAcademy, async (req, res) => {
+    const assistants = await practicum.listAssistants(req.dbUser.id);
+    res.json({ assistants });
+  });
+
+  router.post('/assistants', authenticateAcademy, async (req, res) => {
+    const assistant = await practicum.createAssistant(req.dbUser.id, req.body || {});
+    res.json(assistant);
+  });
+
+  router.patch('/assistants/:id', authenticateAcademy, async (req, res) => {
+    const assistant = await practicum.updateAssistant(req.dbUser.id, req.params.id, req.body || {});
+    if (!assistant) return res.status(404).json({ error: 'assistant not found' });
+    res.json(assistant);
+  });
+
+  router.post('/assistants/:id/duplicate', authenticateAcademy, async (req, res) => {
+    const assistant = await practicum.duplicateAssistant(req.dbUser.id, req.params.id);
+    if (!assistant) return res.status(404).json({ error: 'assistant not found' });
+    res.json(assistant);
+  });
+
+  router.delete('/assistants/:id', authenticateAcademy, async (req, res) => {
+    const ok = await practicum.softDeleteAssistant(req.dbUser.id, req.params.id);
+    if (!ok) return res.status(404).json({ error: 'assistant not found' });
+    res.json({ ok: true });
+  });
+
+  router.post('/workflows', authenticateAcademy, async (req, res) => {
+    const workflow = await practicum.createWorkflow(req.dbUser.id, req.body || {});
+    for (const s of req.body?.steps || []) {
+      await practicum.addWorkflowStep(workflow.id, s);
+    }
+    res.json(workflow);
+  });
+
+  router.post('/workflows/:id/run', authenticateAcademy, aiChatLimiter, async (req, res) => {
+    const openai = createOpenRouterClient();
+    const wf = await practicum.getWorkflowForUser(req.params.id, req.dbUser.id);
+    if (!wf) return res.status(404).json({ error: 'workflow not found' });
+    const steps = await practicum.listWorkflowSteps(wf.id);
+    const run = await practicum.createWorkflowRun(wf.id, req.dbUser.id, String(req.body?.input || ''));
+    let prev = String(req.body?.input || '');
+    const outputs = [];
+    try {
+      for (const s of steps) {
+        const filledPrompt = String(s.prompt_text || '').replace(/\{\{previous_output\}\}/g, prev);
+        const model = pickModel(req.body?.model, req.dbUser);
+        const gen = streamChatCompletion(openai, {
+          model,
+          messages: [{ role: 'user', content: filledPrompt }],
+          maxTokens: 1000
+        });
+        let text = '';
+        let usage = null;
+        for await (const part of gen) {
+          if (part.type === 'chunk') text += part.text;
+          if (part.type === 'done') usage = part.usage;
+        }
+        await practicum.addWorkflowStepRun(run.id, s.id, text);
+        await recordFeatureUsage(req, {
+          model,
+          promptTokens: usage?.prompt_tokens || estimateTokensFromText(filledPrompt),
+          completionTokens: usage?.completion_tokens || estimateTokensFromText(text),
+          costUsd: estimateCostUsd(usage?.prompt_tokens || 0, usage?.completion_tokens || 0, model),
+          featureMode: 'workflow_builder'
+        });
+        outputs.push({ stepId: s.id, title: s.title, output: text });
+        prev = text;
+      }
+      await practicum.finishWorkflowRun(run.id, 'completed');
+    } catch (e) {
+      await practicum.finishWorkflowRun(run.id, 'failed');
+      throw e;
+    }
+    res.json({ runId: run.id, outputs });
+  });
+
+  router.get('/hallucination/scenarios', authenticateAcademy, async (req, res) => {
+    const scenarios = await practicum.listHallucinationScenarios();
+    res.json({ scenarios });
+  });
+
+  router.post('/hallucination/attempt', authenticateAcademy, async (req, res) => {
+    const selectedIssue = String(req.body?.selected_issue || '');
+    const explanation = String(req.body?.explanation || '');
+    const score = explanation.length > 40 ? 10 : explanation.length > 10 ? 6 : 3;
+    const attempt = await practicum.createHallucinationAttempt({
+      scenarioId: req.body?.scenario_id,
+      userId: req.dbUser.id,
+      selectedIssue,
+      explanation,
+      score,
+      feedback: score >= 8 ? 'Отлично: вы корректно нашли проблему и обосновали.' : 'Уточните тип ошибки и почему утверждение ненадежно.'
+    });
+    const progress = await practicum.getHallucinationProgress(req.dbUser.id);
+    res.json({ attempt, progress: progress[0] || { attempts: 0, avg_score: 0 } });
+  });
+
+  router.post('/certificate', authenticateAcademy, async (req, res) => {
+    const cert = await practicum.upsertCertificate({
+      certificateId: req.body?.certificate_id || randomUUID().replace(/-/g, '').slice(0, 16).toUpperCase(),
+      userId: req.dbUser.id,
+      userName: req.dbUser.name || req.dbUser.email,
+      courseName: String(req.body?.course_name || 'AI Practicum'),
+      completionDate: req.body?.completion_date || new Date().toISOString().slice(0, 10),
+      completedModules: req.body?.completed_modules || []
+    });
+    res.json(cert);
   });
 
   router.get('/conversations', authenticateAcademy, async (req, res) => {
@@ -287,7 +774,8 @@ function createRouter({ JWT_SECRET }) {
         model: imgModel,
         promptTokens: pt,
         completionTokens: ct,
-        costUsd
+        costUsd,
+        featureMode: 'image_generation'
       });
 
       let autoTitle;
@@ -394,6 +882,10 @@ function createRouter({ JWT_SECRET }) {
       const message = body.message != null ? String(body.message) : '';
       const regenerate = body.regenerate === true || body.regenerate === 'true';
       const bodyModel = body.model;
+      const chatMode = String(body.chatMode || 'general');
+      const knowledgeBaseId = body.knowledgeBaseId || null;
+      const strictMode = body.strictMode === true || body.strictMode === 'true' || chatMode === 'strict_knowledge';
+      const personaId = body.personaId || null;
 
       let savedFiles = [];
       if (!regenerate && req.files?.length) {
@@ -454,28 +946,58 @@ function createRouter({ JWT_SECRET }) {
         let rows = await db.listAiMessagesAsc(conversationId, 500);
         rows = rows.slice(-MAX_CONTEXT_MESSAGES);
 
-        let totalChars = 0;
-        const apiMessages = [];
         const lessonForPrompt = lesson || (conv.lesson_id ? await db.getLessonById(conv.lesson_id) : null);
-        apiMessages.push({
-          role: 'system',
-          content: getMentorSystemPrompt({ lesson: lessonForPrompt })
-        });
 
-        for (const m of rows) {
-          if (m.role !== 'user' && m.role !== 'assistant') continue;
-          let content;
-          if (m.role === 'user') {
-            content = await buildUserContentForApi(m.content, req.dbUser.id, m.meta);
-          } else {
-            content = m.content;
+        const { apiMessages, totalChars, droppedTurns } = await buildMessagesWithBudget(
+          rows,
+          lessonForPrompt,
+          req
+        );
+
+        if (personaId) {
+          const persona = await practicum.getPersonaForUser(personaId, req.dbUser.id);
+          if (persona) {
+            apiMessages.splice(1, 0, {
+              role: 'system',
+              content: `Persona: ${persona.name}\nTone: ${persona.tone}\nExpertise: ${persona.expertise}\nTeaching style: ${persona.teaching_style}\nInstructions:\n${persona.system_prompt}`
+            });
           }
-          totalChars += estimatePayloadFootprintForLimits(content);
-          apiMessages.push({ role: m.role, content });
+        }
+
+        let retrievalCitations = [];
+        let strictFallbackText = null;
+        if ((chatMode === 'knowledge' || chatMode === 'strict_knowledge' || chatMode === 'agent_knowledge') && knowledgeBaseId) {
+          const allChunks = await practicum.getChunksForKnowledgeBase(req.dbUser.id, knowledgeBaseId);
+          const retrieved = buildRetrieval(message || 'last user message', allChunks, 5);
+          retrievalCitations = retrieved.map((r, idx) => ({
+            id: idx + 1,
+            document: r.document_name,
+            score: Number((r.score || 0).toFixed(3)),
+            preview: String(r.content || '').slice(0, 220)
+          }));
+          if (!retrieved.length && strictMode) strictFallbackText = strictNoSourceMessage();
+          if (retrieved.length) {
+            const kbContext = retrieved
+              .map((r, idx) => `[Source ${idx + 1}] ${r.document_name}\n${r.content}`)
+              .join('\n\n');
+            apiMessages.splice(1, 0, {
+              role: 'system',
+              content: `Knowledge base context (use as source of truth):\n${kbContext}\nAlways cite source numbers in the answer.`
+            });
+          }
+        }
+
+        if (droppedTurns > 0) {
+          console.info(
+            `[academy/chat] context shrink: dropped ${droppedTurns} oldest message(s), chars=${totalChars}`
+          );
         }
 
         if (totalChars > MAX_CONTEXT_CHARS) {
-          return res.status(400).json({ error: 'Context too large. Start a new chat or shorten messages.' });
+          return res.status(400).json({
+            error:
+              'Контекст слишком большой даже после сжатия истории. Начните новый диалог или отправьте файл отдельным коротким чатом.'
+          });
         }
 
         const estTokens = estimateTokensFromText(JSON.stringify(apiMessages));
@@ -491,6 +1013,27 @@ function createRouter({ JWT_SECRET }) {
         };
 
         send({ type: 'start', conversationId, model });
+
+        if (strictFallbackText) {
+          await db.addAiMessage(conversationId, 'assistant', strictFallbackText, {
+            model,
+            feature_mode: 'chat_strict_knowledge',
+            citations: [],
+            confidence: 'low'
+          });
+          await recordFeatureUsage(req, {
+            conversationId,
+            model,
+            promptTokens: estTokens,
+            completionTokens: estimateTokensFromText(strictFallbackText),
+            costUsd: estimateCostUsd(estTokens, estimateTokensFromText(strictFallbackText), model),
+            featureMode: 'chat_strict_knowledge'
+          });
+          send({ type: 'chunk', text: strictFallbackText });
+          send({ type: 'done', conversationId, citations: [], confidence: 'low' });
+          res.end();
+          return;
+        }
 
         let finalUsage = null;
         let fullAssistant = '';
@@ -521,7 +1064,17 @@ function createRouter({ JWT_SECRET }) {
 
         const meta = {
           model,
-          mentor_prompt_version: MENTOR_PROMPT_VERSION
+          mentor_prompt_version: MENTOR_PROMPT_VERSION,
+          feature_mode:
+            chatMode === 'knowledge'
+              ? 'chat_knowledge'
+              : chatMode === 'strict_knowledge'
+                ? 'chat_strict_knowledge'
+                : chatMode === 'agent_knowledge'
+                  ? 'chat_agent_knowledge'
+                  : 'chat_general',
+          citations: retrievalCitations,
+          confidence: retrievalCitations.length ? 'medium' : 'low'
         };
         await db.addAiMessage(conversationId, 'assistant', fullAssistant || ' ', meta);
 
@@ -533,13 +1086,13 @@ function createRouter({ JWT_SECRET }) {
             ? costFromApi
             : estimateCostUsd(promptTokens, completionTokens, model);
 
-        await db.recordAiUsage({
-          userId: req.dbUser.id,
+        await recordFeatureUsage(req, {
           conversationId,
           model,
           promptTokens,
           completionTokens,
-          costUsd
+          costUsd,
+          featureMode: meta.feature_mode
         });
 
         let autoTitle;
@@ -558,6 +1111,8 @@ function createRouter({ JWT_SECRET }) {
         send({
           type: 'done',
           conversationId,
+          citations: retrievalCitations,
+          confidence: retrievalCitations.length ? 'medium' : 'low',
           usage: {
             prompt_tokens: promptTokens,
             completion_tokens: completionTokens,
