@@ -672,7 +672,8 @@ async function refreshKbStatus() {
   }
   rows.slice(0, 8).forEach((d) => {
     const div = document.createElement('div');
-    div.textContent = `${d.name} — ${d.status}${d.error_message ? ` (${d.error_message})` : ''}`;
+    const displayName = d.original_name || d.name || 'document';
+    div.textContent = `${displayName} — ${d.status}${d.error_message ? ` (${d.error_message})` : ''}`;
     box.appendChild(div);
   });
 }
@@ -1160,6 +1161,13 @@ function wireUi() {
   });
   document.getElementById('knowledgeBaseSelect')?.addEventListener('change', async () => {
     state.selectedKnowledgeBaseId = document.getElementById('knowledgeBaseSelect').value || null;
+    state.activeKnowledgeBaseId = state.selectedKnowledgeBaseId;
+    if (state.selectedKnowledgeBaseId) {
+      await openKnowledgeBase(state.selectedKnowledgeBaseId);
+    } else {
+      state.knowledgeDocuments = [];
+      renderKnowledgeBases();
+    }
     await refreshKbStatus();
   });
 
@@ -1390,29 +1398,30 @@ function renderKnowledgeBases() {
   ul.innerHTML = '';
   if (!state.knowledgeBases.length) {
     const li = document.createElement('li');
-    li.className = 'text-slate-500';
+    li.className = 'text-slate-500 text-xs';
     li.textContent = 'Нет баз знаний';
     ul.appendChild(li);
     return;
   }
   for (const kb of state.knowledgeBases) {
     const li = document.createElement('li');
-    li.className = 'border border-slate-800 rounded p-2 bg-slate-900/60';
+    li.className = 'border rounded p-2 bg-white';
+    li.style.borderColor = 'var(--cursor-border)';
     const isActive = state.activeKnowledgeBaseId === kb.id;
     li.innerHTML = `
       <div class="flex items-center gap-1">
-        <button type="button" data-open-kb="${kb.id}" class="flex-1 text-left ${isActive ? 'text-indigo-300' : 'text-slate-200'} truncate">${escapeHtml(kb.name)}</button>
+        <button type="button" data-open-kb="${kb.id}" class="flex-1 text-left text-xs ${isActive ? 'text-indigo-700 font-medium' : 'text-slate-700'} truncate">${escapeHtml(kb.name)}</button>
         <span class="text-[10px] text-slate-500">${kb.documents_count || 0}</span>
-        <button type="button" data-del-kb="${kb.id}" class="text-red-400 hover:text-red-300 px-1">×</button>
+        <button type="button" data-del-kb="${kb.id}" class="text-red-500 hover:text-red-600 px-1">×</button>
       </div>
       <div id="kb-docs-${kb.id}" class="${isActive ? '' : 'hidden'} mt-2 space-y-1"></div>
       <div id="kb-actions-${kb.id}" class="${isActive ? '' : 'hidden'} mt-2 space-y-1">
         <div class="flex gap-1">
-          <input type="text" data-rename-kb="${kb.id}" value="${escapeHtml(kb.name)}" class="flex-1 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-[10px]" />
-          <button type="button" data-save-kb="${kb.id}" class="text-[10px] px-1.5 rounded bg-slate-800 hover:bg-slate-700">OK</button>
+          <input type="text" data-rename-kb="${kb.id}" value="${escapeHtml(kb.name)}" class="flex-1 bg-white border rounded px-1 py-0.5 text-[10px] text-slate-700" style="border-color: var(--cursor-border);" />
+          <button type="button" data-save-kb="${kb.id}" class="text-[10px] px-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700">OK</button>
         </div>
-        <input type="text" data-search-kb="${kb.id}" placeholder="Поиск документов..." class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[10px]" />
-        <input type="file" data-upload-kb="${kb.id}" class="text-[10px] text-slate-400 w-full" multiple />
+        <input type="text" data-search-kb="${kb.id}" placeholder="Поиск документов..." class="w-full bg-white border rounded px-2 py-1 text-[10px] text-slate-700" style="border-color: var(--cursor-border);" />
+        <input type="file" data-upload-kb="${kb.id}" class="text-[10px] text-slate-600 w-full" multiple />
       </div>
     `;
     ul.appendChild(li);
@@ -1447,12 +1456,12 @@ function renderKnowledgeDocuments(kbId) {
   }
   for (const d of state.knowledgeDocuments) {
     const row = document.createElement('div');
-    row.className = 'flex items-center gap-1 text-[10px] text-slate-400';
+    row.className = 'flex items-center gap-1 text-[10px] text-slate-600';
     row.innerHTML = `
       <span class="flex-1 truncate" title="${escapeHtml(d.original_name)}">${escapeHtml(d.original_name)}</span>
       <span class="text-slate-500">${formatBytes(d.size_bytes)}</span>
-      <button type="button" data-download-doc="${d.id}" class="text-indigo-400 hover:text-indigo-300 px-1">↓</button>
-      <button type="button" data-del-doc="${d.id}" class="text-red-400 hover:text-red-300 px-1">×</button>
+      <button type="button" data-download-doc="${d.id}" class="text-indigo-600 hover:text-indigo-700 px-1">↓</button>
+      <button type="button" data-del-doc="${d.id}" class="text-red-500 hover:text-red-600 px-1">×</button>
     `;
     box.appendChild(row);
   }
@@ -1475,6 +1484,7 @@ async function createKnowledgeBaseHandler() {
     });
     input.value = '';
     state.knowledgeBases = (await api('/api/academy/knowledge-bases')).knowledgeBases || [];
+    populateKnowledgeBases();
     renderKnowledgeBases();
   } catch (e) {
     alert(e.message || 'Не удалось создать базу знаний');
@@ -1483,9 +1493,11 @@ async function createKnowledgeBaseHandler() {
 
 async function openKnowledgeBase(kbId) {
   state.activeKnowledgeBaseId = kbId;
+  state.selectedKnowledgeBaseId = kbId;
   try {
     const docs = await api(`/api/academy/knowledge-bases/${kbId}/documents`);
     state.knowledgeDocuments = docs.documents || [];
+    populateKnowledgeBases();
     renderKnowledgeBases();
   } catch (e) {
     alert(e.message || 'Не удалось загрузить документы');
@@ -1499,9 +1511,12 @@ async function deleteKnowledgeBaseHandler(kbId) {
     state.knowledgeBases = (await api('/api/academy/knowledge-bases')).knowledgeBases || [];
     if (state.activeKnowledgeBaseId === kbId) {
       state.activeKnowledgeBaseId = null;
+      state.selectedKnowledgeBaseId = null;
       state.knowledgeDocuments = [];
     }
+    populateKnowledgeBases();
     renderKnowledgeBases();
+    await refreshKbStatus();
   } catch (e) {
     alert(e.message || 'Не удалось удалить базу знаний');
   }
@@ -1525,7 +1540,9 @@ async function uploadDocumentsHandler(kbId, inputEl) {
     inputEl.value = '';
     await openKnowledgeBase(kbId);
     state.knowledgeBases = (await api('/api/academy/knowledge-bases')).knowledgeBases || [];
+    populateKnowledgeBases();
     renderKnowledgeBases();
+    await refreshKbStatus();
   } catch (e) {
     alert(e.message || 'Не удалось загрузить документы');
   }
@@ -1541,7 +1558,9 @@ async function renameKnowledgeBaseHandler(kbId) {
       body: JSON.stringify({ name })
     });
     state.knowledgeBases = (await api('/api/academy/knowledge-bases')).knowledgeBases || [];
+    populateKnowledgeBases();
     renderKnowledgeBases();
+    await refreshKbStatus();
   } catch (e) {
     alert(e.message || 'Не удалось переименовать базу знаний');
   }
@@ -1593,7 +1612,9 @@ async function deleteDocumentHandler(documentId) {
       await openKnowledgeBase(state.activeKnowledgeBaseId);
     }
     state.knowledgeBases = (await api('/api/academy/knowledge-bases')).knowledgeBases || [];
+    populateKnowledgeBases();
     renderKnowledgeBases();
+    await refreshKbStatus();
   } catch (e) {
     alert(e.message || 'Не удалось удалить документ');
   }
