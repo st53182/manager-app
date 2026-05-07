@@ -599,7 +599,7 @@ function updateModelHint() {
 function populateKnowledgeBases() {
   const sel = document.getElementById('knowledgeBaseSelect');
   if (!sel) return;
-  sel.innerHTML = '<option value="">No KB</option>';
+  sel.innerHTML = '<option value="">Без базы знаний</option>';
   for (const kb of state.knowledgeBases) {
     const o = document.createElement('option');
     o.value = kb.id;
@@ -612,7 +612,7 @@ function populateKnowledgeBases() {
 function populatePersonas() {
   const sel = document.getElementById('personaSelect');
   if (!sel) return;
-  sel.innerHTML = '<option value="">No persona</option>';
+  sel.innerHTML = '<option value="">Без персоны</option>';
   for (const p of state.personas) {
     const o = document.createElement('option');
     o.value = p.id;
