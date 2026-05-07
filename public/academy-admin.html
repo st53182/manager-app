@@ -6,6 +6,7 @@
   <title>AI Academy — Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+        :root { color-scheme: light; }
     body { font-family: ui-sans-serif, system-ui, sans-serif; }
   </style>
 </head>
@@ -24,7 +25,10 @@
   <div id="app" class="hidden container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-2xl font-semibold">Admin · AI Academy</h1>
-      <a href="/academy" class="text-sm text-indigo-400 hover:text-indigo-300">← Workspace</a>
+      <div class="flex items-center gap-3">
+        <div id="languageSwitcher"></div>
+        <a href="/academy" class="text-sm text-indigo-400 hover:text-indigo-300">← Workspace</a>
+      </div>
     </div>
 
     <section class="mb-10">
@@ -67,6 +71,7 @@
     </section>
   </div>
 
+  <script src="/js/translations.js"></script>
   <script type="module" src="/js/academy-admin.js"></script>
 </body>
 </html>

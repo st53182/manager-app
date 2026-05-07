@@ -404,9 +404,12 @@ async function generateTeamAdvice(employees) {
 
     } catch (error) {
         console.error('Error generating team advice:', error);
-        const errorMessage = currentLanguage === 'ru' 
-            ? 'Не удалось сгенерировать рекомендации. Попробуйте обновить страницу.'
-            : 'Failed to generate recommendations. Please try refreshing the page.';
+        const errorMessages = {
+            ru: 'Не удалось сгенерировать рекомендации. Попробуйте обновить страницу.',
+            lv: 'Neizdevās ģenerēt ieteikumus. Lūdzu, atsvaidziniet lapu.',
+            en: 'Failed to generate recommendations. Please try refreshing the page.'
+        };
+        const errorMessage = errorMessages[currentLanguage] || errorMessages.en;
         displayMotivationAdvice(errorMessage);
     }
 }
@@ -436,9 +439,12 @@ function displayInitialAdviceMessage() {
     const container = document.getElementById('motivationAdvice');
     const currentLanguage = window.translationManager ? window.translationManager.currentLanguage : 'ru';
     
-    const message = currentLanguage === 'ru' 
-        ? 'Нажмите "Обновить рекомендации" для получения персонализированных советов по мотивации команды на основе анализа мотивационных триггеров.'
-        : 'Click "Refresh Recommendations" to get personalized team motivation advice based on motivational triggers analysis.';
+    const initialMessages = {
+        ru: 'Нажмите "Обновить рекомендации" для получения персонализированных советов по мотивации команды на основе анализа мотивационных триггеров.',
+        lv: 'Nospiediet "Atjaunot ieteikumus", lai saņemtu personalizētus komandas motivācijas padomus, balstoties uz motivācijas trigeru analīzi.',
+        en: 'Click "Refresh Recommendations" to get personalized team motivation advice based on motivational triggers analysis.'
+    };
+    const message = initialMessages[currentLanguage] || initialMessages.en;
     
     container.innerHTML = `<p class="leading-relaxed opacity-75 italic">${message}</p>`;
 }
@@ -458,23 +464,4 @@ document.addEventListener('DOMContentLoaded', function() {
         generateTeamAdvice(teamEmployees);
     });
 
-    document.getElementById('langRu').addEventListener('click', function() {
-        if (window.translationManager) {
-            window.translationManager.setLanguage('ru');
-        }
-        this.classList.add('bg-blue-600', 'text-white');
-        this.classList.remove('bg-gray-300', 'text-gray-700');
-        document.getElementById('langEn').classList.remove('bg-blue-600', 'text-white');
-        document.getElementById('langEn').classList.add('bg-gray-300', 'text-gray-700');
-    });
-
-    document.getElementById('langEn').addEventListener('click', function() {
-        if (window.translationManager) {
-            window.translationManager.setLanguage('en');
-        }
-        this.classList.add('bg-blue-600', 'text-white');
-        this.classList.remove('bg-gray-300', 'text-gray-700');
-        document.getElementById('langRu').classList.remove('bg-blue-600', 'text-white');
-        document.getElementById('langRu').classList.add('bg-gray-300', 'text-gray-700');
-    });
 });

@@ -814,8 +814,9 @@ app.post('/api/team/:id/motivation-advice', authenticateToken, async (req, res) 
       return res.status(500).json({ error: 'OpenAI API key not configured' });
     }
 
+    const normalizedLanguage = ['ru', 'lv', 'en'].includes(language) ? language : 'en';
     let prompt;
-    if (language === 'ru') {
+    if (normalizedLanguage === 'ru') {
       prompt = `Проанализируй топ мотивационные триггеры этой команды и предоставь конкретные советы по их мотивации:
 
 Команда: ${team.name}
@@ -825,6 +826,16 @@ app.post('/api/team/:id/motivation-advice', authenticateToken, async (req, res) 
 Предоставь 3-4 конкретных, практических рекомендации для мотивации этой команды на основе их доминирующих мотивационных триггеров. Сосредоточься на практических управленческих стратегиях, которые учитывают эти конкретные триггеры.
 
 Структурируй ответ в виде пронумерованного списка. Каждая рекомендация должна быть конкретной и применимой на практике.`;
+    } else if (normalizedLanguage === 'lv') {
+      prompt = `Analizē šīs komandas galvenos motivācijas trigerus un sniedz konkrētus ieteikumus, kā motivēt komandu:
+
+Komanda: ${team.name}
+Komandas lielums: ${employees.length} dalībnieki
+Top 4 motivācijas trigeri (visbiežāk sastopamie komandā): ${topTriggers.join(', ')}
+
+Sniedz 3-4 konkrētus, praktiski pielietojamus ieteikumus komandas motivēšanai, balstoties uz dominējošajiem motivācijas trigeriem. Koncentrējies uz vadības pieejām, kuras var ieviest praksē.
+
+Noformē atbildi kā numurētu sarakstu. Katram ieteikumam jābūt konkrētam un izpildāmam.`;
     } else {
       prompt = `Analyze this team's top motivational triggers and provide specific advice for motivating them:
 
