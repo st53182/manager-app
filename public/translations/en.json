@@ -334,5 +334,62 @@
     "success": "Success",
     "confirm": "Confirm",
     "back": "Back"
+  },
+  "academy": {
+    "brand": "AI Academy",
+    "sidebar": {
+      "new_chat": "+ New chat",
+      "dialogs": "Dialogs"
+    },
+    "chat": {
+      "title_placeholder": "Conversation title",
+      "composer_placeholder": "Message… (you can attach files)",
+      "send": "Send",
+      "regenerate": "Regenerate",
+      "retry": "Retry request"
+    },
+    "controls": {
+      "no_kb": "No knowledge base",
+      "no_persona": "No persona"
+    },
+    "tools": {
+      "title": "Tools"
+    },
+    "tabs": {
+      "kb": "Knowledge Base",
+      "prompts": "Prompts",
+      "models": "Models",
+      "assistant": "Assistants",
+      "training": "Training"
+    },
+    "kb": {
+      "heading": "Knowledge Base",
+      "name_placeholder": "Knowledge base name",
+      "create": "Create KB",
+      "upload_docs": "Upload documents",
+      "select_for_status": "Select a knowledge base to view statuses.",
+      "no_docs": "No documents yet."
+    },
+    "prompts": {
+      "heading": "Prompt tools",
+      "save": "Save prompt",
+      "evaluate": "Evaluate prompt"
+    },
+    "models": {
+      "heading": "Model compare and Playground",
+      "compare_placeholder": "model1,model2",
+      "compare": "Compare",
+      "playground": "Run in Playground"
+    },
+    "assistant": {
+      "heading": "Assistants and workflow",
+      "create": "Create assistant",
+      "run_workflow": "Run workflow"
+    },
+    "training": {
+      "heading": "Hallucination training and certificate",
+      "submit": "Submit attempt",
+      "generate_cert": "Generate certificate"
+    }
   }
 }

@@ -317,5 +317,62 @@
   "soft_skill_goal_setting_benefit": "Повышает мотивацию и результативность работы",
   "soft_skill_emotional_intelligence": "Эмоциональный интеллект",
   "soft_skill_emotional_intelligence_desc": "Понимание и управление эмоциями себя и других",
-  "soft_skill_emotional_intelligence_benefit": "Улучшает межличностные отношения и лидерские качества"
+  "soft_skill_emotional_intelligence_benefit": "Улучшает межличностные отношения и лидерские качества",
+  "academy": {
+    "brand": "AI Academy",
+    "sidebar": {
+      "new_chat": "+ Jauna tērzēšana",
+      "dialogs": "Dialogi"
+    },
+    "chat": {
+      "title_placeholder": "Dialoga nosaukums",
+      "composer_placeholder": "Ziņojums… (var pievienot failus)",
+      "send": "Sūtīt",
+      "regenerate": "Pārģenerēt",
+      "retry": "Atkārtot pieprasījumu"
+    },
+    "controls": {
+      "no_kb": "Bez zināšanu bāzes",
+      "no_persona": "Bez personas"
+    },
+    "tools": {
+      "title": "Rīki"
+    },
+    "tabs": {
+      "kb": "Zināšanu bāze",
+      "prompts": "Prompti",
+      "models": "Modeļi",
+      "assistant": "Asistenti",
+      "training": "Treniņš"
+    },
+    "kb": {
+      "heading": "Zināšanu bāze",
+      "name_placeholder": "Zināšanu bāzes nosaukums",
+      "create": "Izveidot KB",
+      "upload_docs": "Augšupielādēt dokumentus",
+      "select_for_status": "Izvēlieties zināšanu bāzi statusu apskatei.",
+      "no_docs": "Dokumentu vēl nav."
+    },
+    "prompts": {
+      "heading": "Promptu rīki",
+      "save": "Saglabāt promptu",
+      "evaluate": "Novērtēt promptu"
+    },
+    "models": {
+      "heading": "Modeļu salīdzināšana un Playground",
+      "compare_placeholder": "model1,model2",
+      "compare": "Salīdzināt",
+      "playground": "Palaist Playground"
+    },
+    "assistant": {
+      "heading": "Asistenti un workflow",
+      "create": "Izveidot asistentu",
+      "run_workflow": "Palaist workflow"
+    },
+    "training": {
+      "heading": "Halucināciju treniņš un sertifikāts",
+      "submit": "Nosūtīt mēģinājumu",
+      "generate_cert": "Ģenerēt sertifikātu"
+    }
+  }
 }

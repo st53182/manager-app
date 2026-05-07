@@ -334,5 +334,62 @@
   
   "soft_skill_emotional_intelligence": "Эмоциональный интеллект",
   "soft_skill_emotional_intelligence_desc": "Понимание и управление эмоциями себя и других",
-  "soft_skill_emotional_intelligence_benefit": "Улучшает межличностные отношения и лидерские качества"
+  "soft_skill_emotional_intelligence_benefit": "Улучшает межличностные отношения и лидерские качества",
+  "academy": {
+    "brand": "AI Academy",
+    "sidebar": {
+      "new_chat": "+ Новый чат",
+      "dialogs": "Диалоги"
+    },
+    "chat": {
+      "title_placeholder": "Название диалога",
+      "composer_placeholder": "Сообщение… (можно приложить файлы)",
+      "send": "Отправить",
+      "regenerate": "Перегенерировать",
+      "retry": "Повторить запрос"
+    },
+    "controls": {
+      "no_kb": "Без базы знаний",
+      "no_persona": "Без персоны"
+    },
+    "tools": {
+      "title": "Инструменты"
+    },
+    "tabs": {
+      "kb": "База знаний",
+      "prompts": "Промпты",
+      "models": "Модели",
+      "assistant": "Ассистенты",
+      "training": "Тренировка"
+    },
+    "kb": {
+      "heading": "База знаний",
+      "name_placeholder": "Название базы знаний",
+      "create": "Создать KB",
+      "upload_docs": "Загрузить документы",
+      "select_for_status": "Выберите базу знаний для просмотра статусов.",
+      "no_docs": "Документов пока нет."
+    },
+    "prompts": {
+      "heading": "Инструменты промптов",
+      "save": "Сохранить prompt",
+      "evaluate": "Оценить prompt"
+    },
+    "models": {
+      "heading": "Сравнение моделей и Playground",
+      "compare_placeholder": "model1,model2",
+      "compare": "Сравнить",
+      "playground": "Запуск в Playground"
+    },
+    "assistant": {
+      "heading": "Ассистенты и workflow",
+      "create": "Создать ассистента",
+      "run_workflow": "Запустить workflow"
+    },
+    "training": {
+      "heading": "Тренировка галлюцинаций и сертификат",
+      "submit": "Отправить попытку",
+      "generate_cert": "Сгенерировать сертификат"
+    }
+  }
 }

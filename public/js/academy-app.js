@@ -412,6 +412,37 @@ const state = {
   selectedKnowledgeBaseId: null
 };
 
+function currentLang() {
+  return window.translationManager?.currentLanguage || localStorage.getItem('language') || 'ru';
+}
+
+function tr(key, fallback = '') {
+  if (window.translationManager?.t) return window.translationManager.t(key);
+  return fallback || key;
+}
+
+function getLocalizedPersonaName(persona) {
+  if (!persona) return '';
+  const lang = currentLang();
+  if (persona.translations && typeof persona.translations === 'object') {
+    const viaMap = persona.translations[lang] || persona.translations.ru || persona.translations.en;
+    if (viaMap) return viaMap;
+  }
+  const byField = persona[`name_${lang}`] || persona.name_ru || persona.name_en || persona.name;
+  return byField || persona.name || '';
+}
+
+function initLanguageEvents() {
+  if (!window.translationManager || window.translationManager.__academyHooked) return;
+  const original = window.translationManager.setLanguage?.bind(window.translationManager);
+  if (typeof original !== 'function') return;
+  window.translationManager.setLanguage = (language) => {
+    original(language);
+    window.dispatchEvent(new CustomEvent('academy-language-changed', { detail: { language } }));
+  };
+  window.translationManager.__academyHooked = true;
+}
+
 function showGate() {
   document.getElementById('authGate').classList.remove('hidden');
   document.getElementById('app').classList.add('hidden');
@@ -459,6 +490,7 @@ async function init() {
     populatePersonas();
     await refreshKbStatus();
     updateModelHint();
+    applyAcademyTranslations();
     showApp();
   } catch (e) {
     if (e.status === 401 || e.status === 403) {
@@ -483,6 +515,7 @@ function renderUsage() {
 
 function renderCourseTree() {
   const root = document.getElementById('courseTree');
+  if (!root) return;
   root.innerHTML = '';
   const byCourse = {};
   for (const l of state.catalog.lessons) {
@@ -523,7 +556,7 @@ function renderConversationList() {
     const sel = document.createElement('button');
     sel.type = 'button';
     sel.className = `flex-1 min-w-0 text-left truncate py-1 px-2 rounded text-sm ${
-      c.id === state.currentConversationId ? 'bg-slate-700 text-white' : 'text-slate-300 hover:text-white'
+      c.id === state.currentConversationId ? 'bg-slate-700 text-white' : 'text-slate-700 hover:text-slate-900'
     }`;
     sel.textContent = c.title || 'Чат';
     sel.addEventListener('click', () => loadConversation(c.id));
@@ -531,7 +564,7 @@ function renderConversationList() {
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className =
-      'shrink-0 w-8 py-1 text-center text-slate-300 hover:text-red-300 hover:bg-slate-700 rounded text-xl leading-none transition-colors';
+      'shrink-0 w-8 py-1 text-center text-slate-500 hover:text-red-600 hover:bg-slate-100 rounded text-xl leading-none transition-colors';
     delBtn.title = 'Удалить диалог';
     delBtn.setAttribute('aria-label', 'Удалить диалог');
     delBtn.textContent = '×';
@@ -599,7 +632,7 @@ function updateModelHint() {
 function populateKnowledgeBases() {
   const sel = document.getElementById('knowledgeBaseSelect');
   if (!sel) return;
-  sel.innerHTML = '<option value="">Без базы знаний</option>';
+  sel.innerHTML = `<option value="">${tr('academy.controls.no_kb', 'Без базы знаний')}</option>`;
   for (const kb of state.knowledgeBases) {
     const o = document.createElement('option');
     o.value = kb.id;
@@ -612,11 +645,11 @@ function populateKnowledgeBases() {
 function populatePersonas() {
   const sel = document.getElementById('personaSelect');
   if (!sel) return;
-  sel.innerHTML = '<option value="">Без персоны</option>';
+  sel.innerHTML = `<option value="">${tr('academy.controls.no_persona', 'Без персоны')}</option>`;
   for (const p of state.personas) {
     const o = document.createElement('option');
     o.value = p.id;
-    o.textContent = p.name;
+    o.textContent = getLocalizedPersonaName(p);
     sel.appendChild(o);
   }
 }
@@ -626,12 +659,12 @@ async function refreshKbStatus() {
   if (!box) return;
   box.innerHTML = '';
   if (!state.selectedKnowledgeBaseId) {
-    box.textContent = 'Выберите базу знаний для просмотра статусов.';
+    box.textContent = tr('academy.kb.select_for_status', 'Выберите базу знаний для просмотра статусов.');
     return;
   }
   const rows = (await api(`/api/academy/knowledge-bases/${state.selectedKnowledgeBaseId}/documents`)).documents || [];
   if (!rows.length) {
-    box.textContent = 'Документов пока нет.';
+    box.textContent = tr('academy.kb.no_docs', 'Документов пока нет.');
     return;
   }
   rows.slice(0, 8).forEach((d) => {
@@ -652,17 +685,22 @@ function parseMsgMeta(raw) {
 }
 
 async function selectLesson(lesson) {
+  if (!lesson) return;
+  const lessonEmpty = document.getElementById('lessonEmpty');
+  const lessonContent = document.getElementById('lessonContent');
+  const assignmentBlock = document.getElementById('assignmentBlock');
+  const assignmentText = document.getElementById('assignmentText');
   state.currentLessonId = lesson.id;
-  document.getElementById('lessonEmpty').classList.add('hidden');
-  document.getElementById('lessonContent').classList.remove('hidden');
-  document.getElementById('lessonContent').innerHTML = renderMarkdown(lesson.content_md || '');
+  lessonEmpty?.classList.add('hidden');
+  lessonContent?.classList.remove('hidden');
+  if (lessonContent) lessonContent.innerHTML = renderMarkdown(lesson.content_md || '');
   document.getElementById('lessonHint').textContent = `${lesson.course_title || ''} · ${lesson.title}`;
   const asn = lesson.assignment;
-  if (asn) {
-    document.getElementById('assignmentBlock').classList.remove('hidden');
-    document.getElementById('assignmentText').textContent = asn.instructions_md || '';
+  if (asn && assignmentBlock && assignmentText) {
+    assignmentBlock.classList.remove('hidden');
+    assignmentText.textContent = asn.instructions_md || '';
   } else {
-    document.getElementById('assignmentBlock').classList.add('hidden');
+    assignmentBlock?.classList.add('hidden');
   }
 
   const conv = await api('/api/academy/conversations', {
@@ -692,6 +730,8 @@ async function loadConversation(id, opts = {}) {
     if (lesson) {
       document.getElementById('lessonHint').textContent = `${lesson.course_title} · ${lesson.title}`;
     }
+  } else {
+    document.getElementById('lessonHint').textContent = '';
   }
   renderMessages(data.messages || []);
   if (!opts.skipFetchList) {
@@ -736,10 +776,10 @@ function renderMessageEl(m) {
     bubble.appendChild(textDiv);
   }
   const actions = document.createElement('div');
-  actions.className = 'flex gap-2 mt-1 text-xs text-slate-300';
+  actions.className = 'flex gap-2 mt-1 text-xs text-slate-500';
   const copyBtn = document.createElement('button');
   copyBtn.type = 'button';
-  copyBtn.className = 'hover:text-white transition-colors';
+  copyBtn.className = 'hover:text-slate-900 transition-colors';
   copyBtn.textContent = 'Копировать';
   copyBtn.addEventListener('click', () => navigator.clipboard.writeText(m.content));
   actions.appendChild(copyBtn);
@@ -893,6 +933,134 @@ function setComposerBusy(busy) {
   if (ig) ig.disabled = busy;
 }
 
+function initToolTabs() {
+  const tabs = Array.from(document.querySelectorAll('[data-tool-tab]'));
+  const panels = Array.from(document.querySelectorAll('[data-tool-panel]'));
+  if (!tabs.length || !panels.length) return;
+  const activate = (id) => {
+    tabs.forEach((tab) => tab.classList.toggle('is-active', tab.dataset.toolTab === id));
+    panels.forEach((panel) => panel.classList.toggle('is-active', panel.dataset.toolPanel === id));
+  };
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => activate(tab.dataset.toolTab));
+  });
+}
+
+function initResizableLayout() {
+  const app = document.getElementById('app');
+  const leftSidebar = document.getElementById('leftSidebar');
+  const toolsPanel = document.getElementById('toolsPanel');
+  const leftSplitter = document.getElementById('leftSplitter');
+  const rightSplitter = document.getElementById('rightSplitter');
+  if (!app || !leftSidebar || !toolsPanel || !leftSplitter || !rightSplitter) return;
+
+  function setWidths(leftPx, rightPx) {
+    app.style.setProperty('--left-pane-width', `${leftPx}px`);
+    app.style.setProperty('--right-pane-width', `${rightPx}px`);
+    if (window.innerWidth >= 768) {
+      leftSidebar.style.width = `${leftPx}px`;
+      leftSidebar.style.flexBasis = `${leftPx}px`;
+    }
+    if (window.innerWidth >= 1024) {
+      toolsPanel.style.width = `${rightPx}px`;
+      toolsPanel.style.flexBasis = `${rightPx}px`;
+    } else {
+      toolsPanel.style.width = '';
+      toolsPanel.style.flexBasis = '';
+    }
+  }
+
+  setWidths(288, 384);
+  window.addEventListener('resize', () => {
+    setWidths(
+      parseInt(getComputedStyle(app).getPropertyValue('--left-pane-width'), 10) || 288,
+      parseInt(getComputedStyle(app).getPropertyValue('--right-pane-width'), 10) || 384
+    );
+  });
+
+  function bindSplitter(splitter, side) {
+    splitter.addEventListener('pointerdown', (e) => {
+      if ((side === 'left' && window.innerWidth < 768) || (side === 'right' && window.innerWidth < 1024)) return;
+      splitter.setPointerCapture(e.pointerId);
+      splitter.classList.add('is-dragging');
+      const startX = e.clientX;
+      const leftStart = leftSidebar.getBoundingClientRect().width;
+      const rightStart = toolsPanel.getBoundingClientRect().width;
+
+      const onMove = (ev) => {
+        if (side === 'left') {
+          const next = Math.max(240, Math.min(460, leftStart + (ev.clientX - startX)));
+          setWidths(next, rightStart);
+        } else {
+          const next = Math.max(300, Math.min(560, rightStart - (ev.clientX - startX)));
+          setWidths(leftStart, next);
+        }
+      };
+      const onUp = () => {
+        splitter.classList.remove('is-dragging');
+        splitter.removeEventListener('pointermove', onMove);
+        splitter.removeEventListener('pointerup', onUp);
+      };
+      splitter.addEventListener('pointermove', onMove);
+      splitter.addEventListener('pointerup', onUp);
+    });
+  }
+
+  bindSplitter(leftSplitter, 'left');
+  bindSplitter(rightSplitter, 'right');
+}
+
+function applyAcademyTranslations() {
+  const map = {
+    newChatBtn: 'academy.sidebar.new_chat',
+    conversationTitle: 'academy.chat.title_placeholder',
+    composer: 'academy.chat.composer_placeholder',
+    sendBtn: 'academy.chat.send',
+    regenerateBtn: 'academy.chat.regenerate',
+    retryBtn: 'academy.chat.retry',
+    kbNameInput: 'academy.kb.name_placeholder',
+    createKbBtn: 'academy.kb.create',
+    uploadKbBtn: 'academy.kb.upload_docs',
+    savePromptBtn: 'academy.prompts.save',
+    evaluatePromptBtn: 'academy.prompts.evaluate',
+    compareModelsInput: 'academy.models.compare_placeholder',
+    runCompareBtn: 'academy.models.compare',
+    runPlaygroundBtn: 'academy.models.playground',
+    createAssistantBtn: 'academy.assistant.create',
+    runWorkflowBtn: 'academy.assistant.run_workflow',
+    hallucinationAttemptBtn: 'academy.training.submit',
+    generateCertBtn: 'academy.training.generate_cert',
+    dialogsHeading: 'academy.sidebar.dialogs',
+    kbHeading: 'academy.kb.heading',
+    promptsHeading: 'academy.prompts.heading',
+    modelsHeading: 'academy.models.heading',
+    assistantHeading: 'academy.assistant.heading',
+    trainingHeading: 'academy.training.heading'
+  };
+  Object.entries(map).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+      el.placeholder = tr(key, el.placeholder);
+    } else {
+      el.textContent = tr(key, el.textContent);
+    }
+  });
+
+  const title = document.querySelector('[data-i18n="academy.brand"]');
+  if (title) title.textContent = tr('academy.brand', title.textContent);
+  const toolsTitle = document.querySelector('[data-i18n="academy.tools.title"]');
+  if (toolsTitle) toolsTitle.textContent = tr('academy.tools.title', toolsTitle.textContent);
+  document.querySelectorAll('[data-tool-tab]').forEach((tab) => {
+    const key = `academy.tabs.${tab.dataset.toolTab}`;
+    tab.textContent = tr(key, tab.textContent);
+  });
+
+  populateKnowledgeBases();
+  populatePersonas();
+  refreshKbStatus().catch(() => {});
+}
+
 /**
  * Image generation via OpenRouter (shared by composer button and academy-image-spec blocks).
  * @returns {Promise<boolean>} success
@@ -968,13 +1136,13 @@ function wireUi() {
     document.getElementById('messagesContainer').innerHTML = '';
     document.getElementById('conversationTitle').value = '';
     document.getElementById('lessonHint').textContent = '';
-    document.getElementById('lessonEmpty').classList.remove('hidden');
-    document.getElementById('lessonContent').classList.add('hidden');
-    document.getElementById('assignmentBlock').classList.add('hidden');
+    document.getElementById('lessonEmpty')?.classList.remove('hidden');
+    document.getElementById('lessonContent')?.classList.add('hidden');
+    document.getElementById('assignmentBlock')?.classList.add('hidden');
   });
 
   document.getElementById('sendBtn').addEventListener('click', sendHandler);
-  document.getElementById('imageGenBtn').addEventListener('click', imageGenHandler);
+  document.getElementById('imageGenBtn')?.addEventListener('click', imageGenHandler);
 
   document.getElementById('composer').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1195,7 +1363,7 @@ function wireUi() {
     document.getElementById('typingRow').classList.add('hidden');
   });
 
-  document.getElementById('markDoneBtn').addEventListener('click', async () => {
+  document.getElementById('markDoneBtn')?.addEventListener('click', async () => {
     if (!state.currentLessonId) return;
     await api('/api/academy/progress', {
       method: 'POST',
@@ -1237,4 +1405,8 @@ async function sendHandler() {
   document.getElementById('typingRow').classList.add('hidden');
 }
 
+window.addEventListener('academy-language-changed', () => applyAcademyTranslations());
+initLanguageEvents();
+initToolTabs();
+initResizableLayout();
 init();
