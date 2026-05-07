@@ -284,7 +284,7 @@ async function fillAssistantBubble(root, content) {
       header.appendChild(label);
       const openBtn = document.createElement('button');
       openBtn.type = 'button';
-      openBtn.className = 'text-indigo-600 hover:text-indigo-500';
+      openBtn.className = 'text-indigo-300 hover:text-indigo-200 transition-colors';
       openBtn.textContent = 'Открыть в новой вкладке';
       const dlBtn = document.createElement('button');
       dlBtn.type = 'button';
@@ -371,7 +371,7 @@ async function fillAssistantBubble(root, content) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className =
-        'text-xs bg-violet-600 hover:bg-violet-500 rounded px-3 py-1.5 text-white border border-violet-500';
+        'text-xs bg-violet-700 hover:bg-violet-600 rounded px-3 py-1.5 text-violet-100 border border-violet-500 transition-colors';
       btn.textContent = 'Сгенерировать картинку';
       btn.addEventListener('click', () => {
         const combined = [prompt, typeof spec.style_notes === 'string' ? spec.style_notes : '']
@@ -498,7 +498,7 @@ function renderCourseTree() {
       const li = document.createElement('li');
       const prog = state.catalog.progress[l.id];
       const check = prog?.status === 'completed' ? '✓ ' : '';
-      li.innerHTML = `<button type="button" class="text-left w-full hover:text-indigo-600 py-0.5 truncate text-slate-600" data-lesson="${l.id}">${check}${escapeHtml(l.title)}</button>`;
+      li.innerHTML = `<button type="button" class="text-left w-full hover:text-indigo-300 py-0.5 truncate text-slate-300 transition-colors" data-lesson="${l.id}">${check}${escapeHtml(l.title)}</button>`;
       li.querySelector('button').addEventListener('click', () => selectLesson(l));
       ul.appendChild(li);
     }
@@ -523,7 +523,7 @@ function renderConversationList() {
     const sel = document.createElement('button');
     sel.type = 'button';
     sel.className = `flex-1 min-w-0 text-left truncate py-1 px-2 rounded text-sm ${
-      c.id === state.currentConversationId ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:text-slate-900'
+      c.id === state.currentConversationId ? 'bg-slate-700 text-white' : 'text-slate-300 hover:text-white'
     }`;
     sel.textContent = c.title || 'Чат';
     sel.addEventListener('click', () => loadConversation(c.id));
@@ -531,7 +531,7 @@ function renderConversationList() {
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className =
-      'shrink-0 w-8 py-1 text-center text-slate-500 hover:text-red-500 hover:bg-slate-100 rounded text-xl leading-none';
+      'shrink-0 w-8 py-1 text-center text-slate-300 hover:text-red-300 hover:bg-slate-700 rounded text-xl leading-none transition-colors';
     delBtn.title = 'Удалить диалог';
     delBtn.setAttribute('aria-label', 'Удалить диалог');
     delBtn.textContent = '×';
@@ -736,10 +736,10 @@ function renderMessageEl(m) {
     bubble.appendChild(textDiv);
   }
   const actions = document.createElement('div');
-  actions.className = 'flex gap-2 mt-1 text-xs text-slate-600';
+  actions.className = 'flex gap-2 mt-1 text-xs text-slate-300';
   const copyBtn = document.createElement('button');
   copyBtn.type = 'button';
-  copyBtn.className = 'hover:text-slate-900';
+  copyBtn.className = 'hover:text-white transition-colors';
   copyBtn.textContent = 'Копировать';
   copyBtn.addEventListener('click', () => navigator.clipboard.writeText(m.content));
   actions.appendChild(copyBtn);
