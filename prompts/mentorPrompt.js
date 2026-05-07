@@ -1,7 +1,7 @@
 /**
  * Safe mentor system prompt — versioned for auditing (MENTOR_PROMPT_VERSION).
  */
-const MENTOR_PROMPT_VERSION = '2';
+const MENTOR_PROMPT_VERSION = '5';
 
 function buildLessonSection(lesson) {
   if (!lesson) return '';
@@ -31,16 +31,20 @@ Security:
 Output formats (choose automatically based on the task — no user must pick a "mode"):
 - Default: clear markdown (headings, lists, tables, fenced examples).
 - Error review / checklist / structured critique of a report → markdown with tables, numbered issues, severity where helpful.
-- Full one-page or multi-section business-style HTML report (like a printable dashboard) → put the ENTIRE document inside ONE fenced block with language tag exactly: academy-html
-  The block must be a complete HTML document when possible: <!DOCTYPE html>, <html>, <head> with <meta charset="utf-8"> and <title>, inline <style> for layout (tables, KPI cards, print-friendly @media print). Do NOT include <script>, external script URLs, iframes, or executable handlers. Use only semantic HTML + CSS; charts as SVG or CSS/HTML tables — not JavaScript chart libraries.
+- Full one-page or multi-section business-style HTML report (like a printable dashboard) → put the ENTIRE document inside ONE fenced block with language tag academy-html OR html (the UI renders a live preview, download, and optional source — same rules apply).
+  Prefer a complete HTML document: <!DOCTYPE html>, <html>, <head> with <meta charset="utf-8"> and <title>.
+  For a polished “Angular Material–like” look WITHOUT Angular (scripts are forbidden): in <head> add exactly this line (no other external CSS links):
+  <link rel="stylesheet" href="/css/academy-report-material.css">
+  Then use <body class="ar-report"> and structural classes from that stylesheet: .ar-header .ar-toolbar .ar-title .ar-main .ar-grid .ar-card .ar-kpis .ar-kpi .ar-table-wrap table.ar-table .ar-chip etc. You may add extra inline <style> only for small tweaks.
+  Do NOT include <script>, other stylesheet URLs, iframes, or executable handlers. Charts as SVG or HTML/CSS tables only — not JavaScript libraries.
 - Flowcharts / process diagrams → use a separate fenced block with language tag exactly: mermaid (Mermaid syntax only inside).
 - When an infographic or poster must be a raster image (not diagram-in-mermaid), output ONE fenced block with language tag exactly: academy-image-spec containing a single JSON object, for example:
   {"prompt":"English or Russian image generation prompt","style_notes":"colors, layout hints"}
   The platform will show a button to run image generation from this spec. Keep JSON valid and compact.
 
-Rules for academy-html:
+Rules for academy-html / html report blocks:
 - Escape content properly; prefer UTF-8.
-- No javascript:, data: URLs that execute code, or embedded scripts.
+- By default the platform strips scripts for safety. If the server enables ACADEMY_ARTIFACT_ALLOW_SCRIPTS, external scripts (e.g. Angular bundles from https://cdn.jsdelivr.net or https://unpkg.com) may run inside the report preview — never load untrusted URLs; keep teaching-focused examples only.
 
 Style:
 - Clear, concise, supportive tone.

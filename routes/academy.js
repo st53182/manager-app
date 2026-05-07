@@ -38,6 +38,9 @@ const MAX_CONTEXT_MESSAGES = parseInt(process.env.MAX_CONTEXT_MESSAGES || '40', 
 /** Soft guard; PDF/audio/video base64 is capped in footprint calculation (see multimodal). */
 const MAX_CONTEXT_CHARS = parseInt(process.env.MAX_CONTEXT_CHARS || '500000', 10);
 
+/** When true, HTML artifacts may contain scripts (Angular/CDN). XSS risk — enable only in trusted environments. */
+const ARTIFACT_ALLOW_SCRIPTS = process.env.ACADEMY_ARTIFACT_ALLOW_SCRIPTS === 'true';
+
 function createRouter({ JWT_SECRET }) {
   const router = express.Router();
 
@@ -70,6 +73,50 @@ function createRouter({ JWT_SECRET }) {
         return res.status(500).json({ error: 'Auth failed' });
       }
     });
+  }
+
+  /**
+   * Builds OpenRouter messages; truncates long assistant replies for token budget and drops
+   * oldest turns until under MAX_CONTEXT_CHARS (CSV/HTML-heavy chats).
+   */
+  async function buildMessagesWithBudget(rows, lessonForPrompt, req) {
+    const maxAssist = parseInt(process.env.MAX_ASSISTANT_CHARS_IN_CONTEXT || '42000', 10);
+    let subset = [...rows];
+    let droppedTurns = 0;
+
+    async function rebuild() {
+      const apiMessages = [];
+      apiMessages.push({
+        role: 'system',
+        content: getMentorSystemPrompt({ lesson: lessonForPrompt })
+      });
+      let totalChars = estimatePayloadFootprintForLimits(apiMessages[0].content);
+      for (const m of subset) {
+        if (m.role !== 'user' && m.role !== 'assistant') continue;
+        let content;
+        if (m.role === 'user') {
+          content = await buildUserContentForApi(m.content, req.dbUser.id, m.meta);
+        } else {
+          const raw = m.content || '';
+          content =
+            typeof raw === 'string' && raw.length > maxAssist
+              ? raw.slice(0, maxAssist) +
+                '\n\n[… предыдущий ответ обрезан в контексте (длинный отчёт/HTML); полный текст — в истории чата …]'
+              : raw;
+        }
+        totalChars += estimatePayloadFootprintForLimits(content);
+        apiMessages.push({ role: m.role, content });
+      }
+      return { apiMessages, totalChars };
+    }
+
+    let { apiMessages, totalChars } = await rebuild();
+    while (totalChars > MAX_CONTEXT_CHARS && subset.length > 1) {
+      subset = subset.slice(1);
+      droppedTurns += 1;
+      ({ apiMessages, totalChars } = await rebuild());
+    }
+    return { apiMessages, totalChars, droppedTurns };
   }
 
   router.get('/catalog', authenticateAcademy, async (req, res) => {
@@ -141,7 +188,8 @@ function createRouter({ JWT_SECRET }) {
         },
         allowed_models: allowedModels,
         default_model: getDefaultModel(),
-        model_catalog: getModelCatalog()
+        model_catalog: getModelCatalog(),
+        artifact_allow_scripts: ARTIFACT_ALLOW_SCRIPTS
       });
     } catch (e) {
       console.error(e);
@@ -898,17 +946,18 @@ function createRouter({ JWT_SECRET }) {
         let rows = await db.listAiMessagesAsc(conversationId, 500);
         rows = rows.slice(-MAX_CONTEXT_MESSAGES);
 
-        let totalChars = 0;
-        const apiMessages = [];
         const lessonForPrompt = lesson || (conv.lesson_id ? await db.getLessonById(conv.lesson_id) : null);
-        apiMessages.push({
-          role: 'system',
-          content: getMentorSystemPrompt({ lesson: lessonForPrompt })
-        });
+
+        const { apiMessages, totalChars, droppedTurns } = await buildMessagesWithBudget(
+          rows,
+          lessonForPrompt,
+          req
+        );
+
         if (personaId) {
           const persona = await practicum.getPersonaForUser(personaId, req.dbUser.id);
           if (persona) {
-            apiMessages.push({
+            apiMessages.splice(1, 0, {
               role: 'system',
               content: `Persona: ${persona.name}\nTone: ${persona.tone}\nExpertise: ${persona.expertise}\nTeaching style: ${persona.teaching_style}\nInstructions:\n${persona.system_prompt}`
             });
@@ -931,27 +980,24 @@ function createRouter({ JWT_SECRET }) {
             const kbContext = retrieved
               .map((r, idx) => `[Source ${idx + 1}] ${r.document_name}\n${r.content}`)
               .join('\n\n');
-            apiMessages.push({
+            apiMessages.splice(1, 0, {
               role: 'system',
               content: `Knowledge base context (use as source of truth):\n${kbContext}\nAlways cite source numbers in the answer.`
             });
           }
         }
 
-        for (const m of rows) {
-          if (m.role !== 'user' && m.role !== 'assistant') continue;
-          let content;
-          if (m.role === 'user') {
-            content = await buildUserContentForApi(m.content, req.dbUser.id, m.meta);
-          } else {
-            content = m.content;
-          }
-          totalChars += estimatePayloadFootprintForLimits(content);
-          apiMessages.push({ role: m.role, content });
+        if (droppedTurns > 0) {
+          console.info(
+            `[academy/chat] context shrink: dropped ${droppedTurns} oldest message(s), chars=${totalChars}`
+          );
         }
 
         if (totalChars > MAX_CONTEXT_CHARS) {
-          return res.status(400).json({ error: 'Context too large. Start a new chat or shorten messages.' });
+          return res.status(400).json({
+            error:
+              'Контекст слишком большой даже после сжатия истории. Начните новый диалог или отправьте файл отдельным коротким чатом.'
+          });
         }
 
         const estTokens = estimateTokensFromText(JSON.stringify(apiMessages));

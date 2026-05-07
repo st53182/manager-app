@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-translate="index.title">Менеджер Команд - Главная</title>
+    <title data-translate="index.title">AI Academy - Главная</title>
     <meta name="title-key" content="index.title">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -17,7 +17,7 @@
         <div class="container mx-auto px-4 py-3">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                    <a href="/" class="text-xl font-bold text-blue-600" data-translate="nav.title">Менеджер Команд</a>
+                    <a href="/" class="text-xl font-bold text-blue-600" data-translate="nav.title">AI Academy</a>
                 </div>
                 <div class="flex items-center space-x-6">
                     <div id="languageSwitcher"></div>
@@ -27,7 +27,7 @@
                     </div>
                     <div id="userMenu" class="hidden flex items-center space-x-4">
                         <span id="userName" class="text-gray-700"></span>
-                        <a href="/dashboard" class="text-gray-600 hover:text-blue-600 transition-colors" data-translate="nav.dashboard">Панель управления</a>
+                        <a href="/academy" class="text-gray-600 hover:text-blue-600 transition-colors" data-translate="nav.dashboard">Панель управления</a>
                         <button id="logoutBtn" class="text-gray-600 hover:text-red-600 transition-colors" data-translate="nav.logout">Выйти</button>
                     </div>
                 </div>
@@ -36,13 +36,13 @@
     </nav>
     
     <div class="container mx-auto px-4 py-16">
-        <div class="max-w-4xl mx-auto text-center">
-            <h1 class="text-5xl font-bold text-gray-900 mb-6" data-translate="index.heading">Менеджер Команд</h1>
-            <p class="text-xl text-gray-600 mb-12" data-translate="index.subtitle">Управляйте своими командами и сотрудниками</p>
+        <div class="max-w-5xl mx-auto text-center">
+            <h1 class="text-5xl font-bold text-gray-900 mb-6" data-translate="index.heading">AI Academy</h1>
+            <p class="text-xl text-gray-600 mb-12" data-translate="index.subtitle">Обучающая платформа с AI-наставником, уроками и практикой</p>
             
             <div id="guestContent" class="space-y-8">
-                <div class="bg-white rounded-lg shadow-lg p-8">
-                    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Возможности системы</h2>
+                <div class="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+                    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Что есть в платформе</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
                         <div class="flex items-start space-x-3">
                             <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -51,8 +51,8 @@
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="font-semibold text-gray-900">Управление командами</h3>
-                                <p class="text-gray-600">Создавайте и управляйте профилями команд</p>
+                                <h3 class="font-semibold text-gray-900">AI-диалоги по теме урока</h3>
+                                <p class="text-gray-600">Задавайте вопросы, получайте объяснения и примеры в чате</p>
                             </div>
                         </div>
                         <div class="flex items-start space-x-3">
@@ -62,8 +62,8 @@
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="font-semibold text-gray-900">Управление сотрудниками</h3>
-                                <p class="text-gray-600">Добавляйте сотрудников и назначайте их в команды</p>
+                                <h3 class="font-semibold text-gray-900">Структурированные курсы</h3>
+                                <p class="text-gray-600">Проходите уроки по шагам и отслеживайте прогресс</p>
                             </div>
                         </div>
                         <div class="flex items-start space-x-3">
@@ -73,8 +73,8 @@
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="font-semibold text-gray-900">Централизованная база</h3>
-                                <p class="text-gray-600">Единая база данных с Planning Poker</p>
+                                <h3 class="font-semibold text-gray-900">Практические задания</h3>
+                                <p class="text-gray-600">Закрепляйте материал с помощью упражнений и чекпоинтов</p>
                             </div>
                         </div>
                         <div class="flex items-start space-x-3">
@@ -84,8 +84,8 @@
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="font-semibold text-gray-900">Мультиязычность</h3>
-                                <p class="text-gray-600">Поддержка русского и английского языков</p>
+                                <h3 class="font-semibold text-gray-900">Управление доступом и лимитами</h3>
+                                <p class="text-gray-600">Гибкая админ-панель для пользователей и моделей</p>
                             </div>
                         </div>
                     </div>
@@ -106,23 +106,23 @@
                 <div class="bg-white rounded-lg shadow-lg p-8">
                     <h2 class="text-2xl font-semibold text-gray-900 mb-6" data-translate="dashboard.welcome">Добро пожаловать</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <a href="/dashboard" class="block bg-blue-50 hover:bg-blue-100 rounded-lg p-6 transition-colors">
+                        <a href="/academy" class="block bg-blue-50 hover:bg-blue-100 rounded-lg p-6 transition-colors">
                             <div class="text-blue-600 mb-3">
                                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 012-2h2a2 2 0 002 2v2a2 2 0 002 2h6a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2-2V3a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 002 2h2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2v-4z"></path>
                                 </svg>
                             </div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2" data-translate="nav.dashboard">Панель управления</h3>
-                            <p class="text-gray-600">Управляйте командами и сотрудниками</p>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Рабочее пространство</h3>
+                            <p class="text-gray-600">Перейдите к чатам, урокам и заданиям</p>
                         </a>
-                        <a href="/dashboard" class="block bg-green-50 hover:bg-green-100 rounded-lg p-6 transition-colors">
+                        <a href="/academy/admin" class="block bg-green-50 hover:bg-green-100 rounded-lg p-6 transition-colors">
                             <div class="text-green-600 mb-3">
                                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.196-2.121l-.004-.003A3 3 0 0117 20zM9 12a4 4 0 100-8 4 4 0 000 8zm8 0a4 4 0 100-8 4 4 0 000 8z"></path>
                                 </svg>
                             </div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2" data-translate="dashboard.teams_section">Мои команды</h3>
-                            <p class="text-gray-600">Просмотр и управление командами</p>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Панель администратора</h3>
+                            <p class="text-gray-600">Управление пользователями, чатами и usage</p>
                         </a>
                     </div>
                 </div>
