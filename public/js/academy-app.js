@@ -1626,10 +1626,11 @@ function renderKnowledgeDocuments(kbId) {
     return;
   }
   for (const d of state.knowledgeDocuments) {
+    const displayName = d.original_name || d.name || 'document';
     const row = document.createElement('div');
     row.className = 'kb-doc-row';
     row.innerHTML = `
-      <span class="name" title="${escapeHtml(d.original_name)}">${escapeHtml(d.original_name)}</span>
+      <span class="name" title="${escapeHtml(displayName)}">${escapeHtml(displayName)}</span>
       <span class="kb-meta">${formatBytes(d.size_bytes)}</span>
       <button type="button" data-download-doc="${d.id}" class="icon-btn" title="Скачать файл">Скачать</button>
       <button type="button" data-del-doc="${d.id}" class="icon-btn danger" title="Удалить файл">Удалить</button>
