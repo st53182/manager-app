@@ -235,7 +235,10 @@ const state = {
   usage: null,
   streaming: false,
   selectedModel: null,
-  lastFailedPayload: null
+  lastFailedPayload: null,
+  knowledgeBases: [],
+  personas: [],
+  selectedKnowledgeBaseId: null
 };
 
 function showGate() {
@@ -275,10 +278,15 @@ async function init() {
     state.catalog = await api('/api/academy/catalog');
     state.usage = await api('/api/academy/usage');
     state.conversations = (await api('/api/academy/conversations')).conversations;
+    state.knowledgeBases = (await api('/api/academy/knowledge-bases')).knowledgeBases || [];
+    state.personas = (await api('/api/academy/personas')).personas || [];
     renderUsage();
     renderCourseTree();
     renderConversationList();
     populateModels();
+    populateKnowledgeBases();
+    populatePersonas();
+    await refreshKbStatus();
     updateModelHint();
     showApp();
   } catch (e) {
@@ -415,6 +423,51 @@ function updateModelHint() {
   const catalog = state.usage?.model_catalog || [];
   const item = catalog.find((c) => c.id === sel.value);
   hintEl.textContent = item ? `${item.label} — ${item.hint || ''}` : '';
+}
+
+function populateKnowledgeBases() {
+  const sel = document.getElementById('knowledgeBaseSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">No KB</option>';
+  for (const kb of state.knowledgeBases) {
+    const o = document.createElement('option');
+    o.value = kb.id;
+    o.textContent = kb.name;
+    sel.appendChild(o);
+  }
+  if (state.selectedKnowledgeBaseId) sel.value = state.selectedKnowledgeBaseId;
+}
+
+function populatePersonas() {
+  const sel = document.getElementById('personaSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">No persona</option>';
+  for (const p of state.personas) {
+    const o = document.createElement('option');
+    o.value = p.id;
+    o.textContent = p.name;
+    sel.appendChild(o);
+  }
+}
+
+async function refreshKbStatus() {
+  const box = document.getElementById('kbStatusList');
+  if (!box) return;
+  box.innerHTML = '';
+  if (!state.selectedKnowledgeBaseId) {
+    box.textContent = 'Выберите базу знаний для просмотра статусов.';
+    return;
+  }
+  const rows = (await api(`/api/academy/knowledge-bases/${state.selectedKnowledgeBaseId}/documents`)).documents || [];
+  if (!rows.length) {
+    box.textContent = 'Документов пока нет.';
+    return;
+  }
+  rows.slice(0, 8).forEach((d) => {
+    const div = document.createElement('div');
+    div.textContent = `${d.name} — ${d.status}${d.error_message ? ` (${d.error_message})` : ''}`;
+    box.appendChild(div);
+  });
 }
 
 function parseMsgMeta(raw) {
@@ -623,6 +676,17 @@ async function streamChat(payload) {
       if (json.type === 'done') {
         state.usage = await api('/api/academy/usage').catch(() => state.usage);
         renderUsage();
+        const rm = document.getElementById('responseMeta');
+        if (rm) {
+          const cits = Array.isArray(json.citations) ? json.citations : [];
+          if (cits.length || json.confidence) {
+            rm.classList.remove('hidden');
+            rm.textContent = `Confidence: ${json.confidence || 'n/a'} · Sources: ${cits.map((c) => c.document).join(', ')}`;
+          } else {
+            rm.classList.add('hidden');
+            rm.textContent = '';
+          }
+        }
       }
       if (json.type === 'error') {
         document.getElementById('composerError').textContent = json.error || 'Ошибка';
@@ -752,6 +816,167 @@ function wireUi() {
     state.selectedModel = document.getElementById('modelSelect').value;
     updateModelHint();
   });
+  document.getElementById('knowledgeBaseSelect')?.addEventListener('change', async () => {
+    state.selectedKnowledgeBaseId = document.getElementById('knowledgeBaseSelect').value || null;
+    await refreshKbStatus();
+  });
+
+  document.getElementById('createKbBtn')?.addEventListener('click', async () => {
+    const name = document.getElementById('kbNameInput').value.trim();
+    if (!name) return;
+    const kb = await api('/api/academy/knowledge-bases', {
+      method: 'POST',
+      body: JSON.stringify({ name })
+    });
+    state.knowledgeBases.unshift(kb);
+    state.selectedKnowledgeBaseId = kb.id;
+    populateKnowledgeBases();
+    await refreshKbStatus();
+    document.getElementById('kbNameInput').value = '';
+  });
+
+  document.getElementById('uploadKbBtn')?.addEventListener('click', async () => {
+    if (!state.selectedKnowledgeBaseId) {
+      alert('Сначала выберите KB');
+      return;
+    }
+    const input = document.getElementById('kbUploadInput');
+    if (!input?.files?.length) return;
+    const fd = new FormData();
+    for (let i = 0; i < input.files.length; i++) fd.append('files', input.files[i]);
+    const token = getToken();
+    await fetch(`${apiBase}/api/academy/knowledge-bases/${state.selectedKnowledgeBaseId}/documents/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: fd
+    });
+    input.value = '';
+    await refreshKbStatus();
+  });
+
+  document.getElementById('savePromptBtn')?.addEventListener('click', async () => {
+    const text = document.getElementById('composer').value.trim();
+    if (!text) return;
+    await api('/api/academy/prompts', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: `Prompt ${new Date().toISOString()}`,
+        category: 'Personal Productivity',
+        prompt_text: text
+      })
+    });
+    alert('Prompt сохранен');
+  });
+
+  document.getElementById('evaluatePromptBtn')?.addEventListener('click', async () => {
+    const text = document.getElementById('composer').value.trim();
+    if (!text) return;
+    const out = await api('/api/academy/prompt-evaluate', {
+      method: 'POST',
+      body: JSON.stringify({ prompt: text, model: document.getElementById('modelSelect').value })
+    });
+    document.getElementById('promptEvalOutput').textContent = JSON.stringify(out, null, 2);
+  });
+
+  document.getElementById('runCompareBtn')?.addEventListener('click', async () => {
+    const text = document.getElementById('composer').value.trim();
+    const models = document
+      .getElementById('compareModelsInput')
+      .value.split(',')
+      .map((x) => x.trim())
+      .filter(Boolean);
+    if (!text || !models.length) return;
+    const out = await api('/api/academy/model-compare', {
+      method: 'POST',
+      body: JSON.stringify({ prompt: text, models })
+    });
+    document.getElementById('compareOutput').textContent = JSON.stringify(out, null, 2);
+  });
+
+  document.getElementById('runPlaygroundBtn')?.addEventListener('click', async () => {
+    const text = document.getElementById('composer').value.trim();
+    if (!text) return;
+    const out = await api('/api/academy/playground', {
+      method: 'POST',
+      body: JSON.stringify({
+        prompt: text,
+        model: document.getElementById('modelSelect').value,
+        temperature: 0.7,
+        top_p: 1,
+        max_tokens: 900,
+        system_prompt: 'You are an AI playground assistant.',
+        output_format: 'markdown'
+      })
+    });
+    document.getElementById('compareOutput').textContent = out.response || '';
+  });
+
+  document.getElementById('createAssistantBtn')?.addEventListener('click', async () => {
+    const out = await api('/api/academy/assistants', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: `Assistant ${new Date().toISOString().slice(11, 19)}`,
+        description: 'Auto-created from workspace UI',
+        role: 'General helper',
+        instructions: 'Give practical, structured guidance.',
+        connected_kb_id: state.selectedKnowledgeBaseId || null,
+        default_model: document.getElementById('modelSelect').value
+      })
+    });
+    document.getElementById('builderOutput').textContent = JSON.stringify(out, null, 2);
+  });
+
+  document.getElementById('runWorkflowBtn')?.addEventListener('click', async () => {
+    const create = await api('/api/academy/workflows', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Quick workflow',
+        description: 'Auto sample',
+        steps: [
+          { step_order: 1, title: 'Analyze input', prompt_text: 'Analyze:\n{{previous_output}}' },
+          { step_order: 2, title: 'Extract key points', prompt_text: 'Extract bullet points:\n{{previous_output}}' },
+          { step_order: 3, title: 'Generate email', prompt_text: 'Create email draft from:\n{{previous_output}}' }
+        ]
+      })
+    });
+    const run = await api(`/api/academy/workflows/${create.id}/run`, {
+      method: 'POST',
+      body: JSON.stringify({
+        input: document.getElementById('composer').value.trim() || 'No input',
+        model: document.getElementById('modelSelect').value
+      })
+    });
+    document.getElementById('builderOutput').textContent = JSON.stringify(run, null, 2);
+  });
+
+  document.getElementById('hallucinationAttemptBtn')?.addEventListener('click', async () => {
+    const scenarios = await api('/api/academy/hallucination/scenarios');
+    if (!scenarios.scenarios?.length) {
+      document.getElementById('trainingOutput').textContent = 'No scenarios yet.';
+      return;
+    }
+    const first = scenarios.scenarios[0];
+    const out = await api('/api/academy/hallucination/attempt', {
+      method: 'POST',
+      body: JSON.stringify({
+        scenario_id: first.id,
+        selected_issue: 'unsupported claim',
+        explanation: 'The answer states facts without evidence and shows overconfidence.'
+      })
+    });
+    document.getElementById('trainingOutput').textContent = JSON.stringify(out, null, 2);
+  });
+
+  document.getElementById('generateCertBtn')?.addEventListener('click', async () => {
+    const out = await api('/api/academy/certificate', {
+      method: 'POST',
+      body: JSON.stringify({
+        course_name: 'AI Practicum',
+        completed_modules: [1, 2, 3, 4, 5, 6, 7]
+      })
+    });
+    document.getElementById('trainingOutput').textContent = JSON.stringify(out, null, 2);
+  });
 
   const fileInputEl = document.getElementById('fileInput');
   const fileHintEl = document.getElementById('fileListHint');
@@ -784,7 +1009,10 @@ function wireUi() {
     await streamChat({
       conversationId: state.currentConversationId,
       regenerate: true,
-      model: document.getElementById('modelSelect').value
+      model: document.getElementById('modelSelect').value,
+      chatMode: document.getElementById('chatModeSelect')?.value || 'general',
+      knowledgeBaseId: document.getElementById('knowledgeBaseSelect')?.value || undefined,
+      personaId: document.getElementById('personaSelect')?.value || undefined
     }).catch(() => {});
     document.getElementById('typingRow').classList.add('hidden');
   });
@@ -820,7 +1048,11 @@ async function sendHandler() {
     conversationId: state.currentConversationId || undefined,
     lessonId: state.currentLessonId || undefined,
     message: text,
-    model: document.getElementById('modelSelect').value
+    model: document.getElementById('modelSelect').value,
+    chatMode: document.getElementById('chatModeSelect')?.value || 'general',
+    knowledgeBaseId: document.getElementById('knowledgeBaseSelect')?.value || undefined,
+    personaId: document.getElementById('personaSelect')?.value || undefined,
+    strictMode: (document.getElementById('chatModeSelect')?.value || '') === 'strict_knowledge'
   };
 
   document.getElementById('composer').value = '';

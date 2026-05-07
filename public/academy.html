@@ -64,6 +64,14 @@
             </div>
             <div class="flex items-center gap-2 shrink-0">
               <select id="modelSelect" title="Модель OpenRouter" class="bg-slate-900 border border-slate-700 rounded-lg text-xs py-1.5 px-2 max-w-[min(100vw,220px)]"></select>
+              <select id="chatModeSelect" title="Режим чата" class="bg-slate-900 border border-slate-700 rounded-lg text-xs py-1.5 px-2">
+                <option value="general">General</option>
+                <option value="knowledge">Knowledge</option>
+                <option value="strict_knowledge">Strict Knowledge</option>
+                <option value="agent_knowledge">Agent + Knowledge</option>
+              </select>
+              <select id="knowledgeBaseSelect" title="Knowledge Base" class="bg-slate-900 border border-slate-700 rounded-lg text-xs py-1.5 px-2 max-w-[150px]"></select>
+              <select id="personaSelect" title="Persona" class="bg-slate-900 border border-slate-700 rounded-lg text-xs py-1.5 px-2 max-w-[140px]"></select>
               <button type="button" id="regenerateBtn" class="text-xs text-slate-400 hover:text-white border border-slate-700 rounded-lg px-2 py-1">Перегенерировать</button>
             </div>
           </header>
@@ -87,6 +95,7 @@
                   </label>
                   <span id="fileListHint" class="truncate"></span>
                 </div>
+                <div id="responseMeta" class="text-xs text-slate-500 hidden"></div>
               </div>
               <div class="flex flex-col gap-2 shrink-0">
                 <button type="button" id="imageGenBtn" class="bg-violet-900/80 hover:bg-violet-800 border border-violet-700 rounded-xl px-3 py-2 text-xs font-medium text-violet-100 disabled:opacity-40" title="Отдельная модель генерации изображений (OpenRouter)">
@@ -106,6 +115,41 @@
             <h3 class="text-white font-medium mb-2">Задание</h3>
             <p id="assignmentText" class="text-slate-400 whitespace-pre-wrap"></p>
             <button type="button" id="markDoneBtn" class="mt-3 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg px-3 py-1.5">Отметить пройденным</button>
+          </div>
+          <div class="mt-6 pt-6 border-t border-slate-800">
+            <h3 class="text-white font-medium mb-2">Knowledge Base</h3>
+            <div class="space-y-2">
+              <input id="kbNameInput" type="text" placeholder="Название базы знаний" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs" />
+              <button type="button" id="createKbBtn" class="text-xs bg-slate-800 hover:bg-slate-700 rounded px-3 py-1.5">Создать KB</button>
+              <input type="file" id="kbUploadInput" class="w-full text-xs" multiple />
+              <button type="button" id="uploadKbBtn" class="text-xs bg-slate-800 hover:bg-slate-700 rounded px-3 py-1.5">Загрузить документы</button>
+              <div id="kbStatusList" class="text-xs text-slate-400 space-y-1"></div>
+            </div>
+          </div>
+          <div class="mt-6 pt-6 border-t border-slate-800">
+            <h3 class="text-white font-medium mb-2">Prompt Tools</h3>
+            <button type="button" id="savePromptBtn" class="text-xs bg-slate-800 hover:bg-slate-700 rounded px-3 py-1.5 mr-2">Сохранить prompt</button>
+            <button type="button" id="evaluatePromptBtn" class="text-xs bg-slate-800 hover:bg-slate-700 rounded px-3 py-1.5">Оценить prompt</button>
+            <pre id="promptEvalOutput" class="mt-2 text-xs text-slate-400 whitespace-pre-wrap"></pre>
+          </div>
+          <div class="mt-6 pt-6 border-t border-slate-800">
+            <h3 class="text-white font-medium mb-2">Model Compare & Playground</h3>
+            <input id="compareModelsInput" type="text" placeholder="model1,model2" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs mb-2" />
+            <button type="button" id="runCompareBtn" class="text-xs bg-slate-800 hover:bg-slate-700 rounded px-3 py-1.5 mr-2">Compare</button>
+            <button type="button" id="runPlaygroundBtn" class="text-xs bg-slate-800 hover:bg-slate-700 rounded px-3 py-1.5">Playground run</button>
+            <pre id="compareOutput" class="mt-2 text-xs text-slate-400 whitespace-pre-wrap max-h-48 overflow-y-auto"></pre>
+          </div>
+          <div class="mt-6 pt-6 border-t border-slate-800">
+            <h3 class="text-white font-medium mb-2">Assistant & Workflow</h3>
+            <button type="button" id="createAssistantBtn" class="text-xs bg-slate-800 hover:bg-slate-700 rounded px-3 py-1.5 mr-2">Create assistant</button>
+            <button type="button" id="runWorkflowBtn" class="text-xs bg-slate-800 hover:bg-slate-700 rounded px-3 py-1.5">Run sample workflow</button>
+            <pre id="builderOutput" class="mt-2 text-xs text-slate-400 whitespace-pre-wrap max-h-48 overflow-y-auto"></pre>
+          </div>
+          <div class="mt-6 pt-6 border-t border-slate-800">
+            <h3 class="text-white font-medium mb-2">Hallucination Training & Certificate</h3>
+            <button type="button" id="hallucinationAttemptBtn" class="text-xs bg-slate-800 hover:bg-slate-700 rounded px-3 py-1.5 mr-2">Submit training attempt</button>
+            <button type="button" id="generateCertBtn" class="text-xs bg-slate-800 hover:bg-slate-700 rounded px-3 py-1.5">Generate certificate</button>
+            <pre id="trainingOutput" class="mt-2 text-xs text-slate-400 whitespace-pre-wrap"></pre>
           </div>
         </section>
       </div>

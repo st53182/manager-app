@@ -14,6 +14,12 @@ const LEGACY_MANAGER_UI_ENABLED = process.env.LEGACY_MANAGER_UI_ENABLED === 'tru
 
 const { createRouter: createAcademyRouter } = require('./routes/academy');
 const { createRouter: createAdminRouter } = require('./routes/admin');
+const {
+  initializePracticumSchema,
+  upsertBuiltinPersonas,
+  upsertCourseExerciseFields,
+  seedHallucinationScenarios
+} = require('./services/academy/practicumStore');
 
 const { 
   initializeDatabase,
@@ -1217,6 +1223,10 @@ app.get('/api/custom-trees', authenticateToken, async (req, res) => {
 async function startServer() {
   try {
     await initializeDatabase();
+    await initializePracticumSchema();
+    await upsertBuiltinPersonas();
+    await upsertCourseExerciseFields();
+    await seedHallucinationScenarios();
     server.listen(PORT, () => {
       console.log(`Manager app server running on port ${PORT}`);
     });
