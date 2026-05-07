@@ -441,9 +441,10 @@ body.academy-theme #kbStatusList {
   border-radius: 8px;
   background: rgba(30, 41, 59, 0.55);
   color: #cbd5e1;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1;
-  padding: 2px 6px;
+  padding: 4px 8px;
+  white-space: nowrap;
 }
 
 .icon-btn:hover {
@@ -486,6 +487,10 @@ body.academy-theme #kbStatusList {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.kb-actions .kb-meta {
+  font-size: 11px;
 }
 
 .kb-empty {

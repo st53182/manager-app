@@ -1569,14 +1569,15 @@ function renderKnowledgeBases() {
     li.innerHTML = `
       <div class="kb-header">
         <button type="button" data-open-kb="${kb.id}" class="kb-open-btn ${isActive ? 'font-semibold' : ''} truncate">${escapeHtml(kb.name)}</button>
-        <span class="kb-meta">${kb.documents_count || 0}</span>
-        <button type="button" data-del-kb="${kb.id}" class="icon-btn danger">×</button>
+        <span class="kb-meta">${kb.documents_count || 0} док.</span>
+        <button type="button" data-del-kb="${kb.id}" class="icon-btn danger" title="Удалить базу">Удалить</button>
       </div>
       <div id="kb-docs-${kb.id}" class="${isActive ? 'kb-docs' : 'hidden kb-docs'}"></div>
       <div id="kb-actions-${kb.id}" class="${isActive ? 'kb-actions' : 'hidden kb-actions'}">
+        <div class="kb-meta">Переименовать базу</div>
         <div class="flex gap-1">
           <input type="text" data-rename-kb="${kb.id}" value="${escapeHtml(kb.name)}" class="flex-1 border rounded px-1 py-1 text-[10px]" />
-          <button type="button" data-save-kb="${kb.id}" class="icon-btn">OK</button>
+          <button type="button" data-save-kb="${kb.id}" class="icon-btn" title="Сохранить новое имя">Сохранить</button>
         </div>
         <input type="text" data-search-kb="${kb.id}" placeholder="Поиск документов..." class="w-full border rounded px-2 py-1 text-[10px]" />
         <input type="file" data-upload-kb="${kb.id}" class="text-[10px] w-full" multiple />
@@ -1618,8 +1619,8 @@ function renderKnowledgeDocuments(kbId) {
     row.innerHTML = `
       <span class="name" title="${escapeHtml(d.original_name)}">${escapeHtml(d.original_name)}</span>
       <span class="kb-meta">${formatBytes(d.size_bytes)}</span>
-      <button type="button" data-download-doc="${d.id}" class="icon-btn" title="Скачать">↓</button>
-      <button type="button" data-del-doc="${d.id}" class="icon-btn danger" title="Удалить">×</button>
+      <button type="button" data-download-doc="${d.id}" class="icon-btn" title="Скачать файл">Скачать</button>
+      <button type="button" data-del-doc="${d.id}" class="icon-btn danger" title="Удалить файл">Удалить</button>
     `;
     box.appendChild(row);
   }

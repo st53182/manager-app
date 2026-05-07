@@ -172,7 +172,7 @@
                 <select id="kbActionSelect" class="sm:col-span-2 w-full rounded px-2 py-1.5 text-xs text-slate-800" style="border: 1px solid var(--cursor-border);">
                   <option value="">Выберите базу знаний</option>
                 </select>
-                <button type="button" id="openSelectedKbBtn" class="text-xs rounded px-3 py-2 text-slate-800">Открыть</button>
+                <button type="button" id="openSelectedKbBtn" class="text-xs rounded px-3 py-2 text-slate-800">Выбрать</button>
               </div>
               <input id="kbNameInput" type="text" placeholder="Название базы знаний" class="w-full rounded px-2 py-1.5 text-xs text-slate-800" style="border: 1px solid var(--cursor-border);" />
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -180,7 +180,8 @@
                 <button type="button" id="uploadKbBtn" class="text-xs rounded px-3 py-2 text-slate-800">Загрузить документы</button>
               </div>
               <input type="file" id="kbUploadInput" class="w-full text-xs text-slate-700" multiple />
-              <p class="text-[11px] text-slate-500">Управление: открыть, переименовать, поиск, скачивание и удаление файлов.</p>
+              <p class="text-[11px] text-slate-500">1) Выберите базу, 2) загрузите файлы, 3) дождитесь статуса "ГОТОВО".</p>
+              <p class="text-[11px] text-slate-500">Нижний список — ваши базы знаний. Внутри базы: Переименовать, Поиск, Скачать, Удалить.</p>
               <div id="kbStatusList" class="text-xs text-slate-600 space-y-1"></div>
               <ul id="knowledgeBaseList" class="space-y-2 pt-1"></ul>
             </div>
