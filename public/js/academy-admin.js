@@ -80,7 +80,7 @@ async function loadUsers() {
   tbody.innerHTML = '';
   for (const u of users) {
     const tr = document.createElement('tr');
-    tr.className = 'border-t border-slate-800';
+    tr.className = 'border-t border-slate-200';
     const modelsStr = Array.isArray(u.ai_allowed_models)
       ? u.ai_allowed_models.join(', ')
       : typeof u.ai_allowed_models === 'string'
@@ -90,12 +90,12 @@ async function loadUsers() {
       <td class="px-3 py-2">${escape(u.email)}</td>
       <td class="px-3 py-2">${escape(u.role)}</td>
       <td class="px-3 py-2">${u.is_active ? 'да' : 'нет'}</td>
-      <td class="px-3 py-2"><input data-k="ai_daily_token_limit" data-id="${u.id}" type="number" value="${u.ai_daily_token_limit ?? ''}" class="bg-slate-900 border border-slate-700 rounded w-28 px-2 py-1" /></td>
-      <td class="px-3 py-2"><input data-k="ai_monthly_token_limit" data-id="${u.id}" type="number" value="${u.ai_monthly_token_limit ?? ''}" class="bg-slate-900 border border-slate-700 rounded w-28 px-2 py-1" /></td>
-      <td class="px-3 py-2"><input data-k="ai_allowed_models" data-id="${u.id}" type="text" value="${escape(modelsStr)}" class="bg-slate-900 border border-slate-700 rounded w-48 px-2 py-1 text-xs" title="JSON array" /></td>
+      <td class="px-3 py-2"><input data-k="ai_daily_token_limit" data-id="${u.id}" type="number" value="${u.ai_daily_token_limit ?? ''}" class="bg-white border border-slate-300 rounded w-28 px-2 py-1" /></td>
+      <td class="px-3 py-2"><input data-k="ai_monthly_token_limit" data-id="${u.id}" type="number" value="${u.ai_monthly_token_limit ?? ''}" class="bg-white border border-slate-300 rounded w-28 px-2 py-1" /></td>
+      <td class="px-3 py-2"><input data-k="ai_allowed_models" data-id="${u.id}" type="text" value="${escape(modelsStr)}" class="bg-white border border-slate-300 rounded w-48 px-2 py-1 text-xs" title="JSON array" /></td>
       <td class="px-3 py-2 whitespace-nowrap">
         <button type="button" data-save="${u.id}" class="text-indigo-400 hover:text-indigo-300 text-xs mr-2">Сохранить</button>
-        <button type="button" data-toggle="${u.id}" class="text-slate-400 hover:text-white text-xs">${u.is_active ? 'Выкл' : 'Вкл'}</button>
+        <button type="button" data-toggle="${u.id}" class="text-slate-500 hover:text-slate-900 text-xs">${u.is_active ? 'Выкл' : 'Вкл'}</button>
       </td>`;
     tbody.appendChild(tr);
   }
@@ -155,10 +155,10 @@ async function loadChats() {
   ul.innerHTML = '';
   for (const c of conversations) {
     const li = document.createElement('li');
-    li.innerHTML = `<button type="button" class="text-left w-full hover:bg-slate-900 rounded-lg px-3 py-2 border border-slate-800" data-id="${c.id}">
+    li.innerHTML = `<button type="button" class="text-left w-full hover:bg-slate-50 rounded-lg px-3 py-2 border border-slate-200 bg-white" data-id="${c.id}">
       <span class="text-indigo-400">${escape(c.user_email)}</span>
       <span class="text-slate-500 text-xs ml-2">${c.id}</span>
-      <div class="text-slate-300">${escape(c.title || 'Чат')}</div>
+      <div class="text-slate-700">${escape(c.title || 'Чат')}</div>
     </button>`;
     li.querySelector('button').addEventListener('click', () => viewChat(c.id));
     ul.appendChild(li);

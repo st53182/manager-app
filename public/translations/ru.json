@@ -1,20 +1,20 @@
 {
   "nav": {
-    "title": "Менеджер Команд",
+    "title": "AI Academy",
     "login": "Войти",
     "register": "Регистрация",
     "logout": "Выйти",
-    "dashboard": "Панель управления"
+    "dashboard": "Workspace"
   },
   "index": {
-    "title": "Менеджер Команд - Главная",
-    "heading": "Менеджер Команд",
-    "subtitle": "Управляйте своими командами и сотрудниками",
+    "title": "AI Academy - Главная",
+    "heading": "AI Academy",
+    "subtitle": "Обучающая платформа с AI-наставником, уроками и практикой",
     "get_started": "Начать работу",
     "login_to_continue": "Войдите для продолжения"
   },
   "login": {
-    "title": "Вход - Менеджер Команд",
+    "title": "Вход - AI Academy",
     "heading": "Вход",
     "subtitle": "Войдите в ваш аккаунт",
     "email": "Email",
@@ -28,7 +28,7 @@
     "login_error": "Ошибка входа"
   },
   "register": {
-    "title": "Регистрация - Менеджер Команд",
+    "title": "Регистрация - AI Academy",
     "heading": "Регистрация",
     "subtitle": "Создайте аккаунт для управления командами",
     "name": "Имя",
