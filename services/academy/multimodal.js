@@ -274,6 +274,7 @@ function estimateContentChars(content) {
 
 module.exports = {
   uploadsRoot,
+  userUploadDir,
   persistMulterFiles,
   buildUserContentForApi,
   estimateContentChars,

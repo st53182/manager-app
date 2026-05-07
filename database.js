@@ -442,6 +442,36 @@ async function initializeDatabase() {
       CREATE INDEX IF NOT EXISTS idx_ai_usage_user_created ON ai_usage_events(user_id, created_at DESC);
     `);
 
+    console.log('AI Academy: knowledge bases...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS knowledge_bases (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS knowledge_documents (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        knowledge_base_id UUID NOT NULL REFERENCES knowledge_bases(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        original_name VARCHAR(500) NOT NULL,
+        stored_name VARCHAR(500) NOT NULL,
+        mime_type VARCHAR(255) NOT NULL,
+        size_bytes BIGINT DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_kb_user_created ON knowledge_bases(user_id, created_at DESC);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_kd_kb_created ON knowledge_documents(knowledge_base_id, created_at DESC);
+    `);
+
     await seedAcademyCatalog(client);
     await bootstrapAdminEmail(client);
     await mergeExistingUsersAiAllowedModels(client);
@@ -1050,6 +1080,131 @@ async function getLessonProgressForUser(userId) {
   }
 }
 
+async function createKnowledgeBase(userId, { name, description = null }) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `INSERT INTO knowledge_bases (user_id, name, description)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [userId, name, description]
+    );
+    return r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function listKnowledgeBases(userId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT kb.*,
+              COALESCE(COUNT(kd.id), 0)::int AS documents_count
+       FROM knowledge_bases kb
+       LEFT JOIN knowledge_documents kd ON kd.knowledge_base_id = kb.id
+       WHERE kb.user_id = $1
+       GROUP BY kb.id
+       ORDER BY kb.created_at DESC`,
+      [userId]
+    );
+    return r.rows;
+  } finally {
+    client.release();
+  }
+}
+
+async function getKnowledgeBaseForUser(userId, knowledgeBaseId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT * FROM knowledge_bases WHERE id = $1 AND user_id = $2`,
+      [knowledgeBaseId, userId]
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function deleteKnowledgeBase(userId, knowledgeBaseId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `DELETE FROM knowledge_bases WHERE id = $1 AND user_id = $2 RETURNING id`,
+      [knowledgeBaseId, userId]
+    );
+    return !!r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function addKnowledgeDocument(userId, knowledgeBaseId, fileMeta) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `INSERT INTO knowledge_documents
+        (knowledge_base_id, user_id, original_name, stored_name, mime_type, size_bytes)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [
+        knowledgeBaseId,
+        userId,
+        fileMeta.name,
+        fileMeta.stored,
+        fileMeta.mime,
+        fileMeta.sizeBytes
+      ]
+    );
+    return r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function listKnowledgeDocuments(userId, knowledgeBaseId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT *
+       FROM knowledge_documents
+       WHERE user_id = $1 AND knowledge_base_id = $2
+       ORDER BY created_at DESC`,
+      [userId, knowledgeBaseId]
+    );
+    return r.rows;
+  } finally {
+    client.release();
+  }
+}
+
+async function getKnowledgeDocumentForUser(userId, documentId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT * FROM knowledge_documents WHERE id = $1 AND user_id = $2`,
+      [documentId, userId]
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function deleteKnowledgeDocument(userId, documentId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `DELETE FROM knowledge_documents WHERE id = $1 AND user_id = $2 RETURNING id`,
+      [documentId, userId]
+    );
+    return !!r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
 async function listUsersForAdmin(limit = 100, offset = 0) {
   const client = await pool.connect();
   try {
@@ -1207,5 +1362,13 @@ module.exports = {
   adminListAllConversations,
   adminGetConversation,
   adminExportUsage,
-  adminSumUsageByUser
+  adminSumUsageByUser,
+  createKnowledgeBase,
+  listKnowledgeBases,
+  getKnowledgeBaseForUser,
+  deleteKnowledgeBase,
+  addKnowledgeDocument,
+  listKnowledgeDocuments,
+  getKnowledgeDocumentForUser,
+  deleteKnowledgeDocument
 };

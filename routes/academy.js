@@ -2,6 +2,8 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 const db = require('../database');
 const { getMentorSystemPrompt, MENTOR_PROMPT_VERSION } = require('../prompts/mentorPrompt');
 const { createOpenRouterClient, getDefaultModel } = require('../services/ai/openRouterClient');
@@ -10,6 +12,7 @@ const {
   persistMulterFiles,
   buildUserContentForApi,
   estimatePayloadFootprintForLimits,
+  userUploadDir,
   MAX_FILES,
   MAX_FILE_BYTES
 } = require('../services/academy/multimodal');
@@ -87,6 +90,124 @@ function createRouter({ JWT_SECRET }) {
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: 'Failed to save progress' });
+    }
+  });
+
+  router.get('/knowledge-bases', authenticateAcademy, async (req, res) => {
+    try {
+      const bases = await db.listKnowledgeBases(req.dbUser.id);
+      res.json({ knowledgeBases: bases });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to load knowledge bases' });
+    }
+  });
+
+  router.post('/knowledge-bases', authenticateAcademy, async (req, res) => {
+    try {
+      const name = String(req.body?.name || '').trim();
+      const description = String(req.body?.description || '').trim();
+      if (!name) {
+        return res.status(400).json({ error: 'Knowledge base name is required' });
+      }
+      const kb = await db.createKnowledgeBase(req.dbUser.id, {
+        name,
+        description: description || null
+      });
+      res.json(kb);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to create knowledge base' });
+    }
+  });
+
+  router.delete('/knowledge-bases/:id', authenticateAcademy, async (req, res) => {
+    try {
+      const kb = await db.getKnowledgeBaseForUser(req.dbUser.id, req.params.id);
+      if (!kb) return res.status(404).json({ error: 'Knowledge base not found' });
+
+      const docs = await db.listKnowledgeDocuments(req.dbUser.id, kb.id);
+      for (const d of docs) {
+        if (!d.stored_name) continue;
+        const abs = path.join(userUploadDir(req.dbUser.id), d.stored_name);
+        if (fs.existsSync(abs)) {
+          try {
+            fs.unlinkSync(abs);
+          } catch (unlinkErr) {
+            console.warn('Failed to remove document file:', unlinkErr.message);
+          }
+        }
+      }
+
+      await db.deleteKnowledgeBase(req.dbUser.id, kb.id);
+      res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to delete knowledge base' });
+    }
+  });
+
+  router.get('/knowledge-bases/:id/documents', authenticateAcademy, async (req, res) => {
+    try {
+      const kb = await db.getKnowledgeBaseForUser(req.dbUser.id, req.params.id);
+      if (!kb) return res.status(404).json({ error: 'Knowledge base not found' });
+      const docs = await db.listKnowledgeDocuments(req.dbUser.id, kb.id);
+      res.json({ documents: docs });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to load documents' });
+    }
+  });
+
+  router.post(
+    '/knowledge-bases/:id/documents',
+    authenticateAcademy,
+    upload.array('files', MAX_FILES),
+    async (req, res) => {
+      try {
+        const kb = await db.getKnowledgeBaseForUser(req.dbUser.id, req.params.id);
+        if (!kb) return res.status(404).json({ error: 'Knowledge base not found' });
+        if (!req.files?.length) return res.status(400).json({ error: 'Upload at least one file' });
+
+        const saved = persistMulterFiles(req.dbUser.id, req.files);
+        const created = [];
+        for (let i = 0; i < saved.length; i += 1) {
+          const item = saved[i];
+          const source = (req.files || [])[i];
+          created.push(
+            await db.addKnowledgeDocument(req.dbUser.id, kb.id, {
+              ...item,
+              sizeBytes: source?.size || 0
+            })
+          );
+        }
+        res.json({ documents: created });
+      } catch (e) {
+        console.error(e);
+        res.status(400).json({ error: e.message || 'Failed to upload documents' });
+      }
+    }
+  );
+
+  router.delete('/knowledge-documents/:id', authenticateAcademy, async (req, res) => {
+    try {
+      const doc = await db.getKnowledgeDocumentForUser(req.dbUser.id, req.params.id);
+      if (!doc) return res.status(404).json({ error: 'Document not found' });
+      if (doc.stored_name) {
+        const abs = path.join(userUploadDir(req.dbUser.id), doc.stored_name);
+        if (fs.existsSync(abs)) {
+          try {
+            fs.unlinkSync(abs);
+          } catch (unlinkErr) {
+            console.warn('Failed to remove document file:', unlinkErr.message);
+          }
+        }
+      }
+      await db.deleteKnowledgeDocument(req.dbUser.id, req.params.id);
+      res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to delete document' });
     }
   });
 

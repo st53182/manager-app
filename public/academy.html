@@ -47,6 +47,16 @@
           <h3 class="text-xs uppercase tracking-wide text-slate-500 mb-2">Курсы</h3>
           <div id="courseTree" class="space-y-2 text-sm"></div>
         </div>
+        <div>
+          <h3 class="text-xs uppercase tracking-wide text-slate-500 mb-2">База знаний</h3>
+          <div class="space-y-2">
+            <div class="flex gap-1">
+              <input id="kbNameInput" type="text" placeholder="Название базы" class="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs" />
+              <button type="button" id="createKbBtn" class="bg-slate-800 hover:bg-slate-700 rounded px-2 py-1 text-xs">Создать</button>
+            </div>
+            <ul id="knowledgeBaseList" class="space-y-1 text-xs"></ul>
+          </div>
+        </div>
       </div>
       <div class="p-3 border-t border-slate-800 text-xs text-slate-500">
         <span id="userEmail"></span>
