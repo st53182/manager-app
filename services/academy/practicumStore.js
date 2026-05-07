@@ -384,9 +384,9 @@ async function seedHallucinationScenarios() {
   for (const s of defaults) {
     await q(
       `INSERT INTO hallucination_scenarios (title, difficulty, flawed_answer, correct_answer, issue_types)
-       SELECT $1,$2,$3,$4,$5::jsonb
-       WHERE NOT EXISTS (SELECT 1 FROM hallucination_scenarios WHERE title = $1)`,
-      [s.title, s.difficulty, s.flawed_answer, s.correct_answer, JSON.stringify(s.issue_types)]
+       SELECT $1::varchar,$2::varchar,$3::text,$4::text,$5::jsonb
+       WHERE NOT EXISTS (SELECT 1 FROM hallucination_scenarios WHERE title = $6::varchar)`,
+      [s.title, s.difficulty, s.flawed_answer, s.correct_answer, JSON.stringify(s.issue_types), s.title]
     );
   }
 }
