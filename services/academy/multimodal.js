@@ -73,6 +73,24 @@ function assertSafeStoredName(stored) {
   }
 }
 
+/**
+ * OpenRouter/gpt-4o-mini often ignores chat `file` PDF parts; Gemini handles them.
+ * For these models we never send native PDF — only server-extracted text (any length).
+ * Extend via ACADEMY_PDF_TEXT_ONLY_MODELS=comma,separated,model,ids
+ */
+function shouldForcePdfAsPlainText(modelId) {
+  if (!modelId || typeof modelId !== 'string') return false;
+  const extra = String(process.env.ACADEMY_PDF_TEXT_ONLY_MODELS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const defaults = ['openai/gpt-4o-mini'];
+  const ids = new Set([...defaults, ...extra]);
+  if (ids.has(modelId)) return true;
+  if (modelId.includes('gpt-4o-mini')) return true;
+  return false;
+}
+
 function looksLikeDelimitedTable(raw) {
   const lines = raw.split(/\r?\n/).filter((l) => l.length > 0).slice(0, 20);
   if (lines.length < 4) return false;
@@ -155,7 +173,8 @@ function compactJsonBuffer(buf, originalName) {
  * Build one OpenRouter content part from a saved file (async: PDF may use text extraction).
  * ACADEMY_PDF_MODE=text_first (default) | native — native = всегда отправлять PDF как file (дороже).
  */
-async function buildContentPartFromFile(absPath, mime, originalName) {
+async function buildContentPartFromFile(absPath, mime, originalName, options = {}) {
+  const modelId = options.model;
   const buf = fs.readFileSync(absPath);
   if (buf.length > MAX_FILE_BYTES) {
     throw new Error(`File too large (max ${MAX_FILE_BYTES / (1024 * 1024)} MB)`);
@@ -173,6 +192,43 @@ async function buildContentPartFromFile(absPath, mime, originalName) {
     const pdfMode = process.env.ACADEMY_PDF_MODE || 'text_first';
     const minChars = parseInt(process.env.ACADEMY_PDF_MIN_TEXT_CHARS || '80', 10);
     const maxChars = parseInt(process.env.ACADEMY_MAX_PDF_TEXT_CHARS || '80000', 10);
+    const forceTextPdf = shouldForcePdfAsPlainText(modelId);
+
+    if (forceTextPdf) {
+      try {
+        const { extractPdfText } = require('./pdfText');
+        const { text: rawText, numpages } = await extractPdfText(buf);
+        let body = rawText.replace(/\s+/g, ' ').trim();
+        if (body.length > maxChars) {
+          body =
+            body.slice(0, maxChars) +
+            '\n\n[… фрагмент обрезан (ACADEMY_MAX_PDF_TEXT_CHARS), чтобы уложиться в лимит токенов …]';
+        }
+        if (body.length > 0) {
+          const shortNote =
+            body.length < minChars
+              ? `\n\n[Внимание: извлечено мало текста (${body.length} симв.) — возможно скан; для разбора PDF «как файла» выберите модель Gemini или Claude с мультимодальностью.]\n\n`
+              : '\n\n';
+          return {
+            type: 'text',
+            text:
+              `[PDF «${originalName || 'документ.pdf'}», ~${numpages} стр. Текст извлечён на сервере (совместимость с выбранной моделью).]${shortNote}${body}`
+          };
+        }
+        return {
+          type: 'text',
+          text:
+            `[PDF «${originalName || 'документ.pdf'}»] Текст не извлечён (часто у сканов). Эта модель не получает нативный PDF в чате — загрузите документ в базу знаний, приложите текстовый PDF или выберите модель Gemini.`
+        };
+      } catch (e) {
+        console.warn('PDF text extraction failed (text-only model path):', e.message);
+        return {
+          type: 'text',
+          text:
+            `[PDF «${originalName || 'документ.pdf'}»] Ошибка извлечения: ${e.message}. Попробуйте модель Gemini или загрузите файл в базу знаний.`
+        };
+      }
+    }
 
     if (pdfMode !== 'native') {
       try {
@@ -299,7 +355,7 @@ function persistMulterFiles(userId, multerFiles) {
 /**
  * Build message content for OpenRouter: string or multimodal array.
  */
-async function buildUserContentForApi(text, userId, meta) {
+async function buildUserContentForApi(text, userId, meta, modelId) {
   const t = (text || '').trim();
   let m = meta;
   if (typeof m === 'string') {
@@ -333,7 +389,9 @@ async function buildUserContentForApi(text, userId, meta) {
       continue;
     }
     parts.push(
-      await buildContentPartFromFile(abs, f.mime || 'application/octet-stream', f.name)
+      await buildContentPartFromFile(abs, f.mime || 'application/octet-stream', f.name, {
+        model: modelId
+      })
     );
   }
 

@@ -82,7 +82,7 @@ function createRouter({ JWT_SECRET }) {
    * Builds OpenRouter messages; truncates long assistant replies for token budget and drops
    * oldest turns until under MAX_CONTEXT_CHARS (CSV/HTML-heavy chats).
    */
-  async function buildMessagesWithBudget(rows, lessonForPrompt, req) {
+  async function buildMessagesWithBudget(rows, lessonForPrompt, req, modelId) {
     const maxAssist = parseInt(process.env.MAX_ASSISTANT_CHARS_IN_CONTEXT || '42000', 10);
     let subset = [...rows];
     let droppedTurns = 0;
@@ -98,7 +98,7 @@ function createRouter({ JWT_SECRET }) {
         if (m.role !== 'user' && m.role !== 'assistant') continue;
         let content;
         if (m.role === 'user') {
-          content = await buildUserContentForApi(m.content, req.dbUser.id, m.meta);
+          content = await buildUserContentForApi(m.content, req.dbUser.id, m.meta, modelId);
         } else {
           const raw = m.content || '';
           content =
@@ -1128,7 +1128,8 @@ function createRouter({ JWT_SECRET }) {
         const { apiMessages, totalChars, droppedTurns } = await buildMessagesWithBudget(
           rows,
           lessonForPrompt,
-          req
+          req,
+          model
         );
 
         if (personaId) {

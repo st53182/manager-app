@@ -7,7 +7,7 @@ const MODEL_CATALOG = [
     id: 'openai/gpt-4o-mini',
     label: 'Экономно · текст',
     group: 'general',
-    hint: 'Быстрый текст и короткий контекст'
+    hint: 'Быстрый текст; PDF в чате — только извлечённый текст на сервере (сканы лучше через базу знаний или Gemini)'
   },
   {
     id: 'google/gemini-2.0-flash-001',
