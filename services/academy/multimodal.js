@@ -74,7 +74,8 @@ function assertSafeStoredName(stored) {
 }
 
 /**
- * OpenRouter/gpt-4o-mini often ignores chat `file` PDF parts; Gemini handles them.
+ * OpenRouter often drops or mishandles chat `file` PDF parts for some providers;
+ * Gemini typically accepts native PDF.
  * For these models we never send native PDF — only server-extracted text (any length).
  * Extend via ACADEMY_PDF_TEXT_ONLY_MODELS=comma,separated,model,ids
  */
@@ -88,6 +89,7 @@ function shouldForcePdfAsPlainText(modelId) {
   const ids = new Set([...defaults, ...extra]);
   if (ids.has(modelId)) return true;
   if (modelId.includes('gpt-4o-mini')) return true;
+  if (modelId.startsWith('anthropic/claude')) return true;
   return false;
 }
 

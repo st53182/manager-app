@@ -16,10 +16,10 @@ const MODEL_CATALOG = [
     hint: 'Мультимодальность: картинки, PDF, аудио, видео (зависит от лимитов модели)'
   },
   {
-    id: 'anthropic/claude-3.5-sonnet',
+    id: 'anthropic/claude-3.7-sonnet',
     label: 'Данные · код · анализ',
     group: 'data',
-    hint: 'Таблицы, CSV, код, разбор логики и данных'
+    hint: 'Claude Sonnet; PDF в чате — извлечённый текст на сервере (как у GPT mini)'
   },
   {
     id: 'google/gemini-2.5-flash-image',

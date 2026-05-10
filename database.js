@@ -64,6 +64,57 @@ async function mergeExistingUsersAiAllowedModels(client) {
   }
 }
 
+/** OpenRouter removes old model slugs; remap stored IDs so requests do not 404. */
+async function migrateDeprecatedOpenRouterModelIds(client) {
+  const DEPRECATED = {
+    'anthropic/claude-3.5-sonnet': 'anthropic/claude-3.7-sonnet'
+  };
+  try {
+    const r = await client.query(`SELECT id, ai_allowed_models FROM users`);
+    let userUpdates = 0;
+    for (const row of r.rows) {
+      let arr = row.ai_allowed_models;
+      if (typeof arr === 'string') {
+        try {
+          arr = JSON.parse(arr);
+        } catch {
+          arr = [];
+        }
+      }
+      if (!Array.isArray(arr)) continue;
+      const next = [];
+      const seen = new Set();
+      for (const id of arr) {
+        const mapped = DEPRECATED[id] || id;
+        if (!seen.has(mapped)) {
+          seen.add(mapped);
+          next.push(mapped);
+        }
+      }
+      if (JSON.stringify(next) !== JSON.stringify(arr)) {
+        await client.query(`UPDATE users SET ai_allowed_models = $1::jsonb WHERE id = $2`, [
+          JSON.stringify(next),
+          row.id
+        ]);
+        userUpdates += 1;
+      }
+    }
+
+    const conv = await client.query(
+      `UPDATE ai_conversations SET model = $1 WHERE model = $2`,
+      ['anthropic/claude-3.7-sonnet', 'anthropic/claude-3.5-sonnet']
+    );
+
+    if (userUpdates > 0 || conv.rowCount > 0) {
+      console.log(
+        `AI Academy: remapped deprecated OpenRouter models (users updated: ${userUpdates}, conversations: ${conv.rowCount})`
+      );
+    }
+  } catch (e) {
+    console.error('migrateDeprecatedOpenRouterModelIds:', e.message);
+  }
+}
+
 async function seedAcademyCatalog(client) {
   const courses = [
     { slug: 'ai-basics', title: 'Основы AI', description: 'Что такое нейросети и как они работают', sort_order: 1 },
@@ -316,7 +367,7 @@ async function initializeDatabase() {
       `ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true`,
       `ADD COLUMN IF NOT EXISTS ai_daily_token_limit INTEGER DEFAULT 2000000`,
       `ADD COLUMN IF NOT EXISTS ai_monthly_token_limit INTEGER DEFAULT 60000000`,
-      `ADD COLUMN IF NOT EXISTS ai_allowed_models JSONB DEFAULT '["openai/gpt-4o-mini","google/gemini-2.0-flash-001","anthropic/claude-3.5-sonnet"]'::jsonb`
+      `ADD COLUMN IF NOT EXISTS ai_allowed_models JSONB DEFAULT '["openai/gpt-4o-mini","google/gemini-2.0-flash-001","anthropic/claude-3.7-sonnet"]'::jsonb`
     ]) {
       try {
         await client.query(`ALTER TABLE users ${col}`);
@@ -328,7 +379,7 @@ async function initializeDatabase() {
     try {
       await client.query(`
         ALTER TABLE users ALTER COLUMN ai_allowed_models SET DEFAULT
-        '["openai/gpt-4o-mini","google/gemini-2.0-flash-001","anthropic/claude-3.5-sonnet"]'::jsonb
+        '["openai/gpt-4o-mini","google/gemini-2.0-flash-001","anthropic/claude-3.7-sonnet"]'::jsonb
       `);
     } catch (e) {
       console.log('ai_allowed_models default alter skipped:', e.message);
@@ -476,6 +527,7 @@ async function initializeDatabase() {
     await seedAcademyCatalog(client);
     await bootstrapAdminEmail(client);
     await mergeExistingUsersAiAllowedModels(client);
+    await migrateDeprecatedOpenRouterModelIds(client);
     await bumpLegacyTokenLimits(client);
 
     console.log('Database initialization completed successfully');
