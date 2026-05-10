@@ -948,6 +948,10 @@ async function streamChat(payload) {
     if (payload.lessonId) fd.append('lessonId', payload.lessonId);
     if (payload.courseId) fd.append('courseId', payload.courseId);
     if (payload.regenerate) fd.append('regenerate', 'true');
+    if (payload.chatMode) fd.append('chatMode', payload.chatMode);
+    if (payload.knowledgeBaseId) fd.append('knowledgeBaseId', payload.knowledgeBaseId);
+    if (payload.strictMode) fd.append('strictMode', 'true');
+    if (payload.personaId) fd.append('personaId', payload.personaId);
     for (let i = 0; i < fileInput.files.length; i++) {
       fd.append('files', fileInput.files[i]);
     }
