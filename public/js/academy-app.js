@@ -522,10 +522,13 @@ async function init() {
 
 function renderUsage() {
   const u = state.usage;
-  if (!u) return;
+  const el = document.getElementById('usageBadge');
+  if (!el || !u) return;
   const d = u.daily;
   const dayPct = Math.min(100, Math.round((d.used_tokens / d.limit_tokens) * 100));
-  document.getElementById('usageBadge').textContent = `День: ${dayPct}% · ${d.used_tokens}/${d.limit_tokens} tok`;
+  const line = `День: ${dayPct}% · ${d.used_tokens} / ${d.limit_tokens} токенов`;
+  el.textContent = line;
+  el.title = line;
 }
 
 
@@ -611,7 +614,8 @@ function renderCompareResults(data) {
   });
   const b = document.createElement('button');
   b.textContent = 'Сохранить выбор';
-  b.className = 'text-xs text-indigo-700 mt-1';
+  b.type = 'button';
+  b.className = 'aa-btn aa-btn-ghost mt-2';
   b.onclick = async () => {
     const c = document.querySelector('input[name=cc]:checked');
     if (!c || !state.compareSessionId) return alert('Выберите модель');
@@ -653,15 +657,23 @@ function renderCourseTree() {
   }
   for (const c of getMvpCourses()) {
     const wrap = document.createElement('div');
-    wrap.innerHTML = `<div class="font-medium text-slate-800 mb-1">${escapeHtml(c.title)}</div>`;
+    wrap.className = 'mb-3';
+    const title = document.createElement('div');
+    title.className = 'text-sm font-semibold text-slate-800 mb-1 leading-snug';
+    title.textContent = c.title;
+    wrap.appendChild(title);
     const ul = document.createElement('ul');
-    ul.className = 'space-y-0.5 ml-1 border-l border-slate-300 pl-2';
+    ul.className = 'space-y-0.5 ml-2 border-l-2 border-blue-200 pl-2';
     for (const l of byCourse[c.id] || []) {
       const li = document.createElement('li');
       const prog = state.catalog.progress[l.id];
       const check = prog?.status === 'completed' ? '✓ ' : '';
-      li.innerHTML = `<button type="button" class="text-left w-full hover:text-indigo-300 py-0.5 truncate text-slate-300 transition-colors" data-lesson="${l.id}">${check}${escapeHtml(l.title)}</button>`;
-      li.querySelector('button').addEventListener('click', () => selectLesson(l));
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'aa-lesson-btn' + (state.currentLessonId === l.id ? ' is-active' : '');
+      btn.textContent = check + l.title;
+      btn.addEventListener('click', () => selectLesson(l));
+      li.appendChild(btn);
       ul.appendChild(li);
     }
     wrap.appendChild(ul);
@@ -684,9 +696,7 @@ function renderConversationList() {
 
     const sel = document.createElement('button');
     sel.type = 'button';
-    sel.className = `flex-1 min-w-0 text-left truncate py-1 px-2 rounded text-sm ${
-      c.id === state.currentConversationId ? 'bg-slate-700 text-white' : 'text-slate-700 hover:text-slate-900'
-    }`;
+    sel.className = 'aa-conv-btn' + (c.id === state.currentConversationId ? ' is-active' : '');
     sel.textContent = c.title || 'Чат';
     sel.addEventListener('click', () => loadConversation(c.id));
 
@@ -919,6 +929,7 @@ async function selectLesson(lesson) {
   if (!lesson) return;
   state.currentLessonId = lesson.id;
   state.currentLesson = lesson;
+  document.getElementById('lessonPanel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   document.getElementById('lessonEmpty')?.classList.add('hidden');
   document.getElementById('lessonContent')?.classList.remove('hidden');
   const lc = document.getElementById('lessonContent');
@@ -1204,71 +1215,68 @@ function initToolTabs() {
 function initResizableLayout() {
   const app = document.getElementById('app');
   const leftSidebar = document.getElementById('leftSidebar');
+  const lessonPanel = document.getElementById('lessonPanel');
   const toolsPanel = document.getElementById('toolsPanel');
   const leftSplitter = document.getElementById('leftSplitter');
+  const lessonSplitter = document.getElementById('lessonSplitter');
   const rightSplitter = document.getElementById('rightSplitter');
-  if (!app || !leftSidebar || !toolsPanel || !leftSplitter || !rightSplitter) return;
+  if (!app || !leftSidebar || !toolsPanel) return;
 
-  function getClampedWidths(leftPx, rightPx) {
-    const appWidth = app.getBoundingClientRect().width || window.innerWidth;
-    let nextLeft = leftPx;
-    let nextRight = rightPx;
+  function setWidths(leftPx, lessonPx, rightPx) {
+    app.style.setProperty('--left-pane-width', `${leftPx}px`);
+    app.style.setProperty('--lesson-pane-width', `${lessonPx}px`);
+    app.style.setProperty('--right-pane-width', `${rightPx}px`);
     if (window.innerWidth >= 768) {
-      nextLeft = Math.max(240, Math.min(460, leftPx));
-    }
-    if (window.innerWidth >= 1024) {
-      const minCenterWidth = 520;
-      const totalSplitters = 16;
-      const maxRightByViewport = Math.max(300, appWidth - nextLeft - minCenterWidth - totalSplitters);
-      nextRight = Math.max(300, Math.min(Math.min(560, maxRightByViewport), rightPx));
-    }
-    return { left: nextLeft, right: nextRight };
-  }
-
-  function setWidths(leftPx, rightPx) {
-    const { left, right } = getClampedWidths(leftPx, rightPx);
-    app.style.setProperty('--left-pane-width', `${left}px`);
-    app.style.setProperty('--right-pane-width', `${right}px`);
-    if (window.innerWidth >= 768) {
-      leftSidebar.style.width = `${left}px`;
-      leftSidebar.style.flexBasis = `${left}px`;
+      leftSidebar.style.width = `${leftPx}px`;
+      leftSidebar.style.flexBasis = `${leftPx}px`;
     } else {
       leftSidebar.style.width = '';
       leftSidebar.style.flexBasis = '';
     }
-    if (window.innerWidth >= 1024) {
-      toolsPanel.style.width = `${right}px`;
-      toolsPanel.style.flexBasis = `${right}px`;
+    if (lessonPanel && window.innerWidth >= 1280) {
+      lessonPanel.style.width = `${lessonPx}px`;
+      lessonPanel.style.flexBasis = `${lessonPx}px`;
+    } else if (lessonPanel) {
+      lessonPanel.style.width = '';
+      lessonPanel.style.flexBasis = '';
+    }
+    if (window.innerWidth >= 1280) {
+      toolsPanel.style.width = `${rightPx}px`;
+      toolsPanel.style.flexBasis = `${rightPx}px`;
     } else {
       toolsPanel.style.width = '';
       toolsPanel.style.flexBasis = '';
     }
   }
 
-  setWidths(288, 384);
+  setWidths(272, 352, 320);
   window.addEventListener('resize', () => {
     setWidths(
-      parseInt(getComputedStyle(app).getPropertyValue('--left-pane-width'), 10) || 288,
-      parseInt(getComputedStyle(app).getPropertyValue('--right-pane-width'), 10) || 384
+      parseInt(getComputedStyle(app).getPropertyValue('--left-pane-width'), 10) || 272,
+      parseInt(getComputedStyle(app).getPropertyValue('--lesson-pane-width'), 10) || 352,
+      parseInt(getComputedStyle(app).getPropertyValue('--right-pane-width'), 10) || 320
     );
   });
 
   function bindSplitter(splitter, side) {
+    if (!splitter) return;
     splitter.addEventListener('pointerdown', (e) => {
-      if ((side === 'left' && window.innerWidth < 768) || (side === 'right' && window.innerWidth < 1024)) return;
+      if (side === 'left' && window.innerWidth < 768) return;
+      if (side === 'lesson' && window.innerWidth < 1280) return;
+      if (side === 'right' && window.innerWidth < 1280) return;
       splitter.setPointerCapture(e.pointerId);
       splitter.classList.add('is-dragging');
       const startX = e.clientX;
       const leftStart = leftSidebar.getBoundingClientRect().width;
+      const lessonStart = lessonPanel ? lessonPanel.getBoundingClientRect().width : 352;
       const rightStart = toolsPanel.getBoundingClientRect().width;
-
       const onMove = (ev) => {
         if (side === 'left') {
-          const next = Math.max(240, Math.min(460, leftStart + (ev.clientX - startX)));
-          setWidths(next, rightStart);
+          setWidths(Math.max(220, Math.min(400, leftStart + (ev.clientX - startX))), lessonStart, rightStart);
+        } else if (side === 'lesson' && lessonPanel) {
+          setWidths(leftStart, Math.max(280, Math.min(480, lessonStart + (startX - ev.clientX))), rightStart);
         } else {
-          const next = Math.max(300, Math.min(560, rightStart - (ev.clientX - startX)));
-          setWidths(leftStart, next);
+          setWidths(leftStart, lessonStart, Math.max(260, Math.min(480, rightStart - (ev.clientX - startX))));
         }
       };
       const onUp = () => {
@@ -1282,6 +1290,7 @@ function initResizableLayout() {
   }
 
   bindSplitter(leftSplitter, 'left');
+  bindSplitter(lessonSplitter, 'lesson');
   bindSplitter(rightSplitter, 'right');
 }
 
