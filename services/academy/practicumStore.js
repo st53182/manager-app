@@ -399,11 +399,11 @@ async function seedHallucinationScenarios() {
 async function listPromptTemplates(userId, category = null) {
   if (category) {
     return q(
-      `SELECT * FROM prompt_templates WHERE user_id = $1 AND category = $2 ORDER BY created_at DESC`,
+      `SELECT * FROM prompt_templates WHERE (user_id = $1 OR is_builtin = true) AND category = $2 ORDER BY is_builtin DESC, created_at DESC`,
       [userId, category]
     );
   }
-  return q(`SELECT * FROM prompt_templates WHERE user_id = $1 ORDER BY created_at DESC`, [userId]);
+  return q(`SELECT * FROM prompt_templates WHERE user_id = $1 OR is_builtin = true ORDER BY is_builtin DESC, created_at DESC`, [userId]);
 }
 
 async function createPromptTemplate(userId, body) {
@@ -460,9 +460,9 @@ async function updatePromptTemplate(userId, id, body) {
 async function duplicatePromptTemplate(userId, id) {
   const rows = await q(
     `INSERT INTO prompt_templates
-    (user_id, title, description, category, tags, prompt_text, recommended_persona_id, recommended_model, example_output, is_favorite)
-    SELECT user_id, title || ' (copy)', description, category, tags, prompt_text, recommended_persona_id, recommended_model, example_output, is_favorite
-    FROM prompt_templates WHERE id = $1 AND user_id = $2 RETURNING *`,
+    (user_id, title, description, category, tags, prompt_text, recommended_persona_id, recommended_model, example_output, is_favorite, is_builtin)
+    SELECT $2, title || ' (copy)', description, category, tags, prompt_text, recommended_persona_id, recommended_model, example_output, is_favorite, false
+    FROM prompt_templates WHERE id = $1 AND (user_id = $2 OR is_builtin = true) RETURNING *`,
     [id, userId]
   );
   return rows[0] || null;
@@ -646,6 +646,91 @@ async function upsertCertificate(input) {
     ]
   );
   return rows[0];
+}
+
+async function seedBuiltinPromptTemplates() {
+  const defaults = [
+    {
+      title: 'Деловое письмо (RTCFSC)',
+      category: 'Work & Business',
+      description: 'Структурированный черновик письма с ролью, задачей, контекстом, форматом, стилем и критериями.',
+      prompt_text:
+        'Role: Business communication assistant.\nTask: Draft a concise email to [получатель] about [тема].\nContext: [фон, сроки, предыдущая переписка]\nFormat: Тема + 3–5 коротких абзацев + чёткий call-to-action\nStyle: Вежливо, по делу, без воды\nCriteria: До 200 слов, конкретные шаги, без неподтверждённых фактов',
+      tags: ['email', 'rtcfsc', 'business']
+    },
+    {
+      title: 'Сводка встречи',
+      category: 'Work & Business',
+      description: 'Протокол встречи: решения, владельцы, сроки.',
+      prompt_text:
+        'Summarize this meeting transcript in Russian.\nOutput sections: 1) Key decisions 2) Action items (owner + deadline) 3) Open questions 4) Risks.\nTranscript:\n[вставьте текст]',
+      tags: ['meeting', 'summary']
+    },
+    {
+      title: 'Сценарий ролевой практики',
+      category: 'Practice',
+      description: 'ИИ играет роль клиента/коллеги для отработки диалога.',
+      prompt_text:
+        'You are [роль: клиент/руководитель]. I am [моя роль].\nScenario: [ситуация].\nRules: stay in character, one question at a time, challenge weak arguments politely.\nStart the role-play now.',
+      tags: ['scenario', 'roleplay']
+    },
+    {
+      title: 'Проверка фактов в ответе ИИ',
+      category: 'Hallucination',
+      description: 'Попросите модель явно отметить неуверенность и источники.',
+      prompt_text:
+        'Review the following AI-generated answer.\nList: (1) claims that need a source (2) likely hallucinations (3) safer rewritten version.\nAnswer:\n[вставьте ответ]',
+      tags: ['fact-check', 'hallucination']
+    },
+    {
+      title: 'Сравнение вариантов решения',
+      category: 'Analysis',
+      description: 'Таблица плюсов/минусов для бизнес-решения.',
+      prompt_text:
+        'Compare options A and B for [решение].\nContext: [ограничения, бюджет, сроки]\nOutput: markdown table with criteria rows, pros/cons, recommendation with assumptions.',
+      tags: ['analysis', 'decision']
+    },
+    {
+      title: 'Личная продуктивность: план на неделю',
+      category: 'Personal Productivity',
+      description: 'Приоритизация задач на неделю с фокусом на 3 результата.',
+      prompt_text:
+        'Help me plan next week.\nGoals: [3 outcomes]\nConstraints: [время, встречи]\nOutput: daily focus blocks (max 5 bullets/day), one sentence why each matters.',
+      tags: ['productivity', 'planning']
+    }
+  ];
+
+  for (const t of defaults) {
+    await q(
+      `INSERT INTO prompt_templates
+       (user_id, title, description, category, tags, prompt_text, is_builtin)
+       SELECT NULL, $1, $2, $3, $4::jsonb, $5, true
+       WHERE NOT EXISTS (
+         SELECT 1 FROM prompt_templates WHERE is_builtin = true AND title = $6
+       )`,
+      [t.title, t.description, t.category, JSON.stringify(t.tags || []), t.prompt_text, t.title]
+    );
+  }
+}
+
+async function createModelCompareSession({ userId, promptText, models, results }) {
+  const rows = await q(
+    `INSERT INTO model_compare_sessions (user_id, prompt_text, models, results)
+     VALUES ($1, $2, $3::jsonb, $4::jsonb) RETURNING *`,
+    [userId, promptText, JSON.stringify(models || []), JSON.stringify(results || [])]
+  );
+  return rows[0];
+}
+
+async function saveModelCompareChoice(sessionId, userId, chosenModel) {
+  const rows = await q(
+    `UPDATE model_compare_sessions
+     SET chosen_model = $3, chosen_at = CURRENT_TIMESTAMP
+     WHERE id = $1 AND user_id = $2
+     RETURNING *`,
+    [sessionId, userId, chosenModel]
+  );
+  return rows[0] || null;
 }
 
 module.exports = {
