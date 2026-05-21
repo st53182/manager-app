@@ -206,9 +206,51 @@ async function initializePracticumSchema() {
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    await ensurePromptLibrarySchema(client);
   } finally {
     client.release();
   }
+}
+
+
+async function ensurePromptLibrarySchema(client = null) {
+  const run = async (sql) => {
+    if (client) {
+      await client.query(sql);
+    } else {
+      await q(sql);
+    }
+  };
+
+  await run(`
+    ALTER TABLE prompt_templates
+    ADD COLUMN IF NOT EXISTS is_builtin BOOLEAN DEFAULT false
+  `);
+  await run(`
+    ALTER TABLE prompt_templates
+    ALTER COLUMN user_id DROP NOT NULL
+  `);
+  await run(`
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_builtin_prompt_title
+    ON prompt_templates(title) WHERE is_builtin = true
+  `);
+  await run(`
+    CREATE TABLE IF NOT EXISTS model_compare_sessions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      prompt_text TEXT NOT NULL,
+      models JSONB DEFAULT '[]'::jsonb,
+      results JSONB DEFAULT '[]'::jsonb,
+      chosen_model VARCHAR(200),
+      chosen_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await run(`
+    CREATE INDEX IF NOT EXISTS idx_model_compare_sessions_user
+    ON model_compare_sessions(user_id, created_at DESC)
+  `);
 }
 
 async function q(text, params = []) {
@@ -649,6 +691,8 @@ async function upsertCertificate(input) {
 }
 
 async function seedBuiltinPromptTemplates() {
+  await ensurePromptLibrarySchema();
+
   const defaults = [
     {
       title: 'Деловое письмо (RTCFSC)',
@@ -714,6 +758,7 @@ async function seedBuiltinPromptTemplates() {
 }
 
 async function createModelCompareSession({ userId, promptText, models, results }) {
+  await ensurePromptLibrarySchema();
   const rows = await q(
     `INSERT INTO model_compare_sessions (user_id, prompt_text, models, results)
      VALUES ($1, $2, $3::jsonb, $4::jsonb) RETURNING *`,
@@ -735,6 +780,7 @@ async function saveModelCompareChoice(sessionId, userId, chosenModel) {
 
 module.exports = {
   initializePracticumSchema,
+  ensurePromptLibrarySchema,
   upsertBuiltinPersonas,
   seedHallucinationScenarios,
   upsertCourseExerciseFields,
