@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
 const { mergeDefaultAllowedModels } = require('./services/academy/modelCatalog');
+const { seedModuleOneCatalog } = require('./services/academy/seedModuleOneCatalog');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -129,77 +130,7 @@ async function migrateAcademyProgressColumns(client) {
 }
 
 async function seedAcademyCatalog(client) {
-  const courses = [
-    { slug: 'ai-basics', title: 'Основы AI', description: 'Что такое нейросети и как они работают', sort_order: 1 },
-    { slug: 'prompting-basics', title: 'Основы промптинга', description: 'Формулировки, контекст, few-shot', sort_order: 2 },
-    { slug: 'ai-work', title: 'AI для работы', description: 'Письма, резюме, исследования', sort_order: 3 },
-    { slug: 'ai-content', title: 'AI для контента', description: 'Тексты, сценарии, редактура', sort_order: 4 },
-    { slug: 'ai-analytics', title: 'AI для аналитики', description: 'Данные, таблицы, выводы', sort_order: 5 },
-    { slug: 'ai-business', title: 'AI для бизнеса', description: 'Стратегия, метрики, коммуникации', sort_order: 6 }
-  ];
-
-  for (const c of courses) {
-    await client.query(
-      `INSERT INTO academy_courses (slug, title, description, sort_order)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (slug) DO UPDATE SET title = EXCLUDED.title, description = EXCLUDED.description, sort_order = EXCLUDED.sort_order`,
-      [c.slug, c.title, c.description, c.sort_order]
-    );
-  }
-
-  const lessonSeeds = [
-    { courseSlug: 'ai-basics', title: 'Введение: модели и токены', scenario_key: 'ai-basics-intro', sort_order: 1,
-      content_md: 'Изучите базовые понятия: модель, контекстное окно, токены. Задайте вопросы наставнику в чате.',
-      assignment_title: 'Практика', assignment_instructions: 'Спросите у наставника простыми словами, чем отличается обучение модели от inference.' },
-    { courseSlug: 'ai-basics', title: 'Ограничения и галлюцинации', scenario_key: 'ai-basics-limits', sort_order: 2,
-      content_md: 'Поймите риски: галлюцинации, устаревшие знания, необходимость проверки источников.',
-      assignment_title: 'Критическое мышление', assignment_instructions: 'Попросите наставника объяснить, как проверять ответы AI на факты.' },
-    { courseSlug: 'prompting-basics', title: 'Структура хорошего промпта', scenario_key: 'prompt-structure', sort_order: 1,
-      content_md: 'Роль, контекст, формат вывода, критерии успеха.',
-      assignment_title: 'Написать промпт', assignment_instructions: 'Составьте промпт для задачи «краткое резюме статьи» и попросите наставника оценить его.' },
-    { courseSlug: 'prompting-basics', title: 'Итерации и уточнения', scenario_key: 'prompt-iterate', sort_order: 2,
-      content_md: 'Как улучшать результат вторым и третьим сообщением.',
-      assignment_title: 'Итерация', assignment_instructions: 'Выполните одну задачу в два шага: черновик → уточнение.' },
-    { courseSlug: 'ai-work', title: 'Деловая переписка', scenario_key: 'work-email', sort_order: 1,
-      content_md: 'Тон, ясность, призыв к действию.',
-      assignment_title: 'Черновик письма', assignment_instructions: 'Попросите наставника помочь спланировать письмо клиенту, но напишите финальный текст сами.' },
-    { courseSlug: 'ai-content', title: 'Идея и структура', scenario_key: 'content-outline', sort_order: 1,
-      content_md: 'Заголовки, лиды, структура поста.',
-      assignment_title: 'План поста', assignment_instructions: 'Создайте структуру поста на заданную тему и попросите обратную связь по структуре.' },
-    { courseSlug: 'ai-analytics', title: 'Формулировка вопроса к данным', scenario_key: 'analytics-question', sort_order: 1,
-      content_md: 'Как спросить про метрики без ошибочных интерпретаций.',
-      assignment_title: 'Вопрос к данным', assignment_instructions: 'Опишите вымышленный датасет и попросите наставника помочь сформулировать 3 аналитических вопроса.' },
-    { courseSlug: 'ai-business', title: 'Гипотезы и проверка', scenario_key: 'business-hypothesis', sort_order: 1,
-      content_md: 'От гипотезы к эксперименту и метрикам.',
-      assignment_title: 'Гипотеза', assignment_instructions: 'Сформулируйте бизнес-гипотезу и попросите наставника указать слабые места.' }
-  ];
-
-  for (const L of lessonSeeds) {
-    const cr = await client.query(`SELECT id FROM academy_courses WHERE slug = $1`, [L.courseSlug]);
-    if (!cr.rows[0]) continue;
-    const courseId = cr.rows[0].id;
-    const ins = await client.query(
-      `INSERT INTO academy_lessons (course_id, title, content_md, scenario_key, sort_order)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (course_id, scenario_key) DO UPDATE SET
-         title = EXCLUDED.title,
-         content_md = EXCLUDED.content_md,
-         sort_order = EXCLUDED.sort_order
-       RETURNING id`,
-      [courseId, L.title, L.content_md, L.scenario_key, L.sort_order]
-    );
-    const lessonId = ins.rows[0]?.id;
-    if (lessonId) {
-      await client.query(
-        `INSERT INTO academy_assignments (lesson_id, title, instructions_md)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (lesson_id) DO UPDATE SET
-           title = EXCLUDED.title,
-           instructions_md = EXCLUDED.instructions_md`,
-        [lessonId, L.assignment_title, L.assignment_instructions]
-      );
-    }
-  }
+  await seedModuleOneCatalog(client);
 }
 
 async function initializeDatabase() {
@@ -1581,6 +1512,11 @@ module.exports = {
   recordAiUsage,
   upsertLessonProgress,
   getLessonProgressForUser,
+  getAssignmentByLessonId,
+  getLessonSubmission,
+  upsertLessonSubmission,
+  saveLessonFeedback,
+  getProgressSummary,
   listUsersForAdmin,
   adminUpdateUser,
   adminListAllConversations,

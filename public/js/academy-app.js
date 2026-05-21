@@ -660,8 +660,14 @@ function renderCourseTree() {
     wrap.className = 'mb-3';
     const title = document.createElement('div');
     title.className = 'text-sm font-semibold text-slate-800 mb-1 leading-snug';
-    title.textContent = c.title;
+    title.textContent = 'Модуль 1 — практики';
     wrap.appendChild(title);
+    if (c.description) {
+      const desc = document.createElement('p');
+      desc.className = 'text-xs text-slate-500 mb-2 leading-snug';
+      desc.textContent = c.description;
+      wrap.appendChild(desc);
+    }
     const ul = document.createElement('ul');
     ul.className = 'space-y-0.5 ml-2 border-l-2 border-blue-200 pl-2';
     for (const l of byCourse[c.id] || []) {
