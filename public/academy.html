@@ -126,7 +126,14 @@
             <div id="assignmentBlock" class="hidden mt-6">
               <div class="aa-assignment-box">
                 <h3 id="assignmentTitle" class="font-semibold text-slate-900 mb-2">Задание</h3>
-                <div id="assignmentText" class="text-sm text-slate-700 prose prose-sm max-w-none"></div>
+                <div id="assignmentText" class="text-sm text-slate-700 prose prose-sm max-w-none aa-assignment-prose"></div>
+                <div id="practiceHintsRow" class="hidden mt-3 pt-3 border-t border-amber-200/80">
+                  <p class="text-xs text-slate-600 mb-2">Застряли? Выберите подсказку — текст попадёт в чат с наставником (можно отредактировать перед отправкой).</p>
+                  <div class="flex flex-col sm:flex-row gap-2">
+                    <select id="practiceHintSelect" class="aa-select flex-1 text-sm"></select>
+                    <button type="button" id="practiceHintBtn" class="aa-btn aa-btn-ghost shrink-0">Подсказка в чат</button>
+                  </div>
+                </div>
               </div>
 
               <div class="mt-4 space-y-3">

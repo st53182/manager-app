@@ -400,6 +400,28 @@ function initMermaid() {
 
 const MVP_COURSE_SLUG = 'ai-work-business-talk';
 
+/** Готовые вопросы наставнику по практикам (не делают работу за студента). */
+const PRACTICE_HINTS = {
+  'block1-practice-prompt': [
+    { label: 'Не могу выбрать задачу', text: 'Помоги выбрать одну рабочую задачу для практики с промптом RTCFSC. Предложи 3 варианта под роль «менеджер проекта» и кратко объясни плюсы каждого. Не пиши готовый промпт — только варианты задач.' },
+    { label: 'Как заполнить RTCFSC', text: 'Объясни, что писать в каждом блоке RTCFSC (R, T, C, F, S, C) на примере задачи: «краткий ответ клиенту на задержку сроков на 2 недели». Дай по одному примеру фразы на блок, без полного готового промпта.' },
+    { label: 'Проверь черновик промпта', text: 'Я пришлю черновик промпта RTCFSC. Дай обратную связь: что неясно, чего не хватает, что уточнить. Не переписывай промпт целиком за меня.' },
+    { label: 'Критерии успеха', text: 'Приведи 5 примеров измеримых критериев успеха (блок C в RTCFSC) для делового письма и для плана действий. Коротко, списком.' }
+  ],
+  'block1-practice-scenario': [
+    { label: 'Выбор сценария', text: 'Предложи 2–3 рабочих сценария для ролевого диалога с ИИ (клиент, руководитель, сотрудник). Для каждого — одно предложение ситуации. Не пиши готовый диалог.' },
+    { label: 'Стартовое сообщение', text: 'Дай шаблон первого сообщения в чат, чтобы задать роли и правила диалога (ИИ = клиент, я = менеджер). 5–7 строк, без готовых реплик всего разговора.' },
+    { label: 'ИИ вышел из роли', text: 'ИИ отвечает общими советами, а не как персонаж. Какую одну фразу написать, чтобы вернуть в роль? Дай 2 варианта формулировки.' },
+    { label: 'Как оформить выводы', text: 'Покажи пример структуры блока «Выводы» после ролевого диалога: 4 пункта-заголовка и по одному примеру предложения в каждом. Без выдуманного диалога.' }
+  ],
+  'block1-practice-hallucination': [
+    { label: 'Типы ошибок ИИ', text: 'Объясни простыми словами 5 типов рисков в ответах ИИ (выдуманный факт, цифра, ссылка, overconfidence, общая рекомендация) на учебном примере про McKinsey и ROI. Без готового «безопасного» текста за меня.' },
+    { label: 'Разбор учебного фрагмента', text: 'Веди меня по шагам разбору учебного фрагмента про McKinsey / 87% / Forbes. Задавай наводящие вопросы, не выдавай готовый список проблем сразу.' },
+    { label: 'Проверь мой список', text: 'Я пришлю свой список проблем в фрагменте от ИИ. Скажи, что упустил(а) и какие типы рисков перепутал(а). Не пиши безопасную версию целиком.' },
+    { label: 'Безопасные формулировки', text: 'Дай 5 примеров фраз для рабочей переписки, когда данных нет или нужна проверка («по нашим данным…», «требует уточнения…»). Коротко.' }
+  ]
+};
+
 const state = {
   catalog: null,
   conversations: [],
@@ -693,6 +715,35 @@ function escapeHtml(s) {
   return d.innerHTML;
 }
 
+function bindPracticeHints(scenarioKey) {
+  const row = document.getElementById('practiceHintsRow');
+  const sel = document.getElementById('practiceHintSelect');
+  if (!row || !sel) return;
+  const hints = scenarioKey ? (PRACTICE_HINTS[scenarioKey] || []) : [];
+  if (!hints.length) {
+    row.classList.add('hidden');
+    sel.innerHTML = '';
+    return;
+  }
+  row.classList.remove('hidden');
+  sel.innerHTML = '';
+  for (const h of hints) {
+    const o = document.createElement('option');
+    o.value = h.text;
+    o.textContent = h.label;
+    sel.appendChild(o);
+  }
+}
+
+function insertPracticeHintIntoComposer() {
+  const sel = document.getElementById('practiceHintSelect');
+  const composer = document.getElementById('composer');
+  if (!sel?.value || !composer) return;
+  composer.value = sel.value;
+  composer.focus();
+  composer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 function renderConversationList() {
   const ul = document.getElementById('conversationList');
   ul.innerHTML = '';
@@ -949,9 +1000,11 @@ async function selectLesson(lesson) {
     document.getElementById('assignmentTitle').textContent = asn.title || 'Задание';
     at.innerHTML = renderMarkdown(asn.instructions_md || '');
     document.getElementById('askMentorAssignmentBtn')?.classList.remove('hidden');
+    bindPracticeHints(lesson.scenario_key);
   } else {
     ab?.classList.add('hidden');
     document.getElementById('askMentorAssignmentBtn')?.classList.add('hidden');
+    bindPracticeHints(null);
   }
   try { await loadSubmissionForLesson(lesson.id); } catch (e) { console.warn(e); }
   let conv = state.conversations.find((c) => c.lesson_id === lesson.id);
@@ -1704,9 +1757,11 @@ function wireUi() {
     await loadProgressSummary();
   });
   document.getElementById('askMentorAssignmentBtn')?.addEventListener('click', () => {
-    document.getElementById('composer').value = 'Помоги с практическим заданием (не делай за меня).';
+    document.getElementById('composer').value =
+      'Помоги с текущей практикой Модуля 1: направь по шагам, но не делай задание за меня (не пиши готовый ответ целиком).';
     document.getElementById('composer').focus();
   });
+  document.getElementById('practiceHintBtn')?.addEventListener('click', () => insertPracticeHintIntoComposer());
 
   document.getElementById('markDoneBtn')?.addEventListener('click', async () => {
     if (!state.currentLessonId) return;
