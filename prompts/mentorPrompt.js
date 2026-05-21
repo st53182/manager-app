@@ -3,17 +3,20 @@
  */
 const MENTOR_PROMPT_VERSION = '5';
 
-function buildLessonSection(lesson) {
+function buildLessonSection(lesson, assignment = null) {
   if (!lesson) return '';
   const parts = [];
   if (lesson.course_title) parts.push(`Course: ${lesson.course_title}`);
   if (lesson.title) parts.push(`Lesson: ${lesson.title}`);
   if (lesson.content_md) parts.push(`Lesson material:\n${lesson.content_md}`);
+  if (assignment?.instructions_md) {
+    parts.push(`Current assignment (${assignment.title || 'Practice'}):\n${assignment.instructions_md}`);
+  }
   return parts.join('\n');
 }
 
-function getMentorSystemPrompt({ lesson = null } = {}) {
-  const lessonBlock = buildLessonSection(lesson);
+function getMentorSystemPrompt({ lesson = null, assignment = null } = {}) {
+  const lessonBlock = buildLessonSection(lesson, assignment);
 
   return `You are an AI learning mentor on an educational platform (prompt version ${MENTOR_PROMPT_VERSION}).
 

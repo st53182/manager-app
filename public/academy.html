@@ -212,10 +212,14 @@
             <pre id="builderOutput" class="mt-2 text-xs text-slate-600 whitespace-pre-wrap max-h-48 overflow-y-auto"></pre>
           </div>
           <div class="tool-panel" data-tool-panel="training">
-            <h3 id="trainingHeading" class="text-slate-900 font-medium mb-2">Тренировка галлюцинаций и сертификат</h3>
+            <h3 id="trainingHeading" class="text-slate-900 font-medium mb-2">Тренировка галлюцинаций</h3>
+            <select id="hallucinationScenarioSelect" class="w-full border rounded text-xs mb-2"></select>
+            <div id="hallucinationFlawed" class="text-xs p-2 mb-2 rounded bg-amber-50 border"></div>
+            <select id="hallucinationIssueSelect" class="w-full border rounded text-xs mb-2"></select>
+            <textarea id="hallucinationExplanation" rows="2" class="w-full border rounded text-xs mb-2" placeholder="Объяснение"></textarea>
             <div class="flex flex-wrap gap-2">
-              <button type="button" id="hallucinationAttemptBtn" class="text-xs rounded px-3 py-1.5 text-slate-800">Отправить попытку</button>
-              <button type="button" id="generateCertBtn" class="text-xs rounded px-3 py-1.5 text-slate-800">Сгенерировать сертификат</button>
+              <button type="button" id="hallucinationAttemptBtn" class="text-xs rounded px-3 py-1.5 text-slate-800">Проверить</button>
+              <button type="button" id="generateCertBtn" class="text-xs rounded px-3 py-1.5 text-slate-800">Сертификат</button>
             </div>
             <pre id="trainingOutput" class="mt-2 text-xs text-slate-600 whitespace-pre-wrap"></pre>
           </div>

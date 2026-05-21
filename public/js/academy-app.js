@@ -398,11 +398,18 @@ function initMermaid() {
   });
 }
 
+const MVP_COURSE_SLUG = 'ai-work-business-talk';
+
 const state = {
   catalog: null,
   conversations: [],
   currentConversationId: null,
   currentLessonId: null,
+  currentLesson: null,
+  progressSummary: null,
+  compareSessionId: null,
+  hallucinationScenarios: [],
+  promptLibrary: [],
   usage: null,
   streaming: false,
   selectedModel: null,
@@ -495,6 +502,10 @@ async function init() {
     await refreshKbStatus();
     updateModelHint();
     applyAcademyTranslations();
+    renderCourseTree();
+    await loadProgressSummary();
+    await loadPromptLibrary();
+    await loadHallucinationScenarios();
     showApp();
   } catch (e) {
     if (e.status === 401 || e.status === 403) {
@@ -517,16 +528,130 @@ function renderUsage() {
   document.getElementById('usageBadge').textContent = `День: ${dayPct}% · ${d.used_tokens}/${d.limit_tokens} tok`;
 }
 
+
+function getMvpCourses() {
+  if (!state.catalog?.courses) return [];
+  const mvp = state.catalog.courses.filter((c) => c.slug === MVP_COURSE_SLUG);
+  return mvp.length ? mvp : state.catalog.courses;
+}
+function getMvpLessons() {
+  const ids = new Set(getMvpCourses().map((c) => c.id));
+  return (state.catalog?.lessons || []).filter((l) => ids.has(l.course_id));
+}
+async function loadProgressSummary() {
+  try { state.progressSummary = await api('/api/academy/progress/summary'); renderProgressSummary(); } catch (_) {}
+}
+function renderProgressSummary() {
+  const el = document.getElementById('progressSummaryText');
+  if (!el) return;
+  const s = state.progressSummary;
+  if (!s) { el.textContent = '—'; return; }
+  el.textContent = `Практик: ${s.practices_completed}/${s.practices_total} (${s.percent}%)`;
+}
+function syncPracticeModeUi() {
+  const g = document.getElementById('practiceModeSelect')?.value === 'group';
+  document.getElementById('groupMetaFields')?.classList.toggle('hidden', !g);
+  document.getElementById('groupModeCallout')?.classList.toggle('hidden', !g);
+}
+function renderAssignmentFeedback(fb) {
+  const box = document.getElementById('assignmentFeedback');
+  if (!box || !fb) return;
+  box.classList.remove('hidden');
+  const lines = [];
+  if (fb.score != null) lines.push('Оценка: ' + fb.score + '/10');
+  if (fb.recommendations?.length) lines.push('Рекомендации:\n• ' + fb.recommendations.join('\n• '));
+  if (fb.strengths?.length) lines.push('Сильные:\n• ' + fb.strengths.join('\n• '));
+  if (fb.weaknesses?.length) lines.push('Слабые:\n• ' + fb.weaknesses.join('\n• '));
+  box.textContent = lines.join('\n\n');
+}
+async function loadSubmissionForLesson(lessonId) {
+  const data = await api('/api/academy/lessons/' + lessonId + '/submission');
+  if (data.submission?.answer_text) document.getElementById('assignmentAnswer').value = data.submission.answer_text;
+  if (data.submission?.practice_mode) document.getElementById('practiceModeSelect').value = data.submission.practice_mode;
+  syncPracticeModeUi();
+  let fj = data.submission?.feedback_json;
+  if (typeof fj === 'string') try { fj = JSON.parse(fj); } catch { fj = null; }
+  if (fj && Object.keys(fj).length) renderAssignmentFeedback(fj);
+}
+async function saveSubmission(status) {
+  if (!state.currentLessonId) return;
+  await api('/api/academy/lessons/' + state.currentLessonId + '/submission', {
+    method: 'PUT',
+    body: JSON.stringify({
+      answer_text: document.getElementById('assignmentAnswer')?.value?.trim() || '',
+      assignment_status: status,
+      practice_mode: document.getElementById('practiceModeSelect')?.value || 'individual',
+      group_meta: { size: Number(document.getElementById('groupSizeInput')?.value) || null, input_by: document.getElementById('groupInputBy')?.value?.trim() || null }
+    })
+  });
+}
+async function loadPromptLibrary() {
+  try { const d = await api('/api/academy/prompts'); state.promptLibrary = d.prompts || []; renderPromptLibrary(); } catch (_) {}
+}
+function renderPromptLibrary() {
+  const ul = document.getElementById('promptLibraryList');
+  if (!ul) return;
+  ul.innerHTML = '';
+  for (const pr of state.promptLibrary) {
+    const li = document.createElement('li');
+    li.textContent = pr.title + ' (' + (pr.category || '') + ')';
+    ul.appendChild(li);
+  }
+}
+function renderCompareResults(data) {
+  const box = document.getElementById('compareOutput');
+  if (!box) return;
+  box.innerHTML = '';
+  state.compareSessionId = data.session_id;
+  (data.results || []).forEach((r) => {
+    const d = document.createElement('div');
+    d.className = 'compare-col text-xs mb-2';
+    d.innerHTML = '<b>' + escapeHtml(r.model) + '</b><pre class="whitespace-pre-wrap max-h-20 overflow-auto">' + escapeHtml((r.response||'').slice(0,800)) + '</pre><label><input type="radio" name="cc" value="' + escapeHtml(r.model) + '"> Лучший</label>';
+    box.appendChild(d);
+  });
+  const b = document.createElement('button');
+  b.textContent = 'Сохранить выбор';
+  b.className = 'text-xs text-indigo-700 mt-1';
+  b.onclick = async () => {
+    const c = document.querySelector('input[name=cc]:checked');
+    if (!c || !state.compareSessionId) return alert('Выберите модель');
+    await api('/api/academy/model-compare/' + state.compareSessionId + '/choice', { method: 'POST', body: JSON.stringify({ chosen_model: c.value }) });
+    document.getElementById('compareChoiceHint').textContent = 'Сохранено: ' + c.value;
+  };
+  box.appendChild(b);
+}
+async function loadHallucinationScenarios() {
+  try {
+    const d = await api('/api/academy/hallucination/scenarios');
+    state.hallucinationScenarios = d.scenarios || [];
+    const sel = document.getElementById('hallucinationScenarioSelect');
+    if (!sel) return;
+    sel.innerHTML = '';
+    state.hallucinationScenarios.forEach((s) => { const o = document.createElement('option'); o.value = s.id; o.textContent = s.title; sel.appendChild(o); });
+    renderHallucinationScenarioUi();
+  } catch (_) {}
+}
+function renderHallucinationScenarioUi() {
+  const s = state.hallucinationScenarios.find((x) => x.id === document.getElementById('hallucinationScenarioSelect')?.value);
+  if (!s) return;
+  document.getElementById('hallucinationFlawed').textContent = s.flawed_answer || '';
+  const is = document.getElementById('hallucinationIssueSelect');
+  is.innerHTML = '';
+  let types = s.issue_types;
+  if (typeof types === 'string') try { types = JSON.parse(types); } catch { types = []; }
+  (types || []).forEach((t) => { const o = document.createElement('option'); o.value = t; o.textContent = t; is.appendChild(o); });
+}
+
 function renderCourseTree() {
   const root = document.getElementById('courseTree');
-  if (!root) return;
+  if (!root || !state.catalog) return;
   root.innerHTML = '';
   const byCourse = {};
-  for (const l of state.catalog.lessons) {
+  for (const l of getMvpLessons()) {
     if (!byCourse[l.course_id]) byCourse[l.course_id] = [];
     byCourse[l.course_id].push(l);
   }
-  for (const c of state.catalog.courses) {
+  for (const c of getMvpCourses()) {
     const wrap = document.createElement('div');
     wrap.innerHTML = `<div class="font-medium text-slate-800 mb-1">${escapeHtml(c.title)}</div>`;
     const ul = document.createElement('ul');
@@ -792,33 +917,31 @@ function parseMsgMeta(raw) {
 
 async function selectLesson(lesson) {
   if (!lesson) return;
-  const lessonEmpty = document.getElementById('lessonEmpty');
-  const lessonContent = document.getElementById('lessonContent');
-  const assignmentBlock = document.getElementById('assignmentBlock');
-  const assignmentText = document.getElementById('assignmentText');
   state.currentLessonId = lesson.id;
-  lessonEmpty?.classList.add('hidden');
-  lessonContent?.classList.remove('hidden');
-  if (lessonContent) lessonContent.innerHTML = renderMarkdown(lesson.content_md || '');
-  document.getElementById('lessonHint').textContent = `${lesson.course_title || ''} · ${lesson.title}`;
+  state.currentLesson = lesson;
+  document.getElementById('lessonEmpty')?.classList.add('hidden');
+  document.getElementById('lessonContent')?.classList.remove('hidden');
+  const lc = document.getElementById('lessonContent');
+  if (lc) lc.innerHTML = renderMarkdown(lesson.content_md || '');
+  document.getElementById('lessonHint').textContent = (lesson.course_title || '') + ' · ' + lesson.title;
+  const ab = document.getElementById('assignmentBlock');
+  const at = document.getElementById('assignmentText');
   const asn = lesson.assignment;
-  if (asn && assignmentBlock && assignmentText) {
-    assignmentBlock.classList.remove('hidden');
-    assignmentText.textContent = asn.instructions_md || '';
+  if (asn && ab && at) {
+    ab.classList.remove('hidden');
+    document.getElementById('assignmentTitle').textContent = asn.title || 'Задание';
+    at.innerHTML = renderMarkdown(asn.instructions_md || '');
+    document.getElementById('askMentorAssignmentBtn')?.classList.remove('hidden');
   } else {
-    assignmentBlock?.classList.add('hidden');
+    ab?.classList.add('hidden');
+    document.getElementById('askMentorAssignmentBtn')?.classList.add('hidden');
   }
-
-  const conv = await api('/api/academy/conversations', {
-    method: 'POST',
-    body: JSON.stringify({
-      lessonId: lesson.id,
-      courseId: lesson.course_id,
-      title: lesson.title,
-      model: document.getElementById('modelSelect').value
-    })
-  });
-  state.conversations.unshift(conv);
+  try { await loadSubmissionForLesson(lesson.id); } catch (e) { console.warn(e); }
+  let conv = state.conversations.find((c) => c.lesson_id === lesson.id);
+  if (!conv) {
+    conv = await api('/api/academy/conversations', { method: 'POST', body: JSON.stringify({ lessonId: lesson.id, courseId: lesson.course_id, title: lesson.title, model: document.getElementById('modelSelect').value }) });
+    state.conversations.unshift(conv);
+  }
   state.currentConversationId = conv.id;
   renderConversationList();
   await loadConversation(conv.id, { skipFetchList: true });
@@ -1394,13 +1517,22 @@ function wireUi() {
   });
 
   document.getElementById('evaluatePromptBtn')?.addEventListener('click', async () => {
-    const text = document.getElementById('composer').value.trim();
+    const text =
+      document.getElementById('promptTrainerInput')?.value.trim() ||
+      document.getElementById('assignmentAnswer')?.value.trim() ||
+      document.getElementById('composer').value.trim();
     if (!text) return;
     const out = await api('/api/academy/prompt-evaluate', {
       method: 'POST',
       body: JSON.stringify({ prompt: text, model: document.getElementById('modelSelect').value })
     });
     document.getElementById('promptEvalOutput').textContent = JSON.stringify(out, null, 2);
+    const wrap = document.getElementById('promptCompareBeforeAfter');
+    if (wrap && out.improved_prompt) {
+      wrap.classList.remove('hidden');
+      document.getElementById('promptBefore').textContent = text;
+      document.getElementById('promptAfter').textContent = out.improved_prompt;
+    }
   });
 
   document.getElementById('runCompareBtn')?.addEventListener('click', async () => {
@@ -1415,7 +1547,7 @@ function wireUi() {
       method: 'POST',
       body: JSON.stringify({ prompt: text, models })
     });
-    document.getElementById('compareOutput').textContent = JSON.stringify(out, null, 2);
+    renderCompareResults(out);
   });
 
   document.getElementById('runPlaygroundBtn')?.addEventListener('click', async () => {
@@ -1475,21 +1607,13 @@ function wireUi() {
   });
 
   document.getElementById('hallucinationAttemptBtn')?.addEventListener('click', async () => {
-    const scenarios = await api('/api/academy/hallucination/scenarios');
-    if (!scenarios.scenarios?.length) {
-      document.getElementById('trainingOutput').textContent = 'No scenarios yet.';
-      return;
-    }
-    const first = scenarios.scenarios[0];
-    const out = await api('/api/academy/hallucination/attempt', {
-      method: 'POST',
-      body: JSON.stringify({
-        scenario_id: first.id,
-        selected_issue: 'unsupported claim',
-        explanation: 'The answer states facts without evidence and shows overconfidence.'
-      })
-    });
-    document.getElementById('trainingOutput').textContent = JSON.stringify(out, null, 2);
+    const scenarioId = document.getElementById('hallucinationScenarioSelect')?.value;
+    const selected_issue = document.getElementById('hallucinationIssueSelect')?.value;
+    const explanation = document.getElementById('hallucinationExplanation')?.value?.trim();
+    if (!scenarioId || !selected_issue || !explanation) return alert('Заполните поля');
+    const out = await api('/api/academy/hallucination/attempt', { method: 'POST', body: JSON.stringify({ scenario_id: scenarioId, selected_issue, explanation }) });
+    document.getElementById('trainingOutput').textContent = 'Оценка: ' + out.attempt?.score + '/10\n' + (out.attempt?.feedback || '');
+    if (state.currentLessonId) { document.getElementById('assignmentAnswer').value = selected_issue + ': ' + explanation; await saveSubmission('submitted'); }
   });
 
   document.getElementById('generateCertBtn')?.addEventListener('click', async () => {
@@ -1549,6 +1673,26 @@ function wireUi() {
     document.getElementById('typingRow').classList.add('hidden');
   });
 
+
+  document.getElementById('practiceModeSelect')?.addEventListener('change', syncPracticeModeUi);
+  document.getElementById('saveAnswerBtn')?.addEventListener('click', async () => { try { await saveSubmission('draft'); alert('Сохранено'); } catch(e){alert(e.message);} });
+  document.getElementById('submitAnswerBtn')?.addEventListener('click', async () => { try { await saveSubmission('submitted'); alert('Отправлено'); } catch(e){alert(e.message);} });
+  document.getElementById('requestFeedbackBtn')?.addEventListener('click', async () => {
+    if (!state.currentLessonId) return;
+    const answer_text = document.getElementById('assignmentAnswer')?.value?.trim();
+    if (!answer_text) return alert('Введите ответ');
+    await saveSubmission('submitted');
+    const out = await api('/api/academy/lessons/' + state.currentLessonId + '/feedback', { method: 'POST', body: JSON.stringify({ answer_text, model: document.getElementById('modelSelect').value }) });
+    renderAssignmentFeedback(out.feedback);
+    state.catalog = await api('/api/academy/catalog');
+    renderCourseTree();
+    await loadProgressSummary();
+  });
+  document.getElementById('askMentorAssignmentBtn')?.addEventListener('click', () => {
+    document.getElementById('composer').value = 'Помоги с практическим заданием (не делай за меня).';
+    document.getElementById('composer').focus();
+  });
+
   document.getElementById('markDoneBtn')?.addEventListener('click', async () => {
     if (!state.currentLessonId) return;
     await api('/api/academy/progress', {
@@ -1557,6 +1701,7 @@ function wireUi() {
     });
     state.catalog = await api('/api/academy/catalog');
     renderCourseTree();
+    await loadProgressSummary();
   });
 }
 

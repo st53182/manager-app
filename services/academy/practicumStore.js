@@ -686,5 +686,8 @@ module.exports = {
   listHallucinationScenarios,
   createHallucinationAttempt,
   getHallucinationProgress,
-  upsertCertificate
+  upsertCertificate,
+  seedBuiltinPromptTemplates,
+  createModelCompareSession,
+  saveModelCompareChoice
 };

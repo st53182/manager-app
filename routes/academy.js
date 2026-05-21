@@ -82,7 +82,7 @@ function createRouter({ JWT_SECRET }) {
    * Builds OpenRouter messages; truncates long assistant replies for token budget and drops
    * oldest turns until under MAX_CONTEXT_CHARS (CSV/HTML-heavy chats).
    */
-  async function buildMessagesWithBudget(rows, lessonForPrompt, req, modelId) {
+  async function buildMessagesWithBudget(rows, lessonForPrompt, req, modelId, assignmentForPrompt = null) {
     const maxAssist = parseInt(process.env.MAX_ASSISTANT_CHARS_IN_CONTEXT || '42000', 10);
     let subset = [...rows];
     let droppedTurns = 0;
@@ -91,7 +91,7 @@ function createRouter({ JWT_SECRET }) {
       const apiMessages = [];
       apiMessages.push({
         role: 'system',
-        content: getMentorSystemPrompt({ lesson: lessonForPrompt })
+        content: getMentorSystemPrompt({ lesson: lessonForPrompt, assignment: assignmentForPrompt })
       });
       let totalChars = estimatePayloadFootprintForLimits(apiMessages[0].content);
       for (const m of subset) {
@@ -149,6 +149,56 @@ function createRouter({ JWT_SECRET }) {
     }
   });
 
+
+  router.get('/progress/summary', authenticateAcademy, async (req, res) => {
+    try { res.json(await db.getProgressSummary(req.dbUser.id)); }
+    catch (e) { console.error(e); res.status(500).json({ error: 'Failed to load progress summary' }); }
+  });
+  router.get('/lessons/:lessonId/submission', authenticateAcademy, async (req, res) => {
+    try {
+      const lesson = await db.getLessonById(req.params.lessonId);
+      if (!lesson) return res.status(404).json({ error: 'Lesson not found' });
+      res.json({ lesson, assignment: await db.getAssignmentByLessonId(req.params.lessonId), submission: await db.getLessonSubmission(req.dbUser.id, req.params.lessonId) });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to load submission' }); }
+  });
+  router.put('/lessons/:lessonId/submission', authenticateAcademy, async (req, res) => {
+    try {
+      if (!await db.getLessonById(req.params.lessonId)) return res.status(404).json({ error: 'Lesson not found' });
+      const b = req.body || {};
+      const submission = await db.upsertLessonSubmission(req.dbUser.id, req.params.lessonId, { answer_text: b.answer_text, assignment_status: b.assignment_status, practice_mode: b.practice_mode, group_meta: b.group_meta, status: 'in_progress' });
+      res.json({ submission });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to save submission' }); }
+  });
+  router.post('/lessons/:lessonId/feedback', authenticateAcademy, aiChatLimiter, async (req, res) => {
+    const openai = createOpenRouterClient();
+    if (!openai) return res.status(503).json({ error: 'AI service not configured' });
+    try {
+      const lessonId = req.params.lessonId;
+      const assignment = await db.getAssignmentByLessonId(lessonId);
+      const submission = await db.getLessonSubmission(req.dbUser.id, lessonId);
+      const answerText = String(req.body?.answer_text || submission?.answer_text || '').trim();
+      if (!answerText) return res.status(400).json({ error: 'answer_text required' });
+      const model = pickModel(req.body?.model, req.dbUser);
+      const criteria = assignment?.rubric_json?.criteria ? assignment.rubric_json.criteria.join(', ') : 'general';
+      const graderPrompt = 'Grade assignment. JSON: score, criteria_scores, strengths, weaknesses, recommendations. Criteria: ' + criteria + '\nAnswer:\n' + answerText;
+      await assertQuota(req, estimateTokensFromText(graderPrompt));
+      let text = '', usage = null;
+      for await (const part of streamChatCompletion(openai, { model, messages: [{ role: 'system', content: 'JSON only' }, { role: 'user', content: graderPrompt }], maxTokens: 1200 })) {
+        if (part.type === 'chunk') text += part.text;
+        if (part.type === 'done') usage = part.usage;
+      }
+      let parsed;
+      try {
+        const m = text.match(/\{[\s\S]*\}/);
+        parsed = JSON.parse(m ? m[0] : text);
+      } catch {
+        parsed = { score: 6, strengths: [], weaknesses: [], recommendations: [] };
+      }
+      const row = await db.saveLessonFeedback(req.dbUser.id, lessonId, { feedbackJson: parsed, score: parsed.score, assignmentStatus: 'reviewed' });
+      await recordFeatureUsage(req, { model, promptTokens: usage?.prompt_tokens||0, completionTokens: usage?.completion_tokens||0, costUsd: estimateCostUsd(usage?.prompt_tokens||0, usage?.completion_tokens||0, model), featureMode: 'assignment_feedback' });
+      res.json({ feedback: parsed, submission: row });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to generate feedback' }); }
+  });
   router.get('/knowledge-bases', authenticateAcademy, async (req, res) => {
     try {
       const bases = await db.listKnowledgeBases(req.dbUser.id);
@@ -657,7 +707,21 @@ function createRouter({ JWT_SECRET }) {
         quality_note: text.length > 500 ? 'Detailed response with good coverage.' : 'Concise response.'
       });
     }
-    res.json({ results });
+    const session = await practicum.createModelCompareSession({
+      userId: req.dbUser.id,
+      promptText,
+      models,
+      results
+    });
+    res.json({ results, session_id: session?.id || null });
+  });
+
+  router.post('/model-compare/:sessionId/choice', authenticateAcademy, async (req, res) => {
+    const chosen = String(req.body?.chosen_model || '').trim();
+    if (!chosen) return res.status(400).json({ error: 'chosen_model required' });
+    const row = await practicum.saveModelCompareChoice(req.params.sessionId, req.dbUser.id, chosen);
+    if (!row) return res.status(404).json({ error: 'session not found' });
+    res.json(row);
   });
 
   router.post('/playground', authenticateAcademy, aiChatLimiter, async (req, res) => {
@@ -1124,13 +1188,8 @@ function createRouter({ JWT_SECRET }) {
         rows = rows.slice(-MAX_CONTEXT_MESSAGES);
 
         const lessonForPrompt = lesson || (conv.lesson_id ? await db.getLessonById(conv.lesson_id) : null);
-
-        const { apiMessages, totalChars, droppedTurns } = await buildMessagesWithBudget(
-          rows,
-          lessonForPrompt,
-          req,
-          model
-        );
+        const assignmentForPrompt = lessonForPrompt ? await db.getAssignmentByLessonId(lessonForPrompt.id) : null;
+        const { apiMessages, totalChars, droppedTurns } = await buildMessagesWithBudget(rows, lessonForPrompt, req, model, assignmentForPrompt);
 
         if (personaId) {
           const persona = await practicum.getPersonaForUser(personaId, req.dbUser.id);

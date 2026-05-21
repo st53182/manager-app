@@ -115,6 +115,19 @@ async function migrateDeprecatedOpenRouterModelIds(client) {
   }
 }
 
+async function migrateAcademyProgressColumns(client) {
+  const sqls=[
+    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS answer_text TEXT",
+    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS answer_updated_at TIMESTAMPTZ",
+    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS assignment_status VARCHAR(30) DEFAULT 'not_started'",
+    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS feedback_json JSONB DEFAULT '{}'::jsonb",
+    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS feedback_at TIMESTAMPTZ",
+    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS practice_mode VARCHAR(20)",
+    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS group_meta JSONB DEFAULT '{}'::jsonb"
+  ];
+  for (const sql of sqls) await client.query(sql);
+}
+
 async function seedAcademyCatalog(client) {
   const courses = [
     { slug: 'ai-basics', title: 'Основы AI', description: 'Что такое нейросети и как они работают', sort_order: 1 },
@@ -524,6 +537,7 @@ async function initializeDatabase() {
       CREATE INDEX IF NOT EXISTS idx_kd_kb_created ON knowledge_documents(knowledge_base_id, created_at DESC);
     `);
 
+    await migrateAcademyProgressColumns(client);
     await seedAcademyCatalog(client);
     await bootstrapAdminEmail(client);
     await mergeExistingUsersAiAllowedModels(client);
@@ -1128,6 +1142,126 @@ async function getLessonProgressForUser(userId) {
       [userId]
     );
     return r.rows;
+  } finally {
+    client.release();
+  }
+}
+
+async function getAssignmentByLessonId(lessonId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(`SELECT * FROM academy_assignments WHERE lesson_id = $1`, [lessonId]);
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function getLessonSubmission(userId, lessonId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT * FROM academy_user_lesson_progress WHERE user_id = $1 AND lesson_id = $2`,
+      [userId, lessonId]
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function upsertLessonSubmission(userId, lessonId, data) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `INSERT INTO academy_user_lesson_progress
+        (user_id, lesson_id, status, answer_text, answer_updated_at, assignment_status, practice_mode, group_meta, updated_at)
+       VALUES ($1, $2, COALESCE($3, 'in_progress'), $4, CURRENT_TIMESTAMP, COALESCE($5, 'draft'), $6, COALESCE($7::jsonb, '{}'::jsonb), CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, lesson_id) DO UPDATE SET
+         answer_text = COALESCE(EXCLUDED.answer_text, academy_user_lesson_progress.answer_text),
+         answer_updated_at = CASE WHEN EXCLUDED.answer_text IS NOT NULL THEN CURRENT_TIMESTAMP ELSE academy_user_lesson_progress.answer_updated_at END,
+         assignment_status = COALESCE(EXCLUDED.assignment_status, academy_user_lesson_progress.assignment_status),
+         practice_mode = COALESCE(EXCLUDED.practice_mode, academy_user_lesson_progress.practice_mode),
+         group_meta = COALESCE(EXCLUDED.group_meta, academy_user_lesson_progress.group_meta),
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        userId,
+        lessonId,
+        data.status || 'in_progress',
+        data.answer_text ?? null,
+        data.assignment_status ?? null,
+        data.practice_mode ?? null,
+        data.group_meta != null ? JSON.stringify(data.group_meta) : null
+      ]
+    );
+    return r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function saveLessonFeedback(userId, lessonId, { feedbackJson, score, assignmentStatus }) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `INSERT INTO academy_user_lesson_progress
+        (user_id, lesson_id, status, feedback_json, feedback_at, score, assignment_status, updated_at)
+       VALUES ($1, $2, 'in_progress', $3::jsonb, CURRENT_TIMESTAMP, $4, COALESCE($5, 'reviewed'), CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, lesson_id) DO UPDATE SET
+         feedback_json = EXCLUDED.feedback_json,
+         feedback_at = CURRENT_TIMESTAMP,
+         score = COALESCE(EXCLUDED.score, academy_user_lesson_progress.score),
+         assignment_status = COALESCE(EXCLUDED.assignment_status, academy_user_lesson_progress.assignment_status),
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [userId, lessonId, JSON.stringify(feedbackJson || {}), score ?? null, assignmentStatus || 'reviewed']
+    );
+    return r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function getProgressSummary(userId) {
+  const client = await pool.connect();
+  try {
+    const lessons = await client.query(
+      `SELECT l.id, l.title, l.scenario_key FROM academy_lessons l
+       JOIN academy_courses c ON c.id = l.course_id WHERE c.slug = 'ai-work-business-talk' ORDER BY l.sort_order`
+    );
+    const progress = await client.query(`SELECT * FROM academy_user_lesson_progress WHERE user_id = $1`, [userId]);
+    const progressMap = {};
+    for (const p of progress.rows) progressMap[p.lesson_id] = p;
+    const practiceLessons = lessons.rows.filter((l) => l.scenario_key && l.scenario_key.startsWith('block1-practice'));
+    let completed = 0;
+    const lessonStatuses = practiceLessons.map((l) => {
+      const p = progressMap[l.id];
+      if (p?.status === 'completed') completed += 1;
+      return {
+        lesson_id: l.id,
+        title: l.title,
+        assignment_status: p?.assignment_status || 'not_started',
+        has_feedback: !!(p?.feedback_json && Object.keys(p.feedback_json).length),
+        status: p?.status || 'not_started'
+      };
+    });
+    const lastActivity = await client.query(
+      `SELECT GREATEST(
+         COALESCE((SELECT MAX(updated_at) FROM academy_user_lesson_progress WHERE user_id = $1), 'epoch'::timestamptz),
+         COALESCE((SELECT MAX(updated_at) FROM ai_conversations WHERE user_id = $1), 'epoch'::timestamptz)
+       ) AS last_activity_at`,
+      [userId]
+    );
+    const total = practiceLessons.length || 1;
+    return {
+      course_slug: 'ai-work-business-talk',
+      practices_completed: completed,
+      practices_total: total,
+      percent: Math.round((completed / total) * 100),
+      last_activity_at: lastActivity.rows[0]?.last_activity_at || null,
+      lessons: lessonStatuses
+    };
   } finally {
     client.release();
   }
