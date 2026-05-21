@@ -1284,6 +1284,7 @@ async function startServer() {
     await upsertBuiltinPersonas();
     await upsertCourseExerciseFields();
     await seedHallucinationScenarios();
+    await seedBuiltinPromptTemplates();
     server.listen(PORT, () => {
       console.log(`Manager app server running on port ${PORT}`);
     });
