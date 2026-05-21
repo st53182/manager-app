@@ -421,6 +421,10 @@ const PRACTICE_HINTS = {
     { label: 'Безопасные формулировки', text: 'Дай 5 примеров фраз для рабочей переписки, когда данных нет или нужна проверка («по нашим данным…», «требует уточнения…»). Коротко.' }
   ]
 };
+const TOOLS_COLLAPSED_KEY = 'academy_tools_panel_collapsed';
+const TOOLS_RIGHT_WIDTH_KEY = 'academy_right_pane_width';
+let academyLayoutSetWidths = null;
+
 
 const state = {
   catalog: null,
@@ -1271,6 +1275,64 @@ function initToolTabs() {
   });
 }
 
+
+function isToolsPanelCollapsed() {
+  return document.getElementById('app')?.classList.contains('tools-panel-collapsed');
+}
+
+function updateToolsPanelToggleUi(collapsed) {
+  const hideBtn = document.getElementById('hideToolsPanelBtn');
+  const showBtn = document.getElementById('showToolsPanelBtn');
+  if (hideBtn) {
+    hideBtn.textContent = collapsed ? 'Показать инструменты' : 'Скрыть инструменты';
+  }
+  if (showBtn) {
+    const app = document.getElementById('app');
+    const appVisible = app && !app.classList.contains('hidden');
+    showBtn.classList.toggle('hidden', !(collapsed && appVisible && window.innerWidth >= 1280));
+  }
+}
+
+function applyToolsPanelCollapsed(collapsed, { persist = true } = {}) {
+  const app = document.getElementById('app');
+  if (!app) return;
+  app.classList.toggle('tools-panel-collapsed', collapsed);
+  if (persist) localStorage.setItem(TOOLS_COLLAPSED_KEY, collapsed ? '1' : '0');
+
+  const left = parseInt(getComputedStyle(app).getPropertyValue('--left-pane-width'), 10) || 272;
+  const lesson = parseInt(getComputedStyle(app).getPropertyValue('--lesson-pane-width'), 10) || 352;
+  let right = parseInt(getComputedStyle(app).getPropertyValue('--right-pane-width'), 10) || 320;
+
+  if (collapsed) {
+    if (persist) localStorage.setItem(TOOLS_RIGHT_WIDTH_KEY, String(right));
+    const expanded = Math.min(672, Math.max(400, lesson + right));
+    app.style.setProperty('--lesson-pane-expanded-width', `${expanded}px`);
+  } else {
+    const saved = parseInt(localStorage.getItem(TOOLS_RIGHT_WIDTH_KEY), 10);
+    if (saved > 260) right = saved;
+    app.style.removeProperty('--lesson-pane-expanded-width');
+  }
+
+  if (academyLayoutSetWidths) academyLayoutSetWidths(left, lesson, right);
+  updateToolsPanelToggleUi(collapsed);
+}
+
+function initToolsPanelToggle() {
+  const hideBtn = document.getElementById('hideToolsPanelBtn');
+  const collapseBtn = document.getElementById('collapseToolsPanelBtn');
+  const showBtn = document.getElementById('showToolsPanelBtn');
+  const toggle = () => applyToolsPanelCollapsed(!isToolsPanelCollapsed());
+  hideBtn?.addEventListener('click', toggle);
+  collapseBtn?.addEventListener('click', toggle);
+  showBtn?.addEventListener('click', toggle);
+  window.addEventListener('resize', () => updateToolsPanelToggleUi(isToolsPanelCollapsed()));
+  if (localStorage.getItem(TOOLS_COLLAPSED_KEY) === '1') {
+    applyToolsPanelCollapsed(true, { persist: false });
+  } else {
+    updateToolsPanelToggleUi(false);
+  }
+}
+
 function initResizableLayout() {
   const app = document.getElementById('app');
   const leftSidebar = document.getElementById('leftSidebar');
@@ -1282,6 +1344,7 @@ function initResizableLayout() {
   if (!app || !leftSidebar || !toolsPanel) return;
 
   function setWidths(leftPx, lessonPx, rightPx) {
+    const collapsed = app.classList.contains('tools-panel-collapsed');
     app.style.setProperty('--left-pane-width', `${leftPx}px`);
     app.style.setProperty('--lesson-pane-width', `${lessonPx}px`);
     app.style.setProperty('--right-pane-width', `${rightPx}px`);
@@ -1293,13 +1356,24 @@ function initResizableLayout() {
       leftSidebar.style.flexBasis = '';
     }
     if (lessonPanel && window.innerWidth >= 1280) {
-      lessonPanel.style.width = `${lessonPx}px`;
-      lessonPanel.style.flexBasis = `${lessonPx}px`;
+      if (collapsed) {
+        const savedRight = parseInt(localStorage.getItem(TOOLS_RIGHT_WIDTH_KEY), 10) || rightPx;
+        let expanded = parseInt(getComputedStyle(app).getPropertyValue('--lesson-pane-expanded-width'), 10);
+        if (!expanded || Number.isNaN(expanded)) {
+          expanded = Math.min(672, Math.max(400, lessonPx + savedRight));
+          app.style.setProperty('--lesson-pane-expanded-width', `${expanded}px`);
+        }
+        lessonPanel.style.width = `${expanded}px`;
+        lessonPanel.style.flexBasis = `${expanded}px`;
+      } else {
+        lessonPanel.style.width = `${lessonPx}px`;
+        lessonPanel.style.flexBasis = `${lessonPx}px`;
+      }
     } else if (lessonPanel) {
       lessonPanel.style.width = '';
       lessonPanel.style.flexBasis = '';
     }
-    if (window.innerWidth >= 1280) {
+    if (window.innerWidth >= 1280 && !collapsed) {
       toolsPanel.style.width = `${rightPx}px`;
       toolsPanel.style.flexBasis = `${rightPx}px`;
     } else {
@@ -1322,7 +1396,7 @@ function initResizableLayout() {
     splitter.addEventListener('pointerdown', (e) => {
       if (side === 'left' && window.innerWidth < 768) return;
       if (side === 'lesson' && window.innerWidth < 1280) return;
-      if (side === 'right' && window.innerWidth < 1280) return;
+      if (side === 'right' && (window.innerWidth < 1280 || app.classList.contains('tools-panel-collapsed'))) return;
       splitter.setPointerCapture(e.pointerId);
       splitter.classList.add('is-dragging');
       const startX = e.clientX;
@@ -1333,7 +1407,14 @@ function initResizableLayout() {
         if (side === 'left') {
           setWidths(Math.max(220, Math.min(400, leftStart + (ev.clientX - startX))), lessonStart, rightStart);
         } else if (side === 'lesson' && lessonPanel) {
-          setWidths(leftStart, Math.max(280, Math.min(480, lessonStart + (startX - ev.clientX))), rightStart);
+          const nextLesson = Math.max(280, Math.min(672, lessonStart + (startX - ev.clientX)));
+          if (app.classList.contains('tools-panel-collapsed')) {
+            app.style.setProperty('--lesson-pane-expanded-width', `${nextLesson}px`);
+            lessonPanel.style.width = `${nextLesson}px`;
+            lessonPanel.style.flexBasis = `${nextLesson}px`;
+          } else {
+            setWidths(leftStart, nextLesson, rightStart);
+          }
         } else {
           setWidths(leftStart, lessonStart, Math.max(260, Math.min(480, rightStart - (ev.clientX - startX))));
         }
@@ -1351,6 +1432,7 @@ function initResizableLayout() {
   bindSplitter(leftSplitter, 'left');
   bindSplitter(lessonSplitter, 'lesson');
   bindSplitter(rightSplitter, 'right');
+  academyLayoutSetWidths = setWidths;
 }
 
 function applyAcademyTranslations() {
@@ -2050,4 +2132,5 @@ window.addEventListener('academy-language-changed', () => applyAcademyTranslatio
 initLanguageEvents();
 initToolTabs();
 initResizableLayout();
+initToolsPanelToggle();
 init();

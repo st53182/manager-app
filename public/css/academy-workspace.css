@@ -46,6 +46,52 @@
   }
 }
 
+
+/* Скрытая панель инструментов — урок занимает её ширину */
+.academy-light #app.tools-panel-collapsed #toolsPanel,
+.academy-light #app.tools-panel-collapsed #rightSplitter {
+  display: none !important;
+}
+
+@media (min-width: 1280px) {
+  .academy-light #app.tools-panel-collapsed #lessonPanel {
+    width: var(--lesson-pane-expanded-width, 36rem) !important;
+    flex: 0 0 var(--lesson-pane-expanded-width, 36rem) !important;
+    max-width: min(48vw, 42rem) !important;
+  }
+}
+
+.academy-light .aa-tools-reopen {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding: 0.75rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--aa-text-secondary);
+  background: var(--aa-surface);
+  border: 1px solid var(--aa-border);
+  border-right: none;
+  border-radius: var(--aa-radius-sm) 0 0 var(--aa-radius-sm);
+  box-shadow: var(--aa-shadow-sm);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.academy-light .aa-tools-reopen:hover {
+  background: var(--aa-primary-soft);
+  color: var(--aa-primary);
+}
+
+.academy-light .aa-tools-reopen.hidden {
+  display: none !important;
+}
+
 @media (min-width: 1280px) {
   .academy-light #lessonPanel {
     width: var(--lesson-pane-width);

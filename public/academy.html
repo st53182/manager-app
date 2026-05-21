@@ -18,6 +18,10 @@
     </div>
   </div>
 
+  <button type="button" id="showToolsPanelBtn" class="aa-tools-reopen hidden" title="Показать инструменты" aria-label="Показать инструменты">
+    Инструменты
+  </button>
+
   <div id="app" class="hidden h-screen flex flex-col md:flex-row overflow-hidden">
     <!-- Левая колонка: курсы, прогресс, диалоги -->
     <aside id="leftSidebar" class="aa-sidebar w-full md:shrink-0 flex flex-col border-r max-h-[42vh] md:max-h-none overflow-hidden">
@@ -115,9 +119,14 @@
 
         <!-- Урок и задание -->
         <section id="lessonPanel" class="flex flex-col w-full xl:shrink-0 aa-panel border-b xl:border-b-0 xl:border-r overflow-hidden max-h-[45vh] xl:max-h-none min-h-0">
-          <div class="px-4 py-3 border-b shrink-0" style="border-color: var(--aa-border);">
-            <h2 class="font-semibold text-slate-900">Урок и задание</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Выберите практику в списке слева</p>
+          <div class="px-4 py-3 border-b shrink-0 flex items-start justify-between gap-2" style="border-color: var(--aa-border);">
+            <div class="min-w-0">
+              <h2 class="font-semibold text-slate-900">Урок и задание</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Выберите практику в списке слева</p>
+            </div>
+            <button type="button" id="hideToolsPanelBtn" class="aa-btn aa-btn-ghost shrink-0 text-xs hidden xl:inline-flex" title="Скрыть панель инструментов и расширить задание">
+              Скрыть инструменты
+            </button>
           </div>
           <div class="flex-1 overflow-y-auto chat-scroll p-4 min-h-0">
             <p id="lessonEmpty" class="text-sm text-slate-500">Выберите практику в «Модуль 1» слева — откроется полное задание.</p>
@@ -177,9 +186,12 @@
 
         <!-- Инструменты -->
         <section id="toolsPanel" class="w-full xl:shrink-0 flex flex-col aa-panel overflow-hidden min-h-0 max-h-[40vh] xl:max-h-none">
-          <div class="px-4 py-3 border-b shrink-0" style="border-color: var(--aa-border);">
-            <h2 class="font-semibold text-slate-900" data-i18n="academy.tools.title">Инструменты</h2>
-            <p class="text-xs text-slate-500 mt-0.5 leading-snug">Промпты, модели, база знаний и тренировки</p>
+          <div class="px-4 py-3 border-b shrink-0 flex items-start justify-between gap-2" style="border-color: var(--aa-border);">
+            <div class="min-w-0">
+              <h2 class="font-semibold text-slate-900" data-i18n="academy.tools.title">Инструменты</h2>
+              <p class="text-xs text-slate-500 mt-0.5 leading-snug">Промпты, модели, база знаний и тренировки</p>
+            </div>
+            <button type="button" id="collapseToolsPanelBtn" class="aa-btn aa-btn-ghost shrink-0 text-xs px-2 min-h-0 h-8" title="Скрыть панель" aria-label="Скрыть инструменты">×</button>
           </div>
 
           <div class="p-3 border-b shrink-0" style="border-color: var(--aa-border);">
