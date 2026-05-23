@@ -454,3 +454,124 @@
 }
 
 .academy-light .hidden { display: none !important; }
+
+/* Практика: задание на главном экране, чат по кнопке */
+.academy-light #app.practice-focus #sidebarFreeChatBlock {
+  display: none !important;
+}
+
+.academy-light #app.practice-focus #chatSection.chat-collapsed {
+  display: none !important;
+}
+
+@media (min-width: 1280px) {
+  .academy-light #app.practice-focus:not(.practice-chat-open) #lessonSplitter,
+  .academy-light #app.practice-focus:not(.practice-chat-open) #leftSplitter {
+    display: none !important;
+  }
+
+  .academy-light #app.practice-focus.practice-chat-open #chatSection {
+    display: flex !important;
+    flex: 1 1 45%;
+    min-width: 280px;
+  }
+
+  .academy-light #app.practice-focus.practice-chat-open #lessonPanel {
+    flex: 1 1 55%;
+    max-width: none !important;
+    width: auto !important;
+  }
+}
+
+.academy-light #app.practice-focus #lessonPanel {
+  flex: 1 1 auto;
+  max-width: none;
+  max-height: none !important;
+  min-height: 0;
+}
+
+.academy-light #app.practice-focus.practice-chat-open #lessonPanel {
+  max-height: none !important;
+}
+
+.academy-light #app.practice-chat-mobile #chatSection {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  max-height: none !important;
+  min-height: 0 !important;
+}
+
+.academy-light .aa-task-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.academy-light .aa-task-card {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--aa-border);
+  border-radius: var(--aa-radius-sm);
+  background: var(--aa-surface);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1.4;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.academy-light .aa-task-card:hover {
+  border-color: var(--aa-border-strong);
+  background: var(--aa-surface-muted);
+}
+
+.academy-light .aa-task-card.is-selected {
+  border-color: var(--aa-primary);
+  background: var(--aa-primary-soft);
+}
+
+.academy-light .aa-task-card-num {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  background: var(--aa-border);
+  color: var(--aa-text);
+  font-weight: 700;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.academy-light .aa-task-card.is-selected .aa-task-card-num {
+  background: var(--aa-primary);
+  color: #fff;
+}
+
+.academy-light .aa-task-card-title {
+  font-weight: 600;
+  color: var(--aa-text);
+  display: block;
+}
+
+.academy-light .aa-task-card-summary {
+  font-size: 0.875rem;
+  color: var(--aa-text-secondary);
+  display: block;
+  margin-top: 0.15rem;
+}
+
+.academy-light .aa-task-detail {
+  padding: 0.75rem 1rem;
+  background: var(--aa-surface-muted);
+  border: 1px solid var(--aa-border);
+  border-radius: var(--aa-radius-sm);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--aa-text-secondary);
+}

@@ -41,16 +41,17 @@
       </div>
 
       <div class="overflow-y-auto flex-1 p-3 space-y-4 chat-scroll min-h-0">
-        <button id="newChatBtn" type="button" class="aa-btn aa-btn-primary w-full">+ Новый чат</button>
-
         <div>
           <h3 class="aa-label mb-2">Модуль 1 — практики</h3>
           <div id="courseTree" class="space-y-3 text-sm"></div>
         </div>
 
-        <div>
-          <h3 id="dialogsHeading" class="aa-label mb-2">Диалоги</h3>
-          <ul id="conversationList" class="space-y-0.5"></ul>
+        <div id="sidebarFreeChatBlock" class="space-y-3">
+          <button id="newChatBtn" type="button" class="aa-btn aa-btn-ghost w-full text-sm">+ Свободный чат</button>
+          <div>
+            <h3 id="dialogsHeading" class="aa-label mb-2">Диалоги</h3>
+            <ul id="conversationList" class="space-y-0.5"></ul>
+          </div>
         </div>
       </div>
 
@@ -67,11 +68,16 @@
         <!-- Чат с наставником -->
         <section id="chatSection" class="flex-1 min-w-0 flex flex-col aa-panel border-b xl:border-b-0 xl:border-r min-h-[50vh] xl:min-h-0">
           <header class="px-4 py-3 border-b shrink-0" style="border-color: var(--aa-border);">
-            <input id="conversationTitle" type="text" class="w-full bg-transparent border-none text-lg font-semibold text-slate-900 focus:outline-none focus:ring-0" placeholder="Название диалога" />
-            <p id="lessonHint" class="text-xs text-slate-500 mt-0.5 break-words"></p>
+            <div class="flex items-start gap-2">
+              <button type="button" id="backToAssignmentBtn" class="aa-btn aa-btn-ghost shrink-0 hidden text-sm">← К заданию</button>
+              <div class="min-w-0 flex-1">
+                <input id="conversationTitle" type="text" class="w-full bg-transparent border-none text-lg font-semibold text-slate-900 focus:outline-none focus:ring-0" placeholder="Название диалога" />
+                <p id="lessonHint" class="text-xs text-slate-500 mt-0.5 break-words"></p>
+              </div>
+            </div>
           </header>
 
-          <div class="aa-chat-toolbar">
+          <div id="chatAdvancedBlock" class="aa-chat-toolbar hidden">
             <select id="modelSelect" title="Модель" class="aa-select"></select>
             <select id="chatModeSelect" title="Режим" class="aa-select">
               <option value="general">Общий</option>
@@ -83,8 +89,9 @@
             <select id="personaSelect" title="Персона" class="aa-select"></select>
             <button type="button" id="regenerateBtn" class="aa-btn">Перегенерировать</button>
           </div>
+          <button type="button" id="toggleChatAdvancedBtn" class="hidden mx-4 mt-1 text-xs text-blue-600 hover:underline text-left">Дополнительные настройки чата</button>
 
-          <p id="modelHint" class="aa-model-hint"></p>
+          <p id="modelHint" class="aa-model-hint hidden"></p>
 
           <div id="messagesContainer" class="flex-1 overflow-y-auto chat-scroll px-4 py-4 space-y-4 bg-white min-h-0"></div>
 
@@ -121,8 +128,8 @@
         <section id="lessonPanel" class="flex flex-col w-full xl:shrink-0 aa-panel border-b xl:border-b-0 xl:border-r overflow-hidden max-h-[45vh] xl:max-h-none min-h-0">
           <div class="px-4 py-3 border-b shrink-0 flex items-start justify-between gap-2" style="border-color: var(--aa-border);">
             <div class="min-w-0">
-              <h2 class="font-semibold text-slate-900">Урок и задание</h2>
-              <p class="text-xs text-slate-500 mt-0.5">Выберите практику в списке слева</p>
+              <h2 class="font-semibold text-slate-900">Задание</h2>
+              <p id="lessonPanelSubtitle" class="text-xs text-slate-500 mt-0.5">Выберите практику в списке слева</p>
             </div>
             <button type="button" id="hideToolsPanelBtn" class="aa-btn aa-btn-ghost shrink-0 text-xs hidden xl:inline-flex" title="Скрыть панель инструментов и расширить задание">
               Скрыть инструменты
@@ -136,8 +143,22 @@
               <div class="aa-assignment-box">
                 <h3 id="assignmentTitle" class="font-semibold text-slate-900 mb-2">Задание</h3>
                 <div id="assignmentText" class="text-sm text-slate-700 prose prose-sm max-w-none aa-assignment-prose"></div>
-                <div id="practiceHintsRow" class="hidden mt-3 pt-3 border-t border-amber-200/80">
-                  <p class="text-xs text-slate-600 mb-2">Застряли? Выберите подсказку — текст попадёт в чат с наставником (можно отредактировать перед отправкой).</p>
+              </div>
+
+              <div id="taskOptionsBlock" class="hidden mt-4">
+                <p class="aa-label mb-2">Выберите одну из 5 задач</p>
+                <div id="taskOptionsList" class="aa-task-options" role="radiogroup" aria-label="Варианты задачи"></div>
+                <div id="taskOptionDetail" class="aa-task-detail hidden mt-3"></div>
+                <p id="taskSelectReminder" class="hidden mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">Выберите вариант задачи (1–5), чтобы продолжить.</p>
+              </div>
+
+              <div id="practiceActionsRow" class="hidden mt-4 space-y-3">
+                <div class="aa-btn-row">
+                  <button type="button" id="openPracticeChatBtn" class="aa-btn aa-btn-primary flex-1">Проверить в чате</button>
+                  <button type="button" id="closePracticeChatBtn" class="aa-btn aa-btn-ghost hidden">Скрыть чат</button>
+                </div>
+                <div id="practiceHintsRow" class="hidden pt-2 border-t border-slate-200">
+                  <p class="text-xs text-slate-600 mb-2">Подсказка откроет чат — текст можно изменить перед отправкой.</p>
                   <div class="flex flex-col sm:flex-row gap-2">
                     <select id="practiceHintSelect" class="aa-select flex-1 text-sm"></select>
                     <button type="button" id="practiceHintBtn" class="aa-btn aa-btn-ghost shrink-0">Подсказка в чат</button>

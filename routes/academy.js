@@ -180,7 +180,17 @@ function createRouter({ JWT_SECRET }) {
       if (!answerText) return res.status(400).json({ error: 'answer_text required' });
       const model = pickModel(req.body?.model, req.dbUser);
       const criteria = assignment?.rubric_json?.criteria ? assignment.rubric_json.criteria.join(', ') : 'general';
-      const graderPrompt = 'Grade assignment. JSON: score, criteria_scores, strengths, weaknesses, recommendations. Criteria: ' + criteria + '\nAnswer:\n' + answerText;
+      let taskLine = '';
+      const gm = submission?.group_meta;
+      const meta = typeof gm === 'string' ? (() => { try { return JSON.parse(gm); } catch { return {}; } })() : gm || {};
+      const taskId = meta.selected_task_id;
+      if (taskId && assignment?.task_options) {
+        let opts = assignment.task_options;
+        if (typeof opts === 'string') try { opts = JSON.parse(opts); } catch { opts = []; }
+        const picked = Array.isArray(opts) ? opts.find((t) => t.id === taskId) : null;
+        if (picked) taskLine = `\nSelected task variant: ${picked.title}\nContext: ${picked.context || picked.summary || ''}\n`;
+      }
+      const graderPrompt = 'Grade assignment. JSON: score, criteria_scores, strengths, weaknesses, recommendations. Criteria: ' + criteria + taskLine + '\nAnswer:\n' + answerText;
       await assertQuota(req, estimateTokensFromText(graderPrompt));
       let text = '', usage = null;
       for await (const part of streamChatCompletion(openai, { model, messages: [{ role: 'system', content: 'JSON only' }, { role: 'user', content: graderPrompt }], maxTokens: 1200 })) {

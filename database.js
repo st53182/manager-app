@@ -118,6 +118,7 @@ async function migrateDeprecatedOpenRouterModelIds(client) {
 
 async function migrateAcademyProgressColumns(client) {
   const sqls=[
+    "ALTER TABLE academy_assignments ADD COLUMN IF NOT EXISTS task_options JSONB DEFAULT '[]'::jsonb",
     "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS answer_text TEXT",
     "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS answer_updated_at TIMESTAMPTZ",
     "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS assignment_status VARCHAR(30) DEFAULT 'not_started'",

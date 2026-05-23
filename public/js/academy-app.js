@@ -401,24 +401,36 @@ function initMermaid() {
 const MVP_COURSE_SLUG = 'ai-work-business-talk';
 
 /** Готовые вопросы наставнику по практикам (не делают работу за студента). */
+const PRACTICE_SCENARIO_KEYS = new Set([
+  'block1-practice-prompt',
+  'block1-practice-scenario',
+  'block1-practice-hallucination'
+]);
+
+const OPEN_CHAT_LABELS = {
+  'block1-practice-prompt': 'Проверить промпт в чате',
+  'block1-practice-scenario': 'Открыть диалог с наставником',
+  'block1-practice-hallucination': 'Обсудить разбор в чате'
+};
+
 const PRACTICE_HINTS = {
   'block1-practice-prompt': [
-    { label: 'Не могу выбрать задачу', text: 'Помоги выбрать одну рабочую задачу для практики с промптом RTCFSC. Предложи 3 варианта под роль «менеджер проекта» и кратко объясни плюсы каждого. Не пиши готовый промпт — только варианты задач.' },
-    { label: 'Как заполнить RTCFSC', text: 'Объясни, что писать в каждом блоке RTCFSC (R, T, C, F, S, C) на примере задачи: «краткий ответ клиенту на задержку сроков на 2 недели». Дай по одному примеру фразы на блок, без полного готового промпта.' },
-    { label: 'Проверь черновик промпта', text: 'Я пришлю черновик промпта RTCFSC. Дай обратную связь: что неясно, чего не хватает, что уточнить. Не переписывай промпт целиком за меня.' },
-    { label: 'Критерии успеха', text: 'Приведи 5 примеров измеримых критериев успеха (блок C в RTCFSC) для делового письма и для плана действий. Коротко, списком.' }
+    { label: 'Как заполнить RTCFSC', text: 'Объясни, что писать в каждом блоке RTCFSC (R, T, C, F, S, C) для моей выбранной задачи. Дай по одному примеру фразы на блок, без полного готового промпта.' },
+    { label: 'Проверь черновик промпта', text: 'Я пришлю черновик промпта RTCFSC по выбранной задаче. Дай обратную связь: что неясно, чего не хватает. Не переписывай промпт целиком.' },
+    { label: 'Критерии успеха', text: 'Приведи 5 примеров измеримых критериев успеха (блок C в RTCFSC) для моей выбранной задачи. Коротко, списком.' },
+    { label: 'Слабое место и v2', text: 'После выполнения промпта в чате: как сформулировать «слабое место» и «улучшение v2»? Пример на 2–3 предложения, без готового ответа на задание.' }
   ],
   'block1-practice-scenario': [
-    { label: 'Выбор сценария', text: 'Предложи 2–3 рабочих сценария для ролевого диалога с ИИ (клиент, руководитель, сотрудник). Для каждого — одно предложение ситуации. Не пиши готовый диалог.' },
-    { label: 'Стартовое сообщение', text: 'Дай шаблон первого сообщения в чат, чтобы задать роли и правила диалога (ИИ = клиент, я = менеджер). 5–7 строк, без готовых реплик всего разговора.' },
-    { label: 'ИИ вышел из роли', text: 'ИИ отвечает общими советами, а не как персонаж. Какую одну фразу написать, чтобы вернуть в роль? Дай 2 варианта формулировки.' },
-    { label: 'Как оформить выводы', text: 'Покажи пример структуры блока «Выводы» после ролевого диалога: 4 пункта-заголовка и по одному примеру предложения в каждом. Без выдуманного диалога.' }
+    { label: 'Стартовое сообщение', text: 'Дай шаблон первого сообщения в чат для моего выбранного сценария: роли, правила, 3–5 реплик. Без готового диалога целиком.' },
+    { label: 'ИИ вышел из роли', text: 'ИИ отвечает общими советами, а не как персонаж. Дай 2 фразы, чтобы вернуть в роль моего сценария.' },
+    { label: 'Следующая реплика', text: 'Подскажи, что написать следующим сообщением в моём диалоге — одну реплику, без продолжения за меня.' },
+    { label: 'Как оформить выводы', text: 'Покажи структуру блока «Выводы»: 4 пункта-заголовка и по одному примеру предложения. Без выдуманного диалога.' }
   ],
   'block1-practice-hallucination': [
-    { label: 'Типы ошибок ИИ', text: 'Объясни простыми словами 5 типов рисков в ответах ИИ (выдуманный факт, цифра, ссылка, overconfidence, общая рекомендация) на учебном примере про McKinsey и ROI. Без готового «безопасного» текста за меня.' },
-    { label: 'Разбор учебного фрагмента', text: 'Веди меня по шагам разбору учебного фрагмента про McKinsey / 87% / Forbes. Задавай наводящие вопросы, не выдавай готовый список проблем сразу.' },
-    { label: 'Проверь мой список', text: 'Я пришлю свой список проблем в фрагменте от ИИ. Скажи, что упустил(а) и какие типы рисков перепутал(а). Не пиши безопасную версию целиком.' },
-    { label: 'Безопасные формулировки', text: 'Дай 5 примеров фраз для рабочей переписки, когда данных нет или нужна проверка («по нашим данным…», «требует уточнения…»). Коротко.' }
+    { label: 'Типы ошибок ИИ', text: 'Объясни простыми словами 5 типов рисков в ответах ИИ на моём выбранном фрагменте. Без готового «безопасного» текста.' },
+    { label: 'Разбор по шагам', text: 'Веди меня по шагам разбору моего выбранного фрагмента. Задавай наводящие вопросы, не выдавай готовый список проблем сразу.' },
+    { label: 'Проверь мой список', text: 'Я пришлю список проблем в выбранном фрагменте. Скажи, что упустил(а) и какие типы перепутал(а).' },
+    { label: 'Безопасные формулировки', text: 'Дай 5 примеров фраз для рабочей переписки, когда данных нет или нужна проверка. Коротко.' }
   ]
 };
 const TOOLS_COLLAPSED_KEY = 'academy_tools_panel_collapsed';
@@ -444,7 +456,9 @@ const state = {
   personas: [],
   selectedKnowledgeBaseId: null,
   activeKnowledgeBaseId: null,
-  knowledgeDocuments: []
+  knowledgeDocuments: [],
+  selectedTaskId: null,
+  taskOptions: []
 };
 let kbStatusPollTimer = null;
 let kbStatusPollBusy = false;
@@ -593,14 +607,207 @@ function renderAssignmentFeedback(fb) {
   if (fb.weaknesses?.length) lines.push('Слабые:\n• ' + fb.weaknesses.join('\n• '));
   box.textContent = lines.join('\n\n');
 }
+function parseTaskOptions(assignment) {
+  let opts = assignment?.task_options;
+  if (typeof opts === 'string') {
+    try {
+      opts = JSON.parse(opts);
+    } catch {
+      opts = [];
+    }
+  }
+  return Array.isArray(opts) ? opts : [];
+}
+
+function isModuleOnePractice(lesson) {
+  return Boolean(lesson?.scenario_key && PRACTICE_SCENARIO_KEYS.has(lesson.scenario_key));
+}
+
+function getSubmissionGroupMeta(submission) {
+  const raw = submission?.group_meta;
+  if (!raw) return {};
+  if (typeof raw === 'object') return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+function buildGroupMetaForSave() {
+  return {
+    size: Number(document.getElementById('groupSizeInput')?.value) || null,
+    input_by: document.getElementById('groupInputBy')?.value?.trim() || null,
+    selected_task_id: state.selectedTaskId || null
+  };
+}
+
+function getSelectedTaskOption() {
+  return state.taskOptions.find((t) => t.id === state.selectedTaskId) || null;
+}
+
+function updateTaskSelectReminder() {
+  const el = document.getElementById('taskSelectReminder');
+  if (!el) return;
+  const show = state.taskOptions.length > 0 && !state.selectedTaskId;
+  el.classList.toggle('hidden', !show);
+}
+
+function renderTaskOptionDetail() {
+  const detail = document.getElementById('taskOptionDetail');
+  if (!detail) return;
+  const task = getSelectedTaskOption();
+  if (!task?.context) {
+    detail.classList.add('hidden');
+    detail.textContent = '';
+    return;
+  }
+  detail.classList.remove('hidden');
+  detail.innerHTML = `<strong class="text-slate-800 block mb-1">${escapeHtml(task.title)}</strong>${escapeHtml(task.context)}`;
+  updateTaskSelectReminder();
+}
+
+function selectTaskOption(taskId, { persist = true } = {}) {
+  state.selectedTaskId = taskId || null;
+  const list = document.getElementById('taskOptionsList');
+  if (list) {
+    list.querySelectorAll('.aa-task-card').forEach((btn) => {
+      btn.classList.toggle('is-selected', btn.dataset.taskId === state.selectedTaskId);
+      btn.setAttribute('aria-checked', btn.dataset.taskId === state.selectedTaskId ? 'true' : 'false');
+    });
+  }
+  renderTaskOptionDetail();
+  if (persist && state.currentLessonId) {
+    saveSubmission('draft').catch((e) => console.warn(e));
+  }
+}
+
+function renderTaskOptions(lesson) {
+  const block = document.getElementById('taskOptionsBlock');
+  const list = document.getElementById('taskOptionsList');
+  if (!block || !list) return;
+  state.taskOptions = parseTaskOptions(lesson?.assignment);
+  if (!state.taskOptions.length) {
+    block.classList.add('hidden');
+    list.innerHTML = '';
+    state.selectedTaskId = null;
+    return;
+  }
+  block.classList.remove('hidden');
+  list.innerHTML = '';
+  state.taskOptions.forEach((task, idx) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'aa-task-card';
+    btn.dataset.taskId = task.id;
+    btn.setAttribute('role', 'radio');
+    btn.setAttribute('aria-checked', 'false');
+    btn.innerHTML = `<span class="aa-task-card-num">${idx + 1}</span><span><span class="aa-task-card-title">${escapeHtml(task.title)}</span><span class="aa-task-card-summary">${escapeHtml(task.summary || '')}</span></span>`;
+    btn.addEventListener('click', () => selectTaskOption(task.id));
+    list.appendChild(btn);
+  });
+  if (state.selectedTaskId && state.taskOptions.some((t) => t.id === state.selectedTaskId)) {
+    selectTaskOption(state.selectedTaskId, { persist: false });
+  } else {
+    state.selectedTaskId = null;
+    updateTaskSelectReminder();
+  }
+}
+
+function updateOpenPracticeChatLabel(scenarioKey) {
+  const btn = document.getElementById('openPracticeChatBtn');
+  if (!btn) return;
+  btn.textContent = OPEN_CHAT_LABELS[scenarioKey] || 'Открыть чат с наставником';
+}
+
+function setPracticeChatOpen(open) {
+  const app = document.getElementById('app');
+  const chat = document.getElementById('chatSection');
+  const openBtn = document.getElementById('openPracticeChatBtn');
+  const closeBtn = document.getElementById('closePracticeChatBtn');
+  const backBtn = document.getElementById('backToAssignmentBtn');
+  if (!app || !chat) return;
+  if (open) {
+    chat.classList.remove('chat-collapsed');
+    app.classList.add('practice-chat-open');
+    if (window.innerWidth < 1280) app.classList.add('practice-chat-mobile');
+    openBtn?.classList.add('hidden');
+    closeBtn?.classList.remove('hidden');
+    backBtn?.classList.remove('hidden');
+    document.getElementById('composer')?.focus();
+  } else {
+    chat.classList.add('chat-collapsed');
+    app.classList.remove('practice-chat-open', 'practice-chat-mobile');
+    openBtn?.classList.remove('hidden');
+    closeBtn?.classList.add('hidden');
+    backBtn?.classList.add('hidden');
+    document.getElementById('lessonPanel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function setPracticeFocusMode(on, lesson = null) {
+  const app = document.getElementById('app');
+  if (!app) return;
+  if (on && lesson && isModuleOnePractice(lesson)) {
+    app.classList.add('practice-focus');
+    document.getElementById('sidebarFreeChatBlock')?.classList.add('hidden');
+    document.getElementById('practiceActionsRow')?.classList.remove('hidden');
+    document.getElementById('toggleChatAdvancedBtn')?.classList.remove('hidden');
+    document.getElementById('lessonPanelSubtitle').textContent = lesson.title || 'Практика';
+    updateOpenPracticeChatLabel(lesson.scenario_key);
+    setPracticeChatOpen(false);
+    if (!isToolsPanelCollapsed()) applyToolsPanelCollapsed(true);
+  } else {
+    app.classList.remove('practice-focus', 'practice-chat-open', 'practice-chat-mobile');
+    document.getElementById('sidebarFreeChatBlock')?.classList.remove('hidden');
+    document.getElementById('practiceActionsRow')?.classList.add('hidden');
+    document.getElementById('taskOptionsBlock')?.classList.add('hidden');
+    document.getElementById('toggleChatAdvancedBtn')?.classList.add('hidden');
+    document.getElementById('chatAdvancedBlock')?.classList.add('hidden');
+    document.getElementById('chatSection')?.classList.remove('chat-collapsed');
+    document.getElementById('backToAssignmentBtn')?.classList.add('hidden');
+    document.getElementById('openPracticeChatBtn')?.classList.remove('hidden');
+    document.getElementById('closePracticeChatBtn')?.classList.add('hidden');
+  }
+}
+
+function openPracticeChat() {
+  if (!state.selectedTaskId && state.taskOptions.length) {
+    document.getElementById('taskSelectReminder')?.classList.remove('hidden');
+    document.getElementById('taskOptionsBlock')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
+  setPracticeChatOpen(true);
+}
+
+function closePracticeChat() {
+  setPracticeChatOpen(false);
+}
+
+function warnIfNoTaskSelected() {
+  if (!state.taskOptions.length) return true;
+  if (state.selectedTaskId) return true;
+  document.getElementById('taskSelectReminder')?.classList.remove('hidden');
+  document.getElementById('taskOptionsBlock')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  return false;
+}
+
 async function loadSubmissionForLesson(lessonId) {
   const data = await api('/api/academy/lessons/' + lessonId + '/submission');
   if (data.submission?.answer_text) document.getElementById('assignmentAnswer').value = data.submission.answer_text;
+  else document.getElementById('assignmentAnswer').value = '';
   if (data.submission?.practice_mode) document.getElementById('practiceModeSelect').value = data.submission.practice_mode;
   syncPracticeModeUi();
+  const gm = getSubmissionGroupMeta(data.submission);
+  if (gm.size) document.getElementById('groupSizeInput').value = gm.size;
+  if (gm.input_by) document.getElementById('groupInputBy').value = gm.input_by;
+  if (gm.selected_task_id && state.taskOptions.some((t) => t.id === gm.selected_task_id)) {
+    selectTaskOption(gm.selected_task_id, { persist: false });
+  }
   let fj = data.submission?.feedback_json;
   if (typeof fj === 'string') try { fj = JSON.parse(fj); } catch { fj = null; }
   if (fj && Object.keys(fj).length) renderAssignmentFeedback(fj);
+  else document.getElementById('assignmentFeedback')?.classList.add('hidden');
 }
 async function saveSubmission(status) {
   if (!state.currentLessonId) return;
@@ -610,7 +817,7 @@ async function saveSubmission(status) {
       answer_text: document.getElementById('assignmentAnswer')?.value?.trim() || '',
       assignment_status: status,
       practice_mode: document.getElementById('practiceModeSelect')?.value || 'individual',
-      group_meta: { size: Number(document.getElementById('groupSizeInput')?.value) || null, input_by: document.getElementById('groupInputBy')?.value?.trim() || null }
+      group_meta: buildGroupMetaForSave()
     })
   });
 }
@@ -743,9 +950,15 @@ function insertPracticeHintIntoComposer() {
   const sel = document.getElementById('practiceHintSelect');
   const composer = document.getElementById('composer');
   if (!sel?.value || !composer) return;
-  composer.value = sel.value;
+  const task = getSelectedTaskOption();
+  let text = sel.value;
+  if (task) text += `\n\nМой выбранный вариант: «${task.title}». Контекст: ${task.context}`;
+  if (document.getElementById('app')?.classList.contains('practice-focus')) {
+    if (!warnIfNoTaskSelected()) return;
+    openPracticeChat();
+  }
+  composer.value = text;
   composer.focus();
-  composer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function renderConversationList() {
@@ -990,6 +1203,7 @@ async function selectLesson(lesson) {
   if (!lesson) return;
   state.currentLessonId = lesson.id;
   state.currentLesson = lesson;
+  state.selectedTaskId = null;
   document.getElementById('lessonPanel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   document.getElementById('lessonEmpty')?.classList.add('hidden');
   document.getElementById('lessonContent')?.classList.remove('hidden');
@@ -1003,12 +1217,15 @@ async function selectLesson(lesson) {
     ab.classList.remove('hidden');
     document.getElementById('assignmentTitle').textContent = asn.title || 'Задание';
     at.innerHTML = renderMarkdown(asn.instructions_md || '');
-    document.getElementById('askMentorAssignmentBtn')?.classList.remove('hidden');
+    document.getElementById('askMentorAssignmentBtn')?.classList.add('hidden');
+    renderTaskOptions(lesson);
     bindPracticeHints(lesson.scenario_key);
+    setPracticeFocusMode(true, lesson);
   } else {
     ab?.classList.add('hidden');
     document.getElementById('askMentorAssignmentBtn')?.classList.add('hidden');
     bindPracticeHints(null);
+    setPracticeFocusMode(false);
   }
   try { await loadSubmissionForLesson(lesson.id); } catch (e) { console.warn(e); }
   let conv = state.conversations.find((c) => c.lesson_id === lesson.id);
@@ -1548,6 +1765,10 @@ function wireUi() {
 
   document.getElementById('newChatBtn').addEventListener('click', async () => {
     state.currentLessonId = null;
+    state.currentLesson = null;
+    state.selectedTaskId = null;
+    state.taskOptions = [];
+    setPracticeFocusMode(false);
     const conv = await api('/api/academy/conversations', {
       method: 'POST',
       body: JSON.stringify({
@@ -1826,9 +2047,29 @@ function wireUi() {
 
   document.getElementById('practiceModeSelect')?.addEventListener('change', syncPracticeModeUi);
   document.getElementById('saveAnswerBtn')?.addEventListener('click', async () => { try { await saveSubmission('draft'); alert('Сохранено'); } catch(e){alert(e.message);} });
-  document.getElementById('submitAnswerBtn')?.addEventListener('click', async () => { try { await saveSubmission('submitted'); alert('Отправлено'); } catch(e){alert(e.message);} });
+  document.getElementById('submitAnswerBtn')?.addEventListener('click', async () => {
+    if (!warnIfNoTaskSelected()) return;
+    try { await saveSubmission('submitted'); alert('Отправлено'); } catch (e) { alert(e.message); }
+  });
+  document.getElementById('openPracticeChatBtn')?.addEventListener('click', () => openPracticeChat());
+  document.getElementById('closePracticeChatBtn')?.addEventListener('click', () => closePracticeChat());
+  document.getElementById('backToAssignmentBtn')?.addEventListener('click', () => closePracticeChat());
+  document.getElementById('toggleChatAdvancedBtn')?.addEventListener('click', () => {
+    document.getElementById('chatAdvancedBlock')?.classList.toggle('hidden');
+    document.getElementById('modelHint')?.classList.toggle('hidden');
+  });
+  window.addEventListener('resize', () => {
+    const app = document.getElementById('app');
+    if (app?.classList.contains('practice-chat-open') && window.innerWidth >= 1280) {
+      app.classList.remove('practice-chat-mobile');
+    } else if (app?.classList.contains('practice-chat-open') && window.innerWidth < 1280) {
+      app.classList.add('practice-chat-mobile');
+    }
+  });
+
   document.getElementById('requestFeedbackBtn')?.addEventListener('click', async () => {
     if (!state.currentLessonId) return;
+    if (!warnIfNoTaskSelected()) return;
     const answer_text = document.getElementById('assignmentAnswer')?.value?.trim();
     if (!answer_text) return alert('Введите ответ');
     await saveSubmission('submitted');
@@ -1839,6 +2080,7 @@ function wireUi() {
     await loadProgressSummary();
   });
   document.getElementById('askMentorAssignmentBtn')?.addEventListener('click', () => {
+    openPracticeChat();
     document.getElementById('composer').value =
       'Помоги с текущей практикой Модуля 1: направь по шагам, но не делай задание за меня (не пиши готовый ответ целиком).';
     document.getElementById('composer').focus();
