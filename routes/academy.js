@@ -5,7 +5,7 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const db = require('../database');
-const { getMentorSystemPrompt, MENTOR_PROMPT_VERSION } = require('../prompts/mentorPrompt');
+const { getMentorSystemPrompt, getPracticeRunSystemPrompt, MENTOR_PROMPT_VERSION } = require('../prompts/mentorPrompt');
 const { createOpenRouterClient, getDefaultModel } = require('../services/ai/openRouterClient');
 const { streamChatCompletion, estimateTokensFromText, estimateCostUsd } = require('../services/ai/streamChat');
 const {
@@ -82,16 +82,33 @@ function createRouter({ JWT_SECRET }) {
    * Builds OpenRouter messages; truncates long assistant replies for token budget and drops
    * oldest turns until under MAX_CONTEXT_CHARS (CSV/HTML-heavy chats).
    */
-  async function buildMessagesWithBudget(rows, lessonForPrompt, req, modelId, assignmentForPrompt = null) {
+  async function buildMessagesWithBudget(
+    rows,
+    lessonForPrompt,
+    req,
+    modelId,
+    assignmentForPrompt = null,
+    chatMode = 'general',
+    practiceRunContext = null
+  ) {
     const maxAssist = parseInt(process.env.MAX_ASSISTANT_CHARS_IN_CONTEXT || '42000', 10);
     let subset = [...rows];
     let droppedTurns = 0;
 
     async function rebuild() {
       const apiMessages = [];
+      const systemContent =
+        chatMode === 'practice_run'
+          ? getPracticeRunSystemPrompt({
+              lesson: lessonForPrompt,
+              runKind: practiceRunContext?.runKind || 'prompt',
+              taskTitle: practiceRunContext?.taskTitle || '',
+              taskContext: practiceRunContext?.taskContext || ''
+            })
+          : getMentorSystemPrompt({ lesson: lessonForPrompt, assignment: assignmentForPrompt });
       apiMessages.push({
         role: 'system',
-        content: getMentorSystemPrompt({ lesson: lessonForPrompt, assignment: assignmentForPrompt })
+        content: systemContent
       });
       let totalChars = estimatePayloadFootprintForLimits(apiMessages[0].content);
       for (const m of subset) {
@@ -1199,7 +1216,25 @@ function createRouter({ JWT_SECRET }) {
 
         const lessonForPrompt = lesson || (conv.lesson_id ? await db.getLessonById(conv.lesson_id) : null);
         const assignmentForPrompt = lessonForPrompt ? await db.getAssignmentByLessonId(lessonForPrompt.id) : null;
-        const { apiMessages, totalChars, droppedTurns } = await buildMessagesWithBudget(rows, lessonForPrompt, req, model, assignmentForPrompt);
+        let practiceRunContext = null;
+        if (chatMode === 'practice_run' && body.practiceRunContext && typeof body.practiceRunContext === 'object') {
+          practiceRunContext = body.practiceRunContext;
+        } else if (chatMode === 'practice_run' && typeof body.practiceRunContext === 'string') {
+          try {
+            practiceRunContext = JSON.parse(body.practiceRunContext);
+          } catch {
+            practiceRunContext = null;
+          }
+        }
+        const { apiMessages, totalChars, droppedTurns } = await buildMessagesWithBudget(
+          rows,
+          lessonForPrompt,
+          req,
+          model,
+          assignmentForPrompt,
+          chatMode,
+          practiceRunContext
+        );
 
         if (personaId) {
           const persona = await practicum.getPersonaForUser(personaId, req.dbUser.id);

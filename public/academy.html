@@ -152,9 +152,54 @@
                 <p id="taskSelectReminder" class="hidden mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">Выберите вариант задачи (1–5), чтобы продолжить.</p>
               </div>
 
+              <div id="practiceWorkflowBlock" class="hidden mt-4 space-y-3">
+                <div id="practicePromptSection" class="hidden aa-practice-workflow-box">
+                  <p class="aa-label mb-1">Шаг 2. Ваш промпт</p>
+                  <p class="text-xs text-slate-600 mb-2">Заполните блоки RTCFSC или сразу напишите готовый текст ниже — затем отправьте его в нейросеть и получите черновик ответа.</p>
+                  <details class="aa-rtc-details mb-2">
+                    <summary class="text-sm text-blue-700 cursor-pointer">Заполнить по блокам RTCFSC</summary>
+                    <div class="mt-2 space-y-2">
+                      <label class="block text-xs"><span class="font-medium">R — роль</span><textarea id="promptFieldR" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
+                      <label class="block text-xs"><span class="font-medium">T — задача</span><textarea id="promptFieldT" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
+                      <label class="block text-xs"><span class="font-medium">C — контекст</span><textarea id="promptFieldC" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
+                      <label class="block text-xs"><span class="font-medium">F — формат</span><textarea id="promptFieldF" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
+                      <label class="block text-xs"><span class="font-medium">S — стиль</span><textarea id="promptFieldS" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
+                      <label class="block text-xs"><span class="font-medium">C — критерии успеха</span><textarea id="promptFieldCriteria" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
+                      <button type="button" id="assemblePromptBtn" class="aa-btn aa-btn-ghost text-sm">Собрать промпт из блоков</button>
+                    </div>
+                  </details>
+                  <label class="block">
+                    <span class="aa-label">Текст промпта (отправится в нейросеть)</span>
+                    <textarea id="practicePromptText" rows="7" class="aa-textarea mt-1" placeholder="Например: R: ты — опытный менеджер проектов…"></textarea>
+                  </label>
+                  <button type="button" id="runPromptInAiBtn" class="aa-btn aa-btn-primary w-full mt-2">Получить результат от нейросети</button>
+                </div>
+                <div id="practiceAnalysisSection" class="hidden aa-practice-workflow-box">
+                  <p class="aa-label mb-1">Шаг 2. Разбор фрагмента</p>
+                  <p class="text-xs text-slate-600 mb-2">Выбранный учебный текст — в описании задачи выше. Нейросеть поможет найти риски по шагам (без готового отчёта за вас).</p>
+                  <button type="button" id="runAnalysisInAiBtn" class="aa-btn aa-btn-primary w-full">Начать разбор с нейросетью</button>
+                </div>
+                <div id="practiceDialogueSection" class="hidden aa-practice-workflow-box">
+                  <p class="aa-label mb-1">Шаг 2. Старт диалога</p>
+                  <p class="text-xs text-slate-600 mb-2">Напишите, кто вы и кто ИИ (роли и правила), затем начните диалог — ответ пойдёт от «персонажа».</p>
+                  <label class="block">
+                    <span class="aa-label">Первое сообщение в диалог</span>
+                    <textarea id="practiceDialogueStart" rows="5" class="aa-textarea mt-1" placeholder="ИИ = недовольный клиент. Я = менеджер проекта. Правила: по 2–4 предложения…"></textarea>
+                  </label>
+                  <button type="button" id="runDialogueInAiBtn" class="aa-btn aa-btn-primary w-full mt-2">Начать диалог с нейросетью</button>
+                </div>
+                <div id="aiResultBlock" class="hidden">
+                  <p class="aa-label mb-1">Результат нейросети</p>
+                  <div id="aiResultPreview" class="aa-task-detail max-h-48 overflow-y-auto whitespace-pre-wrap"></div>
+                  <div class="aa-btn-row mt-2">
+                    <button type="button" id="insertAiResultBtn" class="aa-btn aa-btn-primary flex-1">Вставить в отчёт</button>
+                    <button type="button" id="openPracticeChatBtn" class="aa-btn aa-btn-ghost flex-1">Продолжить в чате</button>
+                  </div>
+                </div>
+              </div>
+
               <div id="practiceActionsRow" class="hidden mt-4 space-y-3">
-                <div class="aa-btn-row">
-                  <button type="button" id="openPracticeChatBtn" class="aa-btn aa-btn-primary flex-1">Проверить в чате</button>
+                <div class="aa-btn-row hidden" id="practiceChatToggleRow">
                   <button type="button" id="closePracticeChatBtn" class="aa-btn aa-btn-ghost hidden">Скрыть чат</button>
                 </div>
                 <div id="practiceHintsRow" class="hidden pt-2 border-t border-slate-200">

@@ -57,8 +57,52 @@ ${lessonBlock ? `Current learning context:\n${lessonBlock}\n` : ''}
 Respond in the same language the student uses when practical.`;
 }
 
+/**
+ * System prompt when the student runs their own prompt against the model (practice labs).
+ * Not the coaching mentor — the model should produce the deliverable the student asked for.
+ */
+function getPracticeRunSystemPrompt({ lesson = null, runKind = 'prompt', taskTitle = '', taskContext = '' } = {}) {
+  const lessonLine = lesson?.title ? `Practice: ${lesson.title}.` : '';
+  const taskBlock =
+    taskTitle || taskContext
+      ? `\nExercise variant: ${taskTitle || '—'}\n${taskContext ? `Situation: ${taskContext}` : ''}`
+      : '';
+
+  if (runKind === 'dialogue') {
+    return `You are participating in a workplace role-play exercise for learning (${MENTOR_PROMPT_VERSION}).
+${lessonLine}${taskBlock}
+
+Rules:
+- Stay in the character the student assigns you (client, manager, partner, etc.).
+- Reply in short, natural turns (2–6 sentences) like a real person, not like a coach.
+- Do not break character to give generic advice unless the student asks to pause the role-play.
+- Respond in the same language the student uses.`;
+  }
+
+  if (runKind === 'analysis') {
+    return `You are helping a student learn to fact-check AI-generated text (${MENTOR_PROMPT_VERSION}).
+${lessonLine}${taskBlock}
+
+Rules:
+- When the student pastes a fragment, answer their specific question (hints, types of risk, what to verify).
+- Do not write the full graded assignment for them: no complete "safe rewrite" or 5-point checklist unless they draft it first.
+- Be concrete and use simple language.`;
+  }
+
+  return `You execute the student's prompt as a capable assistant (${MENTOR_PROMPT_VERSION}).
+${lessonLine}${taskBlock}
+
+Rules:
+- Follow the student's prompt: role, task, context, format, style, and success criteria they specify.
+- Produce a practical draft answer they can review — this is a prompt test, not a refusal exercise.
+- Do not lecture about how to prompt unless they ask.
+- If something in the prompt is missing, do your best and add one short note at the end about what was unclear.
+- Respond in the same language as the student's prompt.`;
+}
+
 module.exports = {
   MENTOR_PROMPT_VERSION,
   getMentorSystemPrompt,
+  getPracticeRunSystemPrompt,
   buildLessonSection
 };

@@ -575,3 +575,24 @@
   line-height: 1.5;
   color: var(--aa-text-secondary);
 }
+
+.academy-light .aa-practice-workflow-box {
+  padding: 1rem;
+  background: var(--aa-surface);
+  border: 1px solid var(--aa-border);
+  border-radius: var(--aa-radius-sm);
+}
+
+.academy-light .aa-rtc-details summary {
+  list-style: none;
+}
+
+.academy-light .aa-rtc-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.academy-light #runPromptInAiBtn:disabled,
+.academy-light #runDialogueInAiBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

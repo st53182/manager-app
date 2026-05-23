@@ -458,7 +458,8 @@ const state = {
   activeKnowledgeBaseId: null,
   knowledgeDocuments: [],
   selectedTaskId: null,
-  taskOptions: []
+  taskOptions: [],
+  lastPracticeAiResult: null
 };
 let kbStatusPollTimer = null;
 let kbStatusPollBusy = false;
@@ -638,8 +639,187 @@ function buildGroupMetaForSave() {
   return {
     size: Number(document.getElementById('groupSizeInput')?.value) || null,
     input_by: document.getElementById('groupInputBy')?.value?.trim() || null,
-    selected_task_id: state.selectedTaskId || null
+    selected_task_id: state.selectedTaskId || null,
+    prompt_draft: {
+      text: document.getElementById('practicePromptText')?.value?.trim() || '',
+      dialogue_start: document.getElementById('practiceDialogueStart')?.value?.trim() || '',
+      r: document.getElementById('promptFieldR')?.value?.trim() || '',
+      t: document.getElementById('promptFieldT')?.value?.trim() || '',
+      c: document.getElementById('promptFieldC')?.value?.trim() || '',
+      f: document.getElementById('promptFieldF')?.value?.trim() || '',
+      s: document.getElementById('promptFieldS')?.value?.trim() || '',
+      criteria: document.getElementById('promptFieldCriteria')?.value?.trim() || ''
+    }
   };
+}
+
+function restorePromptDraftFromMeta(gm) {
+  const d = gm?.prompt_draft;
+  if (!d || typeof d !== 'object') return;
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && val != null) el.value = val;
+  };
+  set('practicePromptText', d.text);
+  set('practiceDialogueStart', d.dialogue_start);
+  set('promptFieldR', d.r);
+  set('promptFieldT', d.t);
+  set('promptFieldC', d.c);
+  set('promptFieldF', d.f);
+  set('promptFieldS', d.s);
+  set('promptFieldCriteria', d.criteria);
+}
+
+function assembleRtcfsсPrompt() {
+  const parts = [
+    ['R (роль)', document.getElementById('promptFieldR')?.value?.trim()],
+    ['T (задача)', document.getElementById('promptFieldT')?.value?.trim()],
+    ['C (контекст)', document.getElementById('promptFieldC')?.value?.trim()],
+    ['F (формат)', document.getElementById('promptFieldF')?.value?.trim()],
+    ['S (стиль)', document.getElementById('promptFieldS')?.value?.trim()],
+    ['C (критерии успеха)', document.getElementById('promptFieldCriteria')?.value?.trim()]
+  ].filter(([, v]) => v);
+  if (!parts.length) return '';
+  return parts.map(([k, v]) => `${k}:\n${v}`).join('\n\n');
+}
+
+function getPracticePromptText() {
+  const direct = document.getElementById('practicePromptText')?.value?.trim();
+  if (direct) return direct;
+  return assembleRtcfsсPrompt();
+}
+
+function buildPracticeRunContext(runKind) {
+  const task = getSelectedTaskOption();
+  return {
+    runKind,
+    taskTitle: task?.title || '',
+    taskContext: task?.context || task?.summary || ''
+  };
+}
+
+function configurePracticeWorkflow(scenarioKey) {
+  const wf = document.getElementById('practiceWorkflowBlock');
+  const promptSec = document.getElementById('practicePromptSection');
+  const dialSec = document.getElementById('practiceDialogueSection');
+  const analysisSec = document.getElementById('practiceAnalysisSection');
+  if (!wf) return;
+  wf.classList.remove('hidden');
+  promptSec?.classList.add('hidden');
+  dialSec?.classList.add('hidden');
+  analysisSec?.classList.add('hidden');
+  document.getElementById('aiResultBlock')?.classList.add('hidden');
+  state.lastPracticeAiResult = null;
+  if (scenarioKey === 'block1-practice-prompt') promptSec?.classList.remove('hidden');
+  else if (scenarioKey === 'block1-practice-scenario') dialSec?.classList.remove('hidden');
+  else if (scenarioKey === 'block1-practice-hallucination') analysisSec?.classList.remove('hidden');
+}
+
+function showAiResult(text) {
+  if (!text?.trim()) return;
+  state.lastPracticeAiResult = text.trim();
+  const block = document.getElementById('aiResultBlock');
+  const preview = document.getElementById('aiResultPreview');
+  if (block) block.classList.remove('hidden');
+  if (preview) preview.textContent = state.lastPracticeAiResult;
+  block?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function getSelectedTaskNumber() {
+  const idx = state.taskOptions.findIndex((t) => t.id === state.selectedTaskId);
+  return idx >= 0 ? idx + 1 : null;
+}
+
+function insertAiResultIntoAnswer() {
+  const text = state.lastPracticeAiResult;
+  if (!text) {
+    alert('Сначала получите ответ от нейросети.');
+    return;
+  }
+  const ta = document.getElementById('assignmentAnswer');
+  if (!ta) return;
+  const task = getSelectedTaskOption();
+  const num = getSelectedTaskNumber();
+  const sk = state.currentLesson?.scenario_key;
+  let cur = ta.value.trim();
+
+  if (sk === 'block1-practice-prompt') {
+    const promptText = getPracticePromptText();
+    const header = `Выбранный вариант (${num || '?'}): ${task?.title || ''}\n\n`;
+    const promptBlock = promptText ? `Промпт (RTCFSC):\n${promptText}\n\n` : '';
+    const resultBlock = `Краткий результат (ответ нейросети):\n${text}\n\n`;
+    if (!cur) {
+      ta.value = header + promptBlock + resultBlock + 'Слабое место:\n\nУлучшение v2:\n';
+    } else if (!/Краткий результат/i.test(cur)) {
+      ta.value = `${cur}\n\n${resultBlock}`;
+    } else {
+      ta.value = cur.replace(
+        /Краткий результат[^\n]*:\n[\s\S]*?(?=\n\nСлабое место|\n\nУлучшение v2|$)/i,
+        `Краткий результат (ответ нейросети):\n${text}\n\n`
+      );
+      if (ta.value === cur) ta.value = `${cur}\n\n${resultBlock}`;
+    }
+  } else if (sk === 'block1-practice-scenario') {
+    const start = document.getElementById('practiceDialogueStart')?.value?.trim();
+    const header = `Выбранный вариант (${num || '?'}): ${task?.title || ''}\n\n`;
+    const fragment = `Диалог (фрагмент):\nЯ: ${start || '…'}\nИИ: ${text}\n\n`;
+    if (!cur) ta.value = header + fragment + 'Выводы:\n• \n• \n• \n• \n';
+    else if (!/ИИ:/i.test(cur)) ta.value = `${cur}\n\n${fragment}`;
+    else ta.value = `${cur}\n\n---\n${fragment}`;
+  } else {
+    if (!cur) ta.value = `Краткий разбор:\n${text}\n`;
+    else ta.value = `${cur}\n\n${text}`;
+  }
+  saveSubmission('draft').catch((e) => console.warn(e));
+  document.getElementById('assignmentAnswer')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function runPracticeInAi({ message, runKind }) {
+  if (!warnIfNoTaskSelected()) return null;
+  const text = String(message || '').trim();
+  if (!text) {
+    alert(runKind === 'dialogue' ? 'Напишите первое сообщение с ролями.' : 'Сначала напишите промпт.');
+    return null;
+  }
+  if (state.streaming) return null;
+
+  const runBtn =
+    runKind === 'dialogue'
+      ? document.getElementById('runDialogueInAiBtn')
+      : runKind === 'analysis'
+        ? document.getElementById('runAnalysisInAiBtn')
+        : document.getElementById('runPromptInAiBtn');
+  runBtn?.setAttribute('disabled', 'true');
+
+  try {
+    await saveSubmission('draft');
+    openPracticeChat();
+    appendOptimisticUserMessage(text);
+    const typingLabel = document.getElementById('typingLabel');
+    if (typingLabel) typingLabel.textContent = 'Нейросеть выполняет ваш промпт…';
+    document.getElementById('typingRow')?.classList.remove('hidden');
+
+    const payload = {
+      conversationId: state.currentConversationId || undefined,
+      lessonId: state.currentLessonId || undefined,
+      courseId: state.currentLesson?.course_id || undefined,
+      message: text,
+      model: document.getElementById('modelSelect').value,
+      chatMode: 'practice_run',
+      practiceRunContext: buildPracticeRunContext(runKind)
+    };
+
+    const { assistantText } = await streamChat(payload);
+    document.getElementById('typingRow')?.classList.add('hidden');
+    if (assistantText) showAiResult(assistantText);
+    else alert('Ответ получен — откройте чат, чтобы прочитать полностью.');
+    return assistantText;
+  } catch (e) {
+    document.getElementById('typingRow')?.classList.add('hidden');
+    throw e;
+  } finally {
+    runBtn?.removeAttribute('disabled');
+  }
 }
 
 function getSelectedTaskOption() {
@@ -667,6 +847,14 @@ function renderTaskOptionDetail() {
   updateTaskSelectReminder();
 }
 
+function prefillPromptFromTask(task) {
+  if (!task || state.currentLesson?.scenario_key !== 'block1-practice-prompt') return;
+  const tEl = document.getElementById('promptFieldT');
+  const cEl = document.getElementById('promptFieldC');
+  if (tEl && !tEl.value.trim()) tEl.value = task.summary || '';
+  if (cEl && !cEl.value.trim()) cEl.value = task.context || '';
+}
+
 function selectTaskOption(taskId, { persist = true } = {}) {
   state.selectedTaskId = taskId || null;
   const list = document.getElementById('taskOptionsList');
@@ -677,6 +865,7 @@ function selectTaskOption(taskId, { persist = true } = {}) {
     });
   }
   renderTaskOptionDetail();
+  prefillPromptFromTask(getSelectedTaskOption());
   if (persist && state.currentLessonId) {
     saveSubmission('draft').catch((e) => console.warn(e));
   }
@@ -717,7 +906,15 @@ function renderTaskOptions(lesson) {
 function updateOpenPracticeChatLabel(scenarioKey) {
   const btn = document.getElementById('openPracticeChatBtn');
   if (!btn) return;
-  btn.textContent = OPEN_CHAT_LABELS[scenarioKey] || 'Открыть чат с наставником';
+  btn.textContent = 'Продолжить в чате';
+  const runBtn = document.getElementById('runPromptInAiBtn');
+  if (runBtn && scenarioKey === 'block1-practice-prompt') {
+    runBtn.textContent = 'Получить результат от нейросети';
+  }
+  const dialBtn = document.getElementById('runDialogueInAiBtn');
+  if (dialBtn && scenarioKey === 'block1-practice-scenario') {
+    dialBtn.textContent = 'Начать диалог с нейросетью';
+  }
 }
 
 function setPracticeChatOpen(open) {
@@ -761,6 +958,7 @@ function setPracticeFocusMode(on, lesson = null) {
     app.classList.remove('practice-focus', 'practice-chat-open', 'practice-chat-mobile');
     document.getElementById('sidebarFreeChatBlock')?.classList.remove('hidden');
     document.getElementById('practiceActionsRow')?.classList.add('hidden');
+    document.getElementById('practiceWorkflowBlock')?.classList.add('hidden');
     document.getElementById('taskOptionsBlock')?.classList.add('hidden');
     document.getElementById('toggleChatAdvancedBtn')?.classList.add('hidden');
     document.getElementById('chatAdvancedBlock')?.classList.add('hidden');
@@ -801,6 +999,7 @@ async function loadSubmissionForLesson(lessonId) {
   const gm = getSubmissionGroupMeta(data.submission);
   if (gm.size) document.getElementById('groupSizeInput').value = gm.size;
   if (gm.input_by) document.getElementById('groupInputBy').value = gm.input_by;
+  restorePromptDraftFromMeta(gm);
   if (gm.selected_task_id && state.taskOptions.some((t) => t.id === gm.selected_task_id)) {
     selectTaskOption(gm.selected_task_id, { persist: false });
   }
@@ -1219,6 +1418,7 @@ async function selectLesson(lesson) {
     at.innerHTML = renderMarkdown(asn.instructions_md || '');
     document.getElementById('askMentorAssignmentBtn')?.classList.add('hidden');
     renderTaskOptions(lesson);
+    configurePracticeWorkflow(lesson.scenario_key);
     bindPracticeHints(lesson.scenario_key);
     setPracticeFocusMode(true, lesson);
   } else {
@@ -1361,6 +1561,10 @@ async function streamChat(payload) {
     if (payload.conversationId) fd.append('conversationId', payload.conversationId);
     if (payload.lessonId) fd.append('lessonId', payload.lessonId);
     if (payload.courseId) fd.append('courseId', payload.courseId);
+    if (payload.chatMode) fd.append('chatMode', payload.chatMode);
+    if (payload.practiceRunContext) {
+      fd.append('practiceRunContext', JSON.stringify(payload.practiceRunContext));
+    }
     if (payload.regenerate) fd.append('regenerate', 'true');
     if (payload.chatMode) fd.append('chatMode', payload.chatMode);
     if (payload.knowledgeBaseId) fd.append('knowledgeBaseId', payload.knowledgeBaseId);
@@ -1458,12 +1662,17 @@ async function streamChat(payload) {
     if (hint) hint.textContent = '';
   }
 
+  let assistantText = assembled?.trim() || '';
   if (state.currentConversationId) {
     const data = await api(`/api/academy/conversations/${state.currentConversationId}`);
     renderMessages(data.messages || []);
+    const assistants = (data.messages || []).filter((m) => m.role === 'assistant');
+    const last = assistants[assistants.length - 1];
+    if (last?.content) assistantText = String(last.content).trim();
     state.conversations = (await api('/api/academy/conversations')).conversations;
     renderConversationList();
   }
+  return { assistantText };
 }
 
 function setComposerBusy(busy) {
@@ -2051,6 +2260,32 @@ function wireUi() {
     if (!warnIfNoTaskSelected()) return;
     try { await saveSubmission('submitted'); alert('Отправлено'); } catch (e) { alert(e.message); }
   });
+  document.getElementById('assemblePromptBtn')?.addEventListener('click', () => {
+    const assembled = assembleRtcfsсPrompt();
+    if (!assembled) return alert('Заполните хотя бы один блок RTCFSC.');
+    document.getElementById('practicePromptText').value = assembled;
+    saveSubmission('draft').catch(() => {});
+  });
+  document.getElementById('runPromptInAiBtn')?.addEventListener('click', () => {
+    runPracticeInAi({ message: getPracticePromptText(), runKind: 'prompt' }).catch((e) =>
+      alert(e.message || 'Не удалось получить ответ')
+    );
+  });
+  document.getElementById('runDialogueInAiBtn')?.addEventListener('click', () => {
+    const text = document.getElementById('practiceDialogueStart')?.value?.trim();
+    runPracticeInAi({ message: text, runKind: 'dialogue' }).catch((e) =>
+      alert(e.message || 'Не удалось начать диалог')
+    );
+  });
+  document.getElementById('runAnalysisInAiBtn')?.addEventListener('click', () => {
+    const task = getSelectedTaskOption();
+    if (!task?.context) return alert('Сначала выберите фрагмент (1–5).');
+    const msg = `Помоги разобрать этот фрагмент от ИИ по шагам. Не пиши готовый отчёт за меня — задавай наводящие вопросы и указывай типы рисков.\n\nФрагмент:\n${task.context}`;
+    runPracticeInAi({ message: msg, runKind: 'analysis' }).catch((e) =>
+      alert(e.message || 'Не удалось начать разбор')
+    );
+  });
+  document.getElementById('insertAiResultBtn')?.addEventListener('click', () => insertAiResultIntoAnswer());
   document.getElementById('openPracticeChatBtn')?.addEventListener('click', () => openPracticeChat());
   document.getElementById('closePracticeChatBtn')?.addEventListener('click', () => closePracticeChat());
   document.getElementById('backToAssignmentBtn')?.addEventListener('click', () => closePracticeChat());
