@@ -233,14 +233,11 @@
                 </label>
 
                 <div class="aa-btn-row">
-                  <button type="button" id="saveAnswerBtn" class="aa-btn">Сохранить черновик</button>
-                  <button type="button" id="submitAnswerBtn" class="aa-btn">Отправить</button>
-                  <button type="button" id="requestFeedbackBtn" class="aa-btn aa-btn-primary">Обратная связь ИИ</button>
+                  <button type="button" id="submitAnswerBtn" class="aa-btn aa-btn-primary flex-1">Отправить</button>
+                  <button type="button" id="requestFeedbackBtn" class="aa-btn flex-1">Обратная связь ИИ</button>
                 </div>
-                <div class="aa-btn-row">
-                  <button type="button" id="askMentorAssignmentBtn" class="aa-btn aa-btn-ghost hidden">Спросить наставника</button>
-                  <button type="button" id="markDoneBtn" class="aa-btn">Отметить пройденным</button>
-                </div>
+                <p id="autosaveStatus" class="hidden text-xs text-slate-500 mt-1" aria-live="polite"></p>
+                <button type="button" id="askMentorAssignmentBtn" class="aa-btn aa-btn-ghost hidden">Спросить наставника</button>
 
                 <div id="assignmentFeedback" class="aa-feedback-box hidden whitespace-pre-wrap"></div>
               </div>

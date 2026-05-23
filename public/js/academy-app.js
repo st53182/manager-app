@@ -770,7 +770,7 @@ function insertAiResultIntoAnswer() {
     if (!cur) ta.value = `Краткий разбор:\n${text}\n`;
     else ta.value = `${cur}\n\n${text}`;
   }
-  saveSubmission('draft').catch((e) => console.warn(e));
+  scheduleAutoSave();
   document.getElementById('assignmentAnswer')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
@@ -792,6 +792,7 @@ async function runPracticeInAi({ message, runKind }) {
   runBtn?.setAttribute('disabled', 'true');
 
   try {
+    scheduleAutoSave();
     await saveSubmission('draft');
     openPracticeChat();
     appendOptimisticUserMessage(text);
@@ -866,9 +867,7 @@ function selectTaskOption(taskId, { persist = true } = {}) {
   }
   renderTaskOptionDetail();
   prefillPromptFromTask(getSelectedTaskOption());
-  if (persist && state.currentLessonId) {
-    saveSubmission('draft').catch((e) => console.warn(e));
-  }
+  if (persist && state.currentLessonId) scheduleAutoSave();
 }
 
 function renderTaskOptions(lesson) {
@@ -1008,6 +1007,29 @@ async function loadSubmissionForLesson(lessonId) {
   if (fj && Object.keys(fj).length) renderAssignmentFeedback(fj);
   else document.getElementById('assignmentFeedback')?.classList.add('hidden');
 }
+let autosaveTimer = null;
+
+function showAutosaveStatus(text, { hideAfterMs = 2500 } = {}) {
+  const el = document.getElementById('autosaveStatus');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.remove('hidden');
+  clearTimeout(el._hideTimer);
+  if (hideAfterMs > 0) {
+    el._hideTimer = setTimeout(() => el.classList.add('hidden'), hideAfterMs);
+  }
+}
+
+function scheduleAutoSave() {
+  if (!state.currentLessonId) return;
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => {
+    saveSubmission('draft')
+      .then(() => showAutosaveStatus('Сохранено автоматически'))
+      .catch(() => showAutosaveStatus('Не удалось сохранить'));
+  }, 800);
+}
+
 async function saveSubmission(status) {
   if (!state.currentLessonId) return;
   await api('/api/academy/lessons/' + state.currentLessonId + '/submission', {
@@ -1019,6 +1041,58 @@ async function saveSubmission(status) {
       group_meta: buildGroupMetaForSave()
     })
   });
+}
+
+async function markLessonCompleted() {
+  if (!state.currentLessonId) return;
+  await api('/api/academy/progress', {
+    method: 'POST',
+    body: JSON.stringify({ lessonId: state.currentLessonId, status: 'completed' })
+  });
+  state.catalog = await api('/api/academy/catalog');
+  renderCourseTree();
+  await loadProgressSummary();
+}
+
+async function submitPracticeAnswer() {
+  if (!state.currentLessonId) return;
+  if (!warnIfNoTaskSelected()) return;
+  const answer_text = document.getElementById('assignmentAnswer')?.value?.trim();
+  if (!answer_text) return alert('Введите ответ');
+  await saveSubmission('submitted');
+  await markLessonCompleted();
+  showAutosaveStatus('Задание отправлено · практика пройдена', { hideAfterMs: 4000 });
+}
+
+function initAssignmentAutoSave() {
+  const fields = [
+    'assignmentAnswer',
+    'practicePromptText',
+    'practiceDialogueStart',
+    'promptFieldR',
+    'promptFieldT',
+    'promptFieldC',
+    'promptFieldF',
+    'promptFieldS',
+    'promptFieldCriteria',
+    'groupSizeInput',
+    'groupInputBy'
+  ];
+  for (const id of fields) {
+    const el = document.getElementById(id);
+    if (!el || el.dataset.autosaveBound) continue;
+    el.dataset.autosaveBound = '1';
+    el.addEventListener('input', scheduleAutoSave);
+    el.addEventListener('change', scheduleAutoSave);
+  }
+  const mode = document.getElementById('practiceModeSelect');
+  if (mode && !mode.dataset.autosaveBound) {
+    mode.dataset.autosaveBound = '1';
+    mode.addEventListener('change', () => {
+      syncPracticeModeUi();
+      scheduleAutoSave();
+    });
+  }
 }
 async function loadPromptLibrary() {
   try { const d = await api('/api/academy/prompts'); state.promptLibrary = d.prompts || []; renderPromptLibrary(); } catch (_) {}
@@ -1421,6 +1495,7 @@ async function selectLesson(lesson) {
     configurePracticeWorkflow(lesson.scenario_key);
     bindPracticeHints(lesson.scenario_key);
     setPracticeFocusMode(true, lesson);
+    initAssignmentAutoSave();
   } else {
     ab?.classList.add('hidden');
     document.getElementById('askMentorAssignmentBtn')?.classList.add('hidden');
@@ -2254,17 +2329,19 @@ function wireUi() {
   });
 
 
-  document.getElementById('practiceModeSelect')?.addEventListener('change', syncPracticeModeUi);
-  document.getElementById('saveAnswerBtn')?.addEventListener('click', async () => { try { await saveSubmission('draft'); alert('Сохранено'); } catch(e){alert(e.message);} });
+  initAssignmentAutoSave();
   document.getElementById('submitAnswerBtn')?.addEventListener('click', async () => {
-    if (!warnIfNoTaskSelected()) return;
-    try { await saveSubmission('submitted'); alert('Отправлено'); } catch (e) { alert(e.message); }
+    try {
+      await submitPracticeAnswer();
+    } catch (e) {
+      alert(e.message || 'Не удалось отправить');
+    }
   });
   document.getElementById('assemblePromptBtn')?.addEventListener('click', () => {
     const assembled = assembleRtcfsсPrompt();
     if (!assembled) return alert('Заполните хотя бы один блок RTCFSC.');
     document.getElementById('practicePromptText').value = assembled;
-    saveSubmission('draft').catch(() => {});
+    scheduleAutoSave();
   });
   document.getElementById('runPromptInAiBtn')?.addEventListener('click', () => {
     runPracticeInAi({ message: getPracticePromptText(), runKind: 'prompt' }).catch((e) =>
@@ -2321,17 +2398,6 @@ function wireUi() {
     document.getElementById('composer').focus();
   });
   document.getElementById('practiceHintBtn')?.addEventListener('click', () => insertPracticeHintIntoComposer());
-
-  document.getElementById('markDoneBtn')?.addEventListener('click', async () => {
-    if (!state.currentLessonId) return;
-    await api('/api/academy/progress', {
-      method: 'POST',
-      body: JSON.stringify({ lessonId: state.currentLessonId, status: 'completed' })
-    });
-    state.catalog = await api('/api/academy/catalog');
-    renderCourseTree();
-    await loadProgressSummary();
-  });
 }
 
 function formatBytes(bytes) {
