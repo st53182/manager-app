@@ -61,20 +61,45 @@ Respond in the same language the student uses when practical.`;
  * System prompt when the student runs their own prompt against the model (practice labs).
  * Not the coaching mentor — the model should produce the deliverable the student asked for.
  */
-function getPracticeRunSystemPrompt({ lesson = null, runKind = 'prompt', taskTitle = '', taskContext = '' } = {}) {
+function getPracticeRunSystemPrompt({
+  lesson = null,
+  runKind = 'prompt',
+  taskTitle = '',
+  taskContext = '',
+  taskDescription = '',
+  aiRole = '',
+  studentRole = '',
+  studentGoal = '',
+  hardReaction = '',
+  dialogueRules = [],
+  fragmentText = '',
+  pass = null
+} = {}) {
   const lessonLine = lesson?.title ? `Practice: ${lesson.title}.` : '';
+  const descLine = taskDescription ? `\nBrief: ${taskDescription}` : '';
   const taskBlock =
-    taskTitle || taskContext
-      ? `\nExercise variant: ${taskTitle || '—'}\n${taskContext ? `Situation: ${taskContext}` : ''}`
+    taskTitle || taskContext || fragmentText
+      ? `\nExercise variant: ${taskTitle || '—'}${descLine}\n${taskContext ? `Situation: ${taskContext}` : ''}${fragmentText && !taskContext ? `\nFragment:\n${fragmentText}` : ''}`
       : '';
+  const passLine = pass === 'v2' ? '\nThis is the student\'s improved prompt (version 2) — follow it closely.' : '';
 
   if (runKind === 'dialogue') {
+    const roleLine = aiRole ? `\nYour character (stay in role): ${aiRole}` : '';
+    const studentLine = studentRole ? `\nThe student plays: ${studentRole}` : '';
+    const goalLine = studentGoal ? `\nStudent's goal in the dialogue: ${studentGoal}` : '';
+    const rulesBlock =
+      Array.isArray(dialogueRules) && dialogueRules.length
+        ? `\nDialogue must include:\n${dialogueRules.map((r) => `- ${r}`).join('\n')}`
+        : '';
+    const hardBlock = hardReaction
+      ? `\nOn your 2nd or 3rd reply (or when the student pushes for a quick yes), react in character with this difficult response (paraphrase naturally): «${hardReaction}»`
+      : '';
     return `You are participating in a workplace role-play exercise for learning (${MENTOR_PROMPT_VERSION}).
-${lessonLine}${taskBlock}
+${lessonLine}${taskBlock}${roleLine}${studentLine}${goalLine}${rulesBlock}${hardBlock}
 
 Rules:
-- Stay in the character the student assigns you (client, manager, partner, etc.).
-- Reply in short, natural turns (2–6 sentences) like a real person, not like a coach.
+- Stay in the assigned character — not a coach or generic assistant.
+- Reply in short, natural turns (2–6 sentences) like a real person.
 - Do not break character to give generic advice unless the student asks to pause the role-play.
 - Respond in the same language the student uses.`;
   }
@@ -90,7 +115,7 @@ Rules:
   }
 
   return `You execute the student's prompt as a capable assistant (${MENTOR_PROMPT_VERSION}).
-${lessonLine}${taskBlock}
+${lessonLine}${taskBlock}${passLine}
 
 Rules:
 - Follow the student's prompt: role, task, context, format, style, and success criteria they specify.
