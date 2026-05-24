@@ -969,6 +969,47 @@ async function deleteAiConversation(userId, conversationId) {
   }
 }
 
+async function deleteAiConversationsForLesson(userId, lessonId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `DELETE FROM ai_conversations WHERE user_id = $1 AND lesson_id = $2 RETURNING id`,
+      [userId, lessonId]
+    );
+    return r.rowCount;
+  } finally {
+    client.release();
+  }
+}
+
+async function resetLessonPractice(userId, lessonId) {
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `INSERT INTO academy_user_lesson_progress
+        (user_id, lesson_id, status, answer_text, answer_updated_at, assignment_status, practice_mode, group_meta, feedback_json, feedback_at, score, completed_at, updated_at)
+       VALUES ($1, $2, 'in_progress', NULL, NULL, 'not_started', 'individual', '{}'::jsonb, '{}'::jsonb, NULL, NULL, NULL, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, lesson_id) DO UPDATE SET
+         status = 'in_progress',
+         answer_text = NULL,
+         answer_updated_at = NULL,
+         assignment_status = 'not_started',
+         practice_mode = 'individual',
+         group_meta = '{}'::jsonb,
+         feedback_json = '{}'::jsonb,
+         feedback_at = NULL,
+         score = NULL,
+         completed_at = NULL,
+         updated_at = CURRENT_TIMESTAMP`,
+      [userId, lessonId]
+    );
+    await deleteAiConversationsForLesson(userId, lessonId);
+    return true;
+  } finally {
+    client.release();
+  }
+}
+
 async function addAiMessage(conversationId, role, content, meta = {}) {
   const client = await pool.connect();
   try {
@@ -1506,6 +1547,8 @@ module.exports = {
   updateAiConversation,
   touchConversationUpdated,
   deleteAiConversation,
+  deleteAiConversationsForLesson,
+  resetLessonPractice,
   addAiMessage,
   listAiMessagesAsc,
   deleteLastAssistantMessage,

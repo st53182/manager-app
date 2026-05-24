@@ -146,7 +146,7 @@
               </div>
 
               <div id="taskOptionsBlock" class="hidden mt-4">
-                <p class="aa-label mb-2">Выберите одну из 5 задач</p>
+                <p id="taskOptionsPickLabel" class="aa-label mb-2">Выберите один из 5 вариантов</p>
                 <div id="taskOptionsList" class="aa-task-options" role="radiogroup" aria-label="Варианты задачи"></div>
                 <div id="taskOptionDetail" class="aa-task-detail hidden mt-3"></div>
                 <p id="taskSelectReminder" class="hidden mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">Выберите вариант задачи (1–5), чтобы продолжить.</p>
@@ -176,17 +176,28 @@
                 </div>
                 <div id="practiceAnalysisSection" class="hidden aa-practice-workflow-box">
                   <p class="aa-label mb-1">Шаг 2. Разбор фрагмента</p>
-                  <p class="text-xs text-slate-600 mb-2">Выбранный учебный текст — в описании задачи выше. Нейросеть поможет найти риски по шагам (без готового отчёта за вас).</p>
-                  <button type="button" id="runAnalysisInAiBtn" class="aa-btn aa-btn-primary w-full">Начать разбор с нейросетью</button>
+                  <p class="text-xs text-slate-600 mb-2">Прочитайте фрагмент, выпишите риски в заметки. Нейросеть подскажет по шагам — готовый отчёт за вас не пишет.</p>
+                  <p class="text-xs font-medium text-slate-700 mt-2">Исходный фрагмент</p>
+                  <div id="practiceFragmentPreview" class="aa-task-detail text-sm max-h-40 overflow-y-auto">Выберите вариант 1–5 выше.</div>
+                  <label class="block mt-3">
+                    <span class="aa-label">Ваши заметки (проблемы, типы рисков)</span>
+                    <textarea id="practiceAnalysisNotes" rows="5" class="aa-textarea mt-1" placeholder="1) … — тип: выдуманный факт&#10;2) …"></textarea>
+                  </label>
+                  <button type="button" id="runAnalysisInAiBtn" class="aa-btn aa-btn-primary w-full mt-2">Получить подсказку от нейросети</button>
                 </div>
                 <div id="practiceDialogueSection" class="hidden aa-practice-workflow-box">
-                  <p class="aa-label mb-1">Шаг 2. Старт диалога</p>
-                  <p class="text-xs text-slate-600 mb-2">Напишите, кто вы и кто ИИ (роли и правила), затем начните диалог — ответ пойдёт от «персонажа».</p>
-                  <label class="block">
-                    <span class="aa-label">Первое сообщение в диалог</span>
-                    <textarea id="practiceDialogueStart" rows="5" class="aa-textarea mt-1" placeholder="ИИ = недовольный клиент. Я = менеджер проекта. Правила: по 2–4 предложения…"></textarea>
+                  <p class="aa-label mb-1">Шаг 2. Настройка диалога</p>
+                  <p class="text-xs text-slate-600 mb-2">Укажите роли и правила — затем запустите диалог с нейросетью и продолжите в чате.</p>
+                  <div class="grid gap-2 sm:grid-cols-2">
+                    <label class="block text-sm"><span class="font-medium">ИИ (роль)</span><input id="practiceRoleAi" type="text" class="aa-input mt-0.5" placeholder="недовольный клиент" /></label>
+                    <label class="block text-sm"><span class="font-medium">Я (роль)</span><input id="practiceRoleMe" type="text" class="aa-input mt-0.5" placeholder="менеджер проекта" /></label>
+                  </div>
+                  <button type="button" id="assembleDialogueBtn" class="aa-btn aa-btn-ghost text-sm mt-2">Собрать первое сообщение</button>
+                  <label class="block mt-2">
+                    <span class="aa-label">Первое сообщение (уходит в нейросеть)</span>
+                    <textarea id="practiceDialogueStart" rows="5" class="aa-textarea mt-1" placeholder="ИИ = … Я = … Правила: …"></textarea>
                   </label>
-                  <button type="button" id="runDialogueInAiBtn" class="aa-btn aa-btn-primary w-full mt-2">Начать диалог с нейросетью</button>
+                  <button type="button" id="runDialogueInAiBtn" class="aa-btn aa-btn-primary w-full mt-2">Получить ответ нейросети (1-я реплика)</button>
                 </div>
                 <div id="aiResultBlock" class="hidden">
                   <p class="aa-label mb-1">Результат нейросети</p>
@@ -236,6 +247,7 @@
                   <button type="button" id="submitAnswerBtn" class="aa-btn aa-btn-primary flex-1">Отправить</button>
                   <button type="button" id="requestFeedbackBtn" class="aa-btn flex-1">Обратная связь ИИ</button>
                 </div>
+                <button type="button" id="restartPracticeBtn" class="aa-btn aa-btn-ghost w-full text-sm mt-1">Пройти задание сначала</button>
                 <p id="autosaveStatus" class="hidden text-xs text-slate-500 mt-1" aria-live="polite"></p>
                 <button type="button" id="askMentorAssignmentBtn" class="aa-btn aa-btn-ghost hidden">Спросить наставника</button>
 

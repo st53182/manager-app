@@ -186,6 +186,17 @@ function createRouter({ JWT_SECRET }) {
       res.json({ submission });
     } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to save submission' }); }
   });
+  router.post('/lessons/:lessonId/restart', authenticateAcademy, async (req, res) => {
+    try {
+      const lesson = await db.getLessonById(req.params.lessonId);
+      if (!lesson) return res.status(404).json({ error: 'Lesson not found' });
+      await db.resetLessonPractice(req.dbUser.id, req.params.lessonId);
+      res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to restart practice' });
+    }
+  });
   router.post('/lessons/:lessonId/feedback', authenticateAcademy, aiChatLimiter, async (req, res) => {
     const openai = createOpenRouterClient();
     if (!openai) return res.status(503).json({ error: 'AI service not configured' });

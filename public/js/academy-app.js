@@ -407,10 +407,10 @@ const PRACTICE_SCENARIO_KEYS = new Set([
   'block1-practice-hallucination'
 ]);
 
-const OPEN_CHAT_LABELS = {
-  'block1-practice-prompt': 'Проверить промпт в чате',
-  'block1-practice-scenario': 'Открыть диалог с наставником',
-  'block1-practice-hallucination': 'Обсудить разбор в чате'
+const TASK_PICK_LABELS = {
+  'block1-practice-prompt': 'Выберите одну из 5 задач',
+  'block1-practice-scenario': 'Выберите один из 5 сценариев',
+  'block1-practice-hallucination': 'Выберите один из 5 фрагментов'
 };
 
 const PRACTICE_HINTS = {
@@ -648,7 +648,10 @@ function buildGroupMetaForSave() {
       c: document.getElementById('promptFieldC')?.value?.trim() || '',
       f: document.getElementById('promptFieldF')?.value?.trim() || '',
       s: document.getElementById('promptFieldS')?.value?.trim() || '',
-      criteria: document.getElementById('promptFieldCriteria')?.value?.trim() || ''
+      criteria: document.getElementById('promptFieldCriteria')?.value?.trim() || '',
+      role_ai: document.getElementById('practiceRoleAi')?.value?.trim() || '',
+      role_me: document.getElementById('practiceRoleMe')?.value?.trim() || '',
+      analysis_notes: document.getElementById('practiceAnalysisNotes')?.value?.trim() || ''
     }
   };
 }
@@ -668,6 +671,9 @@ function restorePromptDraftFromMeta(gm) {
   set('promptFieldF', d.f);
   set('promptFieldS', d.s);
   set('promptFieldCriteria', d.criteria);
+  set('practiceRoleAi', d.role_ai);
+  set('practiceRoleMe', d.role_me);
+  set('practiceAnalysisNotes', d.analysis_notes);
 }
 
 function assembleRtcfsсPrompt() {
@@ -703,6 +709,7 @@ function configurePracticeWorkflow(scenarioKey) {
   const promptSec = document.getElementById('practicePromptSection');
   const dialSec = document.getElementById('practiceDialogueSection');
   const analysisSec = document.getElementById('practiceAnalysisSection');
+  const pickLabel = document.getElementById('taskOptionsPickLabel');
   if (!wf) return;
   wf.classList.remove('hidden');
   promptSec?.classList.add('hidden');
@@ -710,9 +717,138 @@ function configurePracticeWorkflow(scenarioKey) {
   analysisSec?.classList.add('hidden');
   document.getElementById('aiResultBlock')?.classList.add('hidden');
   state.lastPracticeAiResult = null;
+  if (pickLabel) pickLabel.textContent = TASK_PICK_LABELS[scenarioKey] || 'Выберите один из 5 вариантов';
   if (scenarioKey === 'block1-practice-prompt') promptSec?.classList.remove('hidden');
   else if (scenarioKey === 'block1-practice-scenario') dialSec?.classList.remove('hidden');
-  else if (scenarioKey === 'block1-practice-hallucination') analysisSec?.classList.remove('hidden');
+  else if (scenarioKey === 'block1-practice-hallucination') {
+    analysisSec?.classList.remove('hidden');
+    updateFragmentPreview();
+  }
+}
+
+function updateFragmentPreview() {
+  const el = document.getElementById('practiceFragmentPreview');
+  if (!el) return;
+  const task = getSelectedTaskOption();
+  if (!task?.context) {
+    el.textContent = 'Выберите вариант 1–5 выше.';
+    return;
+  }
+  el.textContent = task.context;
+}
+
+function assembleDialogueStart() {
+  const ai = document.getElementById('practiceRoleAi')?.value?.trim();
+  const me = document.getElementById('practiceRoleMe')?.value?.trim();
+  const task = getSelectedTaskOption();
+  const lines = [];
+  if (ai) lines.push(`ИИ = ${ai}`);
+  if (me) lines.push(`Я = ${me}`);
+  lines.push('Правила: короткие реплики (2–4 предложения), оставайся в роли, минимум 3–5 обменов.');
+  if (task?.summary) lines.push(`Ситуация: ${task.summary}`);
+  return lines.join('\n');
+}
+
+function getDialogueStartText() {
+  const direct = document.getElementById('practiceDialogueStart')?.value?.trim();
+  if (direct) return direct;
+  return assembleDialogueStart();
+}
+
+function prefillDialogueFromTask(task) {
+  if (!task || state.currentLesson?.scenario_key !== 'block1-practice-scenario') return;
+  const aiEl = document.getElementById('practiceRoleAi');
+  const meEl = document.getElementById('practiceRoleMe');
+  const startEl = document.getElementById('practiceDialogueStart');
+  if (aiEl && !aiEl.value.trim()) {
+    if (task.id === 'p2-task-1') aiEl.value = 'недовольный клиент';
+    else if (task.id === 'p2-task-2') aiEl.value = 'руководитель';
+    else if (task.id === 'p2-task-3') aiEl.value = 'новый сотрудник';
+    else if (task.id === 'p2-task-4') aiEl.value = 'сомневающийся партнёр';
+    else if (task.id === 'p2-task-5') aiEl.value = 'перегруженный коллега';
+  }
+  if (meEl && !meEl.value.trim()) {
+    if (task.id === 'p2-task-1') meEl.value = 'менеджер проекта';
+    else if (task.id === 'p2-task-2') meEl.value = 'инициатор внедрения ИИ';
+    else if (task.id === 'p2-task-3') meEl.value = 'руководитель';
+    else if (task.id === 'p2-task-4') meEl.value = 'продакт-менеджер';
+    else if (task.id === 'p2-task-5') meEl.value = 'тимлид';
+  }
+  if (startEl && !startEl.value.trim()) startEl.value = assembleDialogueStart();
+}
+
+function clearPracticeFormUi() {
+  state.selectedTaskId = null;
+  state.lastPracticeAiResult = null;
+  state.currentConversationId = null;
+  const ids = [
+    'assignmentAnswer',
+    'practicePromptText',
+    'practiceDialogueStart',
+    'practiceAnalysisNotes',
+    'practiceRoleAi',
+    'practiceRoleMe',
+    'promptFieldR',
+    'promptFieldT',
+    'promptFieldC',
+    'promptFieldF',
+    'promptFieldS',
+    'promptFieldCriteria',
+    'groupSizeInput',
+    'groupInputBy'
+  ];
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  }
+  const mode = document.getElementById('practiceModeSelect');
+  if (mode) mode.value = 'individual';
+  syncPracticeModeUi();
+  document.getElementById('taskOptionsList')?.querySelectorAll('.aa-task-card').forEach((btn) => {
+    btn.classList.remove('is-selected');
+    btn.setAttribute('aria-checked', 'false');
+  });
+  document.getElementById('taskOptionDetail')?.classList.add('hidden');
+  document.getElementById('aiResultBlock')?.classList.add('hidden');
+  document.getElementById('assignmentFeedback')?.classList.add('hidden');
+  document.getElementById('messagesContainer').innerHTML = '';
+  updateFragmentPreview();
+  updateTaskSelectReminder();
+  closePracticeChat();
+}
+
+async function restartPractice() {
+  if (!state.currentLessonId || !state.currentLesson) return;
+  if (
+    !confirm(
+      'Начать задание сначала?\n\nБудут сброшены: выбор варианта, ответ, заметки и переписка с нейросетью по этой практике.'
+    )
+  ) {
+    return;
+  }
+  await api(`/api/academy/lessons/${state.currentLessonId}/restart`, { method: 'POST' });
+  clearPracticeFormUi();
+  state.conversations = (await api('/api/academy/conversations')).conversations || [];
+  renderConversationList();
+  state.catalog = await api('/api/academy/catalog');
+  renderCourseTree();
+  await loadProgressSummary();
+  const lesson = state.currentLesson;
+  const conv = await api('/api/academy/conversations', {
+    method: 'POST',
+    body: JSON.stringify({
+      lessonId: lesson.id,
+      courseId: lesson.course_id,
+      title: lesson.title,
+      model: document.getElementById('modelSelect').value
+    })
+  });
+  state.conversations.unshift(conv);
+  state.currentConversationId = conv.id;
+  renderConversationList();
+  renderTaskOptions(lesson);
+  configurePracticeWorkflow(lesson.scenario_key);
+  showAutosaveStatus('Задание сброшено — можно пройти сначала', { hideAfterMs: 4000 });
 }
 
 function showAiResult(text) {
@@ -766,6 +902,22 @@ function insertAiResultIntoAnswer() {
     if (!cur) ta.value = header + fragment + 'Выводы:\n• \n• \n• \n• \n';
     else if (!/ИИ:/i.test(cur)) ta.value = `${cur}\n\n${fragment}`;
     else ta.value = `${cur}\n\n---\n${fragment}`;
+  } else if (sk === 'block1-practice-hallucination') {
+    const notes = document.getElementById('practiceAnalysisNotes')?.value?.trim();
+    const header = `Выбранный вариант (${num || '?'}): ${task?.title || ''}\n\n`;
+    const fragment = `Исходный фрагмент:\n${task?.context || '…'}\n\n`;
+    const notesBlock = notes ? `Проблемы (мои заметки):\n${notes}\n\n` : '';
+    const hintBlock = `Подсказка нейросети (черновик):\n${text}\n\n`;
+    if (!cur) {
+      ta.value =
+        header +
+        fragment +
+        notesBlock +
+        hintBlock +
+        'Проблемы (итог, ≥4):\n1) … — тип: …\n\nБезопасная версия:\n\nЧек-лист (5 пунктов):\n1. …\n';
+    } else {
+      ta.value = `${cur}\n\n${hintBlock}`;
+    }
   } else {
     if (!cur) ta.value = `Краткий разбор:\n${text}\n`;
     else ta.value = `${cur}\n\n${text}`;
@@ -778,7 +930,9 @@ async function runPracticeInAi({ message, runKind }) {
   if (!warnIfNoTaskSelected()) return null;
   const text = String(message || '').trim();
   if (!text) {
-    alert(runKind === 'dialogue' ? 'Напишите первое сообщение с ролями.' : 'Сначала напишите промпт.');
+    if (runKind === 'dialogue') alert('Укажите роли и первое сообщение (или нажмите «Собрать первое сообщение»).');
+    else if (runKind === 'analysis') alert('Сначала выберите фрагмент.');
+    else alert('Сначала напишите промпт.');
     return null;
   }
   if (state.streaming) return null;
@@ -797,7 +951,14 @@ async function runPracticeInAi({ message, runKind }) {
     openPracticeChat();
     appendOptimisticUserMessage(text);
     const typingLabel = document.getElementById('typingLabel');
-    if (typingLabel) typingLabel.textContent = 'Нейросеть выполняет ваш промпт…';
+    if (typingLabel) {
+      typingLabel.textContent =
+        runKind === 'dialogue'
+          ? 'Нейросеть отвечает в роли…'
+          : runKind === 'analysis'
+            ? 'Нейросеть готовит подсказку…'
+            : 'Нейросеть выполняет ваш промпт…';
+    }
     document.getElementById('typingRow')?.classList.remove('hidden');
 
     const payload = {
@@ -845,6 +1006,8 @@ function renderTaskOptionDetail() {
   }
   detail.classList.remove('hidden');
   detail.innerHTML = `<strong class="text-slate-800 block mb-1">${escapeHtml(task.title)}</strong>${escapeHtml(task.context)}`;
+  updateFragmentPreview();
+  prefillDialogueFromTask(task);
   updateTaskSelectReminder();
 }
 
@@ -904,15 +1067,16 @@ function renderTaskOptions(lesson) {
 
 function updateOpenPracticeChatLabel(scenarioKey) {
   const btn = document.getElementById('openPracticeChatBtn');
-  if (!btn) return;
-  btn.textContent = 'Продолжить в чате';
+  if (btn) btn.textContent = 'Продолжить в чате';
   const runBtn = document.getElementById('runPromptInAiBtn');
-  if (runBtn && scenarioKey === 'block1-practice-prompt') {
-    runBtn.textContent = 'Получить результат от нейросети';
-  }
+  if (runBtn && scenarioKey === 'block1-practice-prompt') runBtn.textContent = 'Получить результат от нейросети';
   const dialBtn = document.getElementById('runDialogueInAiBtn');
   if (dialBtn && scenarioKey === 'block1-practice-scenario') {
-    dialBtn.textContent = 'Начать диалог с нейросетью';
+    dialBtn.textContent = 'Получить ответ нейросети (1-я реплика)';
+  }
+  const analysisBtn = document.getElementById('runAnalysisInAiBtn');
+  if (analysisBtn && scenarioKey === 'block1-practice-hallucination') {
+    analysisBtn.textContent = 'Получить подсказку от нейросети';
   }
 }
 
@@ -1069,6 +1233,9 @@ function initAssignmentAutoSave() {
     'assignmentAnswer',
     'practicePromptText',
     'practiceDialogueStart',
+    'practiceRoleAi',
+    'practiceRoleMe',
+    'practiceAnalysisNotes',
     'promptFieldR',
     'promptFieldT',
     'promptFieldC',
@@ -2348,19 +2515,29 @@ function wireUi() {
       alert(e.message || 'Не удалось получить ответ')
     );
   });
+  document.getElementById('assembleDialogueBtn')?.addEventListener('click', () => {
+    const msg = assembleDialogueStart();
+    if (!msg) return alert('Заполните хотя бы одну роль.');
+    document.getElementById('practiceDialogueStart').value = msg;
+    scheduleAutoSave();
+  });
   document.getElementById('runDialogueInAiBtn')?.addEventListener('click', () => {
-    const text = document.getElementById('practiceDialogueStart')?.value?.trim();
-    runPracticeInAi({ message: text, runKind: 'dialogue' }).catch((e) =>
+    runPracticeInAi({ message: getDialogueStartText(), runKind: 'dialogue' }).catch((e) =>
       alert(e.message || 'Не удалось начать диалог')
     );
   });
   document.getElementById('runAnalysisInAiBtn')?.addEventListener('click', () => {
     const task = getSelectedTaskOption();
     if (!task?.context) return alert('Сначала выберите фрагмент (1–5).');
-    const msg = `Помоги разобрать этот фрагмент от ИИ по шагам. Не пиши готовый отчёт за меня — задавай наводящие вопросы и указывай типы рисков.\n\nФрагмент:\n${task.context}`;
+    const notes = document.getElementById('practiceAnalysisNotes')?.value?.trim();
+    let msg = `Помоги разобрать фрагмент по шагам. Не пиши готовый отчёт целиком — подскажи, какие риски проверить и какие типы ошибок искать.\n\nФрагмент:\n${task.context}`;
+    if (notes) msg += `\n\nМои заметки:\n${notes}`;
     runPracticeInAi({ message: msg, runKind: 'analysis' }).catch((e) =>
       alert(e.message || 'Не удалось начать разбор')
     );
+  });
+  document.getElementById('restartPracticeBtn')?.addEventListener('click', () => {
+    restartPractice().catch((e) => alert(e.message || 'Не удалось сбросить задание'));
   });
   document.getElementById('insertAiResultBtn')?.addEventListener('click', () => insertAiResultIntoAnswer());
   document.getElementById('openPracticeChatBtn')?.addEventListener('click', () => openPracticeChat());
