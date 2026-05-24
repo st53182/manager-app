@@ -103,7 +103,15 @@ function createRouter({ JWT_SECRET }) {
               lesson: lessonForPrompt,
               runKind: practiceRunContext?.runKind || 'prompt',
               taskTitle: practiceRunContext?.taskTitle || '',
-              taskContext: practiceRunContext?.taskContext || ''
+              taskContext: practiceRunContext?.taskContext || '',
+              taskDescription: practiceRunContext?.taskDescription || '',
+              aiRole: practiceRunContext?.aiRole || '',
+              studentRole: practiceRunContext?.studentRole || '',
+              studentGoal: practiceRunContext?.studentGoal || '',
+              hardReaction: practiceRunContext?.hardReaction || '',
+              dialogueRules: practiceRunContext?.dialogueRules || [],
+              fragmentText: practiceRunContext?.fragmentText || '',
+              pass: practiceRunContext?.pass || null
             })
           : getMentorSystemPrompt({ lesson: lessonForPrompt, assignment: assignmentForPrompt });
       apiMessages.push({
@@ -216,9 +224,38 @@ function createRouter({ JWT_SECRET }) {
         let opts = assignment.task_options;
         if (typeof opts === 'string') try { opts = JSON.parse(opts); } catch { opts = []; }
         const picked = Array.isArray(opts) ? opts.find((t) => t.id === taskId) : null;
-        if (picked) taskLine = `\nSelected task variant: ${picked.title}\nContext: ${picked.context || picked.summary || ''}\n`;
+        if (picked) {
+          taskLine = `\nSelected task variant: ${picked.title}\n`;
+          if (picked.description) taskLine += `Description: ${picked.description}\n`;
+          if (picked.bad_prompt) taskLine += `Bad prompt example: ${picked.bad_prompt}\n`;
+          if (picked.raw_input) taskLine += `Raw input: ${picked.raw_input}\n`;
+          if (picked.fragment_text) {
+            const frag = picked.fragment_text;
+            taskLine += `Fragment (reference): ${frag.length > 800 ? `${frag.slice(0, 800)}…` : frag}\n`;
+          }
+          else taskLine += `Context: ${picked.context || picked.summary || ''}\n`;
+        }
       }
-      const graderPrompt = 'Grade assignment. JSON: score, criteria_scores, strengths, weaknesses, recommendations. Criteria: ' + criteria + taskLine + '\nAnswer:\n' + answerText;
+      let workflowLine = '';
+      if (meta.workflow && typeof meta.workflow === 'object') {
+        try {
+          const wfJson = JSON.stringify(meta.workflow);
+          workflowLine =
+            '\nStructured student workflow (prompt v1/v2, dialogue analysis, risk table, self-check):\n' +
+            wfJson.slice(0, 8000) +
+            (wfJson.length > 8000 ? '…' : '') +
+            '\n';
+        } catch {
+          workflowLine = '';
+        }
+      }
+      const graderPrompt =
+        'Grade assignment. JSON: score, criteria_scores, strengths, weaknesses, recommendations. Criteria: ' +
+        criteria +
+        taskLine +
+        workflowLine +
+        '\nAnswer:\n' +
+        answerText;
       await assertQuota(req, estimateTokensFromText(graderPrompt));
       let text = '', usage = null;
       for await (const part of streamChatCompletion(openai, { model, messages: [{ role: 'system', content: 'JSON only' }, { role: 'user', content: graderPrompt }], maxTokens: 1200 })) {
