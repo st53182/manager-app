@@ -152,86 +152,185 @@
               </div>
 
               <div id="caseBriefBlock" class="hidden mt-4 aa-case-brief"></div>
+              <button type="button" id="startPracticeBtn" class="hidden aa-btn aa-btn-primary w-full mt-3">
+                Начать задание →
+              </button>
 
-              <div id="practiceWorkflowBlock" class="hidden mt-4 space-y-3">
-                <div id="practicePromptSection" class="hidden aa-practice-workflow-box space-y-3">
-                  <p class="aa-label">Шаг 2. Промпт v1 (RTCFSC)</p>
-                  <details class="aa-rtc-details mb-2">
-                    <summary class="text-sm text-blue-700 cursor-pointer">Заполнить по блокам RTCFSC</summary>
-                    <div class="mt-2 space-y-2">
-                      <label class="block text-xs"><span class="font-medium">R — роль</span><textarea id="promptFieldR" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
-                      <label class="block text-xs"><span class="font-medium">T — задача</span><textarea id="promptFieldT" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
-                      <label class="block text-xs"><span class="font-medium">C — контекст</span><textarea id="promptFieldC" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
-                      <label class="block text-xs"><span class="font-medium">F — формат</span><textarea id="promptFieldF" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
-                      <label class="block text-xs"><span class="font-medium">S — стиль</span><textarea id="promptFieldS" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
-                      <label class="block text-xs"><span class="font-medium">C — критерии</span><textarea id="promptFieldCriteria" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
-                      <button type="button" id="assemblePromptV1Btn" class="aa-btn aa-btn-ghost text-sm">Собрать промпт v1 из блоков</button>
+              <!-- Прогресс шагов -->
+              <div id="practiceStepBar" class="hidden mt-4 aa-step-bar">
+                <div class="aa-step-bar-top">
+                  <div id="practiceStepDots" class="aa-step-dots"></div>
+                  <span id="practiceStepNum" class="aa-step-num-text">Шаг 1 из 3</span>
+                </div>
+                <p id="practiceStepTitle" class="aa-step-bar-title"></p>
+              </div>
+              <div id="practiceCelebrationMsg" class="hidden aa-step-celebration" role="status"></div>
+
+              <div id="practiceWorkflowBlock" class="hidden mt-3 space-y-3">
+
+                <!-- ===== ПРАКТИКА 1: Промпт v1/v2 ===== -->
+                <div id="practicePromptSection" class="hidden space-y-3">
+
+                  <!-- Шаг 1: Написать промпт v1 -->
+                  <div class="aa-step-pane aa-practice-workflow-box space-y-3" data-practice-step="1">
+                    <details class="aa-rtc-details mb-2">
+                      <summary class="text-sm text-blue-700 cursor-pointer">Подсказка: блоки RTCFSC (раскрыть)</summary>
+                      <div class="mt-2 space-y-2">
+                        <label class="block text-xs"><span class="font-medium">R — роль</span><textarea id="promptFieldR" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
+                        <label class="block text-xs"><span class="font-medium">T — задача</span><textarea id="promptFieldT" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
+                        <label class="block text-xs"><span class="font-medium">C — контекст</span><textarea id="promptFieldC" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
+                        <label class="block text-xs"><span class="font-medium">F — формат</span><textarea id="promptFieldF" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
+                        <label class="block text-xs"><span class="font-medium">S — стиль</span><textarea id="promptFieldS" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
+                        <label class="block text-xs"><span class="font-medium">C — критерии</span><textarea id="promptFieldCriteria" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
+                        <button type="button" id="assemblePromptV1Btn" class="aa-btn aa-btn-ghost text-sm">Собрать промпт v1 из блоков</button>
+                      </div>
+                    </details>
+                    <label class="block"><span class="aa-label">Промпт v1</span><textarea id="practicePromptV1" rows="6" class="aa-textarea mt-1"></textarea></label>
+                    <button type="button" id="runPromptV1Btn" class="aa-btn aa-btn-primary w-full">Запустить промпт v1 в нейросети</button>
+                    <div id="aiResultBlockV1" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ нейросети v1</p><div id="aiResultV1Preview" class="aa-task-detail max-h-48 overflow-y-auto whitespace-pre-wrap"></div></div>
+                    <div class="aa-eval-box">
+                      <p class="aa-label text-sm mb-2">Оцените ответ v1</p>
+                      <label class="flex items-start gap-2 text-sm"><input type="checkbox" id="evalConcrete" class="mt-0.5" /> <span>Достаточно конкретно</span></label>
+                      <label class="flex items-start gap-2 text-sm mt-1"><input type="checkbox" id="evalTone" class="mt-0.5" /> <span>Подходящий тон</span></label>
+                      <label class="flex items-start gap-2 text-sm mt-1"><input type="checkbox" id="evalNoHype" class="mt-0.5" /> <span>Нет «воды», лишних обещаний, непроверенных фактов</span></label>
                     </div>
-                  </details>
-                  <label class="block"><span class="aa-label">Промпт v1</span><textarea id="practicePromptV1" rows="6" class="aa-textarea mt-1"></textarea></label>
-                  <button type="button" id="runPromptV1Btn" class="aa-btn aa-btn-primary w-full">Получить результат v1</button>
-                  <div id="aiResultBlockV1" class="hidden"><p class="text-xs font-medium text-slate-600">Ответ ИИ v1</p><div id="aiResultV1Preview" class="aa-task-detail max-h-40 overflow-y-auto whitespace-pre-wrap mt-1"></div></div>
-                  <div class="aa-eval-box">
-                    <p class="aa-label text-sm">Оценка ответа v1</p>
-                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="evalConcrete" /> Достаточно конкретно</label>
-                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="evalTone" /> Подходит тон</label>
-                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="evalNoHype" /> Нет лишних обещаний, «воды», непроверенных фактов</label>
+                    <label class="block"><span class="aa-label">Что улучшить? Запишите минимум 2 изменения</span><textarea id="practiceImproveNotes" rows="3" class="aa-textarea mt-1" placeholder="Например: добавить формат (список), уточнить тон (деловой), убрать общие фразы…"></textarea></label>
+                    <button type="button" id="practiceNextS1Btn" class="aa-btn aa-btn-primary w-full mt-1">
+                      Записал улучшения, перехожу к промпту v2 →
+                    </button>
                   </div>
-                  <label class="block"><span class="aa-label">Что улучшить в промпте? (минимум 2 изменения для v2)</span><textarea id="practiceImproveNotes" rows="3" class="aa-textarea mt-1"></textarea></label>
-                  <label class="block"><span class="aa-label">Промпт v2</span><textarea id="practicePromptV2" rows="6" class="aa-textarea mt-1"></textarea></label>
-                  <button type="button" id="runPromptV2Btn" class="aa-btn aa-btn-primary w-full">Получить улучшенный результат v2</button>
-                  <div id="aiResultBlockV2" class="hidden"><p class="text-xs font-medium text-slate-600">Ответ ИИ v2</p><div id="aiResultV2Preview" class="aa-task-detail max-h-40 overflow-y-auto whitespace-pre-wrap mt-1"></div></div>
-                  <label class="block"><span class="aa-label">Главный вывод</span><textarea id="practiceMainInsight" rows="2" class="aa-textarea mt-1" placeholder="Что сильнее всего повлияло на качество?"></textarea></label>
-                  <button type="button" id="buildReportP1Btn" class="aa-btn w-full">Собрать отчёт (практика 1)</button>
+
+                  <!-- Шаг 2: Улучшить до v2 -->
+                  <div class="aa-step-pane hidden aa-practice-workflow-box space-y-3" data-practice-step="2">
+                    <label class="block"><span class="aa-label">Промпт v2 <span class="text-slate-400 font-normal">(улучшенная версия)</span></span><textarea id="practicePromptV2" rows="6" class="aa-textarea mt-1"></textarea></label>
+                    <button type="button" id="runPromptV2Btn" class="aa-btn aa-btn-primary w-full">Запустить промпт v2 в нейросети</button>
+                    <div id="aiResultBlockV2" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ нейросети v2</p><div id="aiResultV2Preview" class="aa-task-detail max-h-48 overflow-y-auto whitespace-pre-wrap"></div></div>
+                    <label class="block"><span class="aa-label">Главный вывод</span><textarea id="practiceMainInsight" rows="2" class="aa-textarea mt-1" placeholder="Что сильнее всего улучшило результат?"></textarea></label>
+                    <button type="button" id="buildReportP1Btn" class="aa-btn aa-btn-primary w-full">
+                      Собрать отчёт и перейти к отправке →
+                    </button>
+                  </div>
                 </div>
 
-                <div id="practiceDialogueSection" class="hidden aa-practice-workflow-box space-y-3">
-                  <p class="aa-label">Шаг 2. Диалог</p>
-                  <div class="grid gap-2 sm:grid-cols-2">
-                    <label class="block text-sm"><span class="font-medium">ИИ (роль)</span><input id="practiceRoleAi" type="text" class="aa-input mt-0.5" /></label>
-                    <label class="block text-sm"><span class="font-medium">Я (роль)</span><input id="practiceRoleMe" type="text" class="aa-input mt-0.5" /></label>
+                <!-- ===== ПРАКТИКА 2: Диалог ===== -->
+                <div id="practiceDialogueSection" class="hidden space-y-3">
+
+                  <!-- Шаг 1: Провести диалог -->
+                  <div class="aa-step-pane aa-practice-workflow-box space-y-3" data-practice-step="1">
+                    <div class="grid gap-2 sm:grid-cols-2">
+                      <label class="block text-sm"><span class="font-medium">ИИ будет играть роль</span><input id="practiceRoleAi" type="text" class="aa-input mt-0.5" /></label>
+                      <label class="block text-sm"><span class="font-medium">Вы — в роли</span><input id="practiceRoleMe" type="text" class="aa-input mt-0.5" /></label>
+                    </div>
+                    <label class="block"><span class="aa-label">Ваша цель в этом разговоре</span><textarea id="practiceStudentGoal" rows="2" class="aa-textarea mt-1" placeholder="Чего вы хотите добиться в итоге этого разговора?"></textarea></label>
+                    <button type="button" id="assembleDialogueBtn" class="aa-btn aa-btn-ghost text-sm">Собрать первое сообщение автоматически</button>
+                    <label class="block"><span class="aa-label">Первое сообщение</span><textarea id="practiceDialogueStart" rows="4" class="aa-textarea mt-1"></textarea></label>
+                    <button type="button" id="runDialogueInAiBtn" class="aa-btn aa-btn-primary w-full">Отправить первую реплику в нейросеть</button>
+                    <div id="aiResultBlockDialogue" class="hidden"><p class="text-xs font-medium mb-1">Ответ нейросети (1-я реплика)</p><div id="aiResultDialoguePreview" class="aa-task-detail max-h-36 overflow-y-auto whitespace-pre-wrap"></div></div>
+                    <button type="button" id="openPracticeChatBtn" class="aa-btn aa-btn-ghost w-full">Продолжить диалог в чате (мин. 4 пары) →</button>
+                    <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+                      Ожидайте сложную реакцию — ИИ намеренно будет возражать или давить. Это и есть тренировка.
+                    </p>
+                    <button type="button" id="practiceNextP2S1Btn" class="aa-btn aa-btn-primary w-full mt-1">
+                      Диалог завершён, перехожу к анализу →
+                    </button>
                   </div>
-                  <label class="block"><span class="aa-label">Моя цель в диалоге</span><textarea id="practiceStudentGoal" rows="2" class="aa-textarea mt-1"></textarea></label>
-                  <button type="button" id="assembleDialogueBtn" class="aa-btn aa-btn-ghost text-sm">Собрать первое сообщение</button>
-                  <label class="block"><span class="aa-label">Первое сообщение</span><textarea id="practiceDialogueStart" rows="4" class="aa-textarea mt-1"></textarea></label>
-                  <button type="button" id="runDialogueInAiBtn" class="aa-btn aa-btn-primary w-full">Получить ответ нейросети (1-я реплика)</button>
-                  <div id="aiResultBlockDialogue" class="hidden"><p class="text-xs font-medium">Ответ ИИ</p><div id="aiResultDialoguePreview" class="aa-task-detail max-h-32 overflow-y-auto whitespace-pre-wrap mt-1"></div></div>
-                  <button type="button" id="openPracticeChatBtn" class="aa-btn aa-btn-ghost w-full">Продолжить диалог в чате (мин. 4 пары)</button>
-                  <p class="text-xs text-slate-500">После диалога заполните анализ ниже.</p>
-                  <label class="block"><span class="aa-label">2 удачные мои реплики</span><textarea id="p2GoodReplies" rows="3" class="aa-textarea mt-1"></textarea></label>
-                  <label class="block"><span class="aa-label">1 слабая реплика и как переписать</span><textarea id="p2WeakReply" rows="2" class="aa-textarea mt-1"></textarea></label>
-                  <label class="block"><span class="aa-label">Где ИИ был нереалистичен</span><textarea id="p2AiIssues" rows="2" class="aa-textarea mt-1"></textarea></label>
-                  <label class="block"><span class="aa-label">Как усложнить инструкцию ИИ</span><textarea id="p2HarderInstruction" rows="2" class="aa-textarea mt-1"></textarea></label>
-                  <label class="block"><span class="aa-label">Применение на работе</span><textarea id="p2ApplyWork" rows="2" class="aa-textarea mt-1"></textarea></label>
-                  <button type="button" id="buildReportP2Btn" class="aa-btn w-full">Собрать отчёт (практика 2)</button>
+
+                  <!-- Шаг 2: Анализ диалога -->
+                  <div class="aa-step-pane hidden aa-practice-workflow-box space-y-3" data-practice-step="2">
+                    <p class="text-xs text-slate-500">Скопируйте из чата понравившиеся реплики, чтобы ответить на вопросы ниже.</p>
+                    <label class="block"><span class="aa-label">2 мои реплики, которые сработали — и почему</span><textarea id="p2GoodReplies" rows="3" class="aa-textarea mt-1" placeholder="Реплика: «…» — потому что признал позицию + предложил конкретный шаг"></textarea></label>
+                    <label class="block"><span class="aa-label">1 слабая реплика и как её переписать</span><textarea id="p2WeakReply" rows="2" class="aa-textarea mt-1" placeholder="Было: «…» → Лучше: «…»"></textarea></label>
+                    <label class="block"><span class="aa-label">Где ИИ вёл себя нереалистично</span><textarea id="p2AiIssues" rows="2" class="aa-textarea mt-1"></textarea></label>
+                    <label class="block"><span class="aa-label">Как усложнить инструкцию ИИ на следующий раз</span><textarea id="p2HarderInstruction" rows="2" class="aa-textarea mt-1"></textarea></label>
+                    <label class="block"><span class="aa-label">Как применю это в реальной работе</span><textarea id="p2ApplyWork" rows="2" class="aa-textarea mt-1"></textarea></label>
+                    <button type="button" id="buildReportP2Btn" class="aa-btn aa-btn-primary w-full">
+                      Собрать отчёт и перейти к отправке →
+                    </button>
+                  </div>
                 </div>
 
-                <div id="practiceAnalysisSection" class="hidden aa-practice-workflow-box space-y-3">
-                  <p class="aa-label">Шаг 2. Таблица рисков</p>
-                  <div class="aa-risk-table-wrap overflow-x-auto">
-                    <table class="aa-risk-table w-full text-xs">
-                      <thead><tr><th>Цитата</th><th>Тип</th><th>Уровень</th><th>Почему</th><th>Что проверить</th></tr></thead>
-                      <tbody id="riskTableBody"></tbody>
-                    </table>
+                <!-- ===== ПРАКТИКА 3: Риски ===== -->
+                <div id="practiceAnalysisSection" class="hidden space-y-3">
+
+                  <!-- Шаг 1: Найти риски -->
+                  <div class="aa-step-pane aa-practice-workflow-box space-y-3" data-practice-step="1">
+                    <p class="text-xs text-slate-600">Прочитайте фрагмент выше. Найдите минимум 4 опасных места и заполните таблицу.</p>
+                    <div class="aa-risk-table-wrap overflow-x-auto">
+                      <table class="aa-risk-table w-full text-xs">
+                        <thead><tr><th>Цитата из текста</th><th>Тип проблемы</th><th>Уровень</th><th>Почему опасно</th><th>Что проверить</th></tr></thead>
+                        <tbody id="riskTableBody"></tbody>
+                      </table>
+                    </div>
+                    <button type="button" id="runAnalysisInAiBtn" class="aa-btn aa-btn-ghost w-full text-sm">Подсказка от нейросети (не готовый отчёт)</button>
+                    <div id="aiResultBlockAnalysis" class="hidden"><div id="aiResultAnalysisPreview" class="aa-task-detail max-h-36 overflow-y-auto whitespace-pre-wrap text-sm"></div></div>
+                    <button type="button" id="practiceNextP3S1Btn" class="aa-btn aa-btn-primary w-full mt-1">
+                      Риски нашёл, перехожу к решению →
+                    </button>
                   </div>
-                  <button type="button" id="runAnalysisInAiBtn" class="aa-btn aa-btn-ghost w-full text-sm">Подсказка от нейросети (не готовый отчёт)</button>
-                  <div id="aiResultBlockAnalysis" class="hidden"><div id="aiResultAnalysisPreview" class="aa-task-detail max-h-32 overflow-y-auto whitespace-pre-wrap text-sm mt-1"></div></div>
-                  <label class="block"><span class="aa-label">Безопасная версия</span><textarea id="practiceSafeVersion" rows="5" class="aa-textarea mt-1"></textarea></label>
-                  <fieldset class="text-sm"><legend class="aa-label mb-1">Решение</legend>
-                    <label class="flex items-center gap-2"><input type="radio" name="riskDecision" value="usable" /> Можно использовать</label>
-                    <label class="flex items-center gap-2"><input type="radio" name="riskDecision" value="after_check" /> После проверки</label>
-                    <label class="flex items-center gap-2"><input type="radio" name="riskDecision" value="not_usable" /> Нельзя в текущем виде</label>
-                  </fieldset>
-                  <p class="aa-label text-sm">Личный чек-лист (5 пунктов)</p>
-                  <div class="space-y-1">
-                    <input id="checklistItem1" type="text" class="aa-input text-sm" placeholder="1." />
-                    <input id="checklistItem2" type="text" class="aa-input text-sm" placeholder="2." />
-                    <input id="checklistItem3" type="text" class="aa-input text-sm" placeholder="3." />
-                    <input id="checklistItem4" type="text" class="aa-input text-sm" placeholder="4." />
-                    <input id="checklistItem5" type="text" class="aa-input text-sm" placeholder="5." />
+
+                  <!-- Шаг 2: Решение и чек-лист -->
+                  <div class="aa-step-pane hidden aa-practice-workflow-box space-y-3" data-practice-step="2">
+                    <label class="block"><span class="aa-label">Безопасная версия фрагмента</span><textarea id="practiceSafeVersion" rows="5" class="aa-textarea mt-1" placeholder="Перепишите фрагмент так, чтобы убрать или исправить найденные риски"></textarea></label>
+                    <fieldset class="text-sm"><legend class="aa-label mb-2">Итоговое решение</legend>
+                      <label class="flex items-center gap-2 py-1"><input type="radio" name="riskDecision" value="usable" /> <span>Можно использовать</span></label>
+                      <label class="flex items-center gap-2 py-1"><input type="radio" name="riskDecision" value="after_check" /> <span>Можно использовать после проверки</span></label>
+                      <label class="flex items-center gap-2 py-1"><input type="radio" name="riskDecision" value="not_usable" /> <span>Нельзя использовать в текущем виде</span></label>
+                    </fieldset>
+                    <div>
+                      <p class="aa-label text-sm mb-1">Мой личный чек-лист проверки ответов ИИ (5 пунктов)</p>
+                      <p class="text-xs text-slate-500 mb-2">Что вы будете проверять в следующий раз, прежде чем использовать текст от нейросети?</p>
+                      <div class="space-y-1">
+                        <input id="checklistItem1" type="text" class="aa-input text-sm" placeholder="1. Например: проверить все цифры в независимом источнике" />
+                        <input id="checklistItem2" type="text" class="aa-input text-sm" placeholder="2." />
+                        <input id="checklistItem3" type="text" class="aa-input text-sm" placeholder="3." />
+                        <input id="checklistItem4" type="text" class="aa-input text-sm" placeholder="4." />
+                        <input id="checklistItem5" type="text" class="aa-input text-sm" placeholder="5." />
+                      </div>
+                    </div>
+                    <button type="button" id="buildReportP3Btn" class="aa-btn aa-btn-primary w-full">
+                      Собрать отчёт и перейти к отправке →
+                    </button>
                   </div>
-                  <button type="button" id="buildReportP3Btn" class="aa-btn w-full">Собрать отчёт (практика 3)</button>
                 </div>
+              </div>
+
+              <!-- Финальный шаг: отправка (общий для всех практик) -->
+              <div id="practiceSubmitBlock" class="hidden mt-3 space-y-3">
+                <div id="practiceSelfCheckBlock" class="hidden aa-practice-workflow-box">
+                  <p class="aa-label mb-2">Самооценка перед отправкой</p>
+                  <ul id="practiceSelfCheckList" class="space-y-2"></ul>
+                </div>
+
+                <details class="text-sm">
+                  <summary class="cursor-pointer text-slate-600">Групповой режим (необязательно)</summary>
+                  <div class="mt-2 space-y-2">
+                    <label class="block">
+                      <span class="aa-label">Режим</span>
+                      <select id="practiceModeSelect" class="aa-select mt-1">
+                        <option value="individual">Индивидуально</option>
+                        <option value="group">Группа (один ответ)</option>
+                      </select>
+                    </label>
+                    <div id="groupMetaFields" class="hidden space-y-2 pl-1">
+                      <input id="groupSizeInput" type="number" min="2" max="30" placeholder="Размер группы" class="aa-input" />
+                      <input id="groupInputBy" type="text" placeholder="Кто вводил ответ" class="aa-input" />
+                    </div>
+                    <p id="groupModeCallout" class="hidden text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      В групповом режиме один участник вводит ответ от имени команды.
+                    </p>
+                  </div>
+                </details>
+
+                <label class="block">
+                  <span class="aa-label">Ваш отчёт</span>
+                  <textarea id="assignmentAnswer" rows="8" class="aa-textarea mt-1" placeholder="Здесь появится собранный отчёт. Можно дополнить или исправить перед отправкой."></textarea>
+                </label>
+
+                <div class="aa-btn-row">
+                  <button type="button" id="submitAnswerBtn" class="aa-btn aa-btn-primary flex-1">Отправить</button>
+                  <button type="button" id="requestFeedbackBtn" class="aa-btn flex-1">Обратная связь ИИ</button>
+                </div>
+                <div id="assignmentFeedback" class="aa-feedback-box hidden whitespace-pre-wrap"></div>
               </div>
 
               <div id="practiceActionsRow" class="hidden mt-4 space-y-3">
@@ -247,46 +346,10 @@
                 </div>
               </div>
 
-              <div id="practiceSelfCheckBlock" class="hidden mt-4 aa-practice-workflow-box">
-                <p class="aa-label mb-2">Самооценка перед отправкой</p>
-                <ul id="practiceSelfCheckList" class="space-y-2"></ul>
-              </div>
-
-              <div class="mt-4 space-y-3">
-                <details class="text-sm">
-                  <summary class="cursor-pointer text-slate-600">Групповой режим (необязательно)</summary>
-                  <div class="mt-2 space-y-2">
-                <label class="block">
-                  <span class="aa-label">Режим</span>
-                  <select id="practiceModeSelect" class="aa-select mt-1">
-                    <option value="individual">Индивидуально</option>
-                    <option value="group">Группа (один ответ)</option>
-                  </select>
-                </label>
-                <div id="groupMetaFields" class="hidden space-y-2 pl-1">
-                  <input id="groupSizeInput" type="number" min="2" max="30" placeholder="Размер группы" class="aa-input" />
-                  <input id="groupInputBy" type="text" placeholder="Кто вводил ответ" class="aa-input" />
-                </div>
-                <p id="groupModeCallout" class="hidden text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  В групповом режиме один участник вводит ответ от имени команды.
-                </p>
-                  </div>
-                </details>
-
-                <label class="block">
-                  <span class="aa-label">Ваш ответ</span>
-                  <textarea id="assignmentAnswer" rows="5" class="aa-textarea mt-1" placeholder="Введите ответ на задание…"></textarea>
-                </label>
-
-                <div class="aa-btn-row">
-                  <button type="button" id="submitAnswerBtn" class="aa-btn aa-btn-primary flex-1">Отправить</button>
-                  <button type="button" id="requestFeedbackBtn" class="aa-btn flex-1">Обратная связь ИИ</button>
-                </div>
-                <button type="button" id="restartPracticeBtn" class="aa-btn aa-btn-ghost w-full text-sm mt-1">Пройти задание сначала</button>
-                <p id="autosaveStatus" class="hidden text-xs text-slate-500 mt-1" aria-live="polite"></p>
+              <div class="mt-3">
+                <button type="button" id="restartPracticeBtn" class="aa-btn aa-btn-ghost w-full text-sm">Пройти задание сначала</button>
+                <p id="autosaveStatus" class="hidden text-xs text-slate-500 mt-1 text-center" aria-live="polite"></p>
                 <button type="button" id="askMentorAssignmentBtn" class="aa-btn aa-btn-ghost hidden">Спросить наставника</button>
-
-                <div id="assignmentFeedback" class="aa-feedback-box hidden whitespace-pre-wrap"></div>
               </div>
             </div>
           </div>

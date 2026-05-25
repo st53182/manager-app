@@ -663,3 +663,77 @@
 .academy-light .aa-risk-row:last-child td {
   border-bottom: none;
 }
+
+/* ── Step wizard ──────────────────────────────────────────── */
+
+.academy-light .aa-step-bar {
+  padding: 0.75rem 1rem;
+  background: var(--aa-surface);
+  border: 1px solid var(--aa-border);
+  border-radius: var(--aa-radius-sm);
+}
+
+.academy-light .aa-step-bar-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.academy-light .aa-step-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.academy-light .aa-step-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 9999px;
+  background: var(--aa-border-strong);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.academy-light .aa-step-dot.is-done {
+  background: var(--aa-success);
+}
+
+.academy-light .aa-step-dot.is-active {
+  background: var(--aa-primary);
+  transform: scale(1.3);
+}
+
+.academy-light .aa-step-num-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--aa-text-secondary);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.academy-light .aa-step-bar-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--aa-text);
+  margin: 0;
+}
+
+.academy-light .aa-step-celebration {
+  padding: 0.65rem 1rem;
+  background: var(--aa-success-soft);
+  border: 1px solid #6ee7b7;
+  border-radius: var(--aa-radius-sm);
+  font-size: 0.875rem;
+  color: #065f46;
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
+.academy-light .aa-step-pane {
+  animation: aa-step-in 0.25s ease;
+}
+
+@keyframes aa-step-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

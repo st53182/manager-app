@@ -413,6 +413,42 @@ const TASK_PICK_LABELS = {
   'block1-practice-hallucination': 'Выберите один из 5 фрагментов'
 };
 
+const PRACTICE_STEP_LABELS = {
+  'block1-practice-prompt': [
+    'Написать промпт v1 и получить первый результат',
+    'Улучшить промпт до v2 и зафиксировать вывод',
+    'Проверить отчёт и отправить'
+  ],
+  'block1-practice-scenario': [
+    'Провести диалог (минимум 4 пары реплик)',
+    'Разобрать свои реплики и поведение ИИ',
+    'Проверить отчёт и отправить'
+  ],
+  'block1-practice-hallucination': [
+    'Найти и классифицировать риски в тексте',
+    'Написать безопасную версию и принять решение',
+    'Проверить отчёт и отправить'
+  ]
+};
+
+const PRACTICE_STEP_CELEBRATIONS = {
+  'block1-practice-prompt': [
+    null,
+    '✓ Отлично! Вы оценили ответ v1 и записали улучшения. Теперь напишите промпт v2.',
+    '✓ Готово! Отчёт собран. Проверьте его и нажмите «Отправить».'
+  ],
+  'block1-practice-scenario': [
+    null,
+    '✓ Диалог завершён! Теперь разберите свои реплики — это самая важная часть тренировки.',
+    '✓ Анализ готов! Отчёт собран. Проверьте его и нажмите «Отправить».'
+  ],
+  'block1-practice-hallucination': [
+    null,
+    '✓ Риски найдены! Теперь напишите безопасную версию текста и примите решение.',
+    '✓ Готово! Отчёт собран. Проверьте его и нажмите «Отправить».'
+  ]
+};
+
 const PRACTICE_HINTS = {
   'block1-practice-prompt': [
     { label: 'Как заполнить RTCFSC', text: 'Объясни, что писать в каждом блоке RTCFSC (R, T, C, F, S, C) для моей выбранной задачи. Дай по одному примеру фразы на блок, без полного готового промпта.' },
@@ -660,7 +696,11 @@ function buildGroupMetaForSave() {
       prompt_v2: document.getElementById('practicePromptV2')?.value?.trim() || ''
     }
   };
-  if (wfApi && scenarioKey) meta.workflow = wfApi.collectWorkflowFromUi(scenarioKey);
+  if (wfApi && scenarioKey) {
+    const wf = wfApi.collectWorkflowFromUi(scenarioKey);
+    wf.currentStep = state.practiceStep || 1;
+    meta.workflow = wf;
+  }
   return meta;
 }
 
@@ -731,14 +771,81 @@ function buildPracticeRunContext(runKind, pass) {
   };
 }
 
+function showPracticeStep(n) {
+  const sk = state.currentLesson?.scenario_key;
+  const labels = PRACTICE_STEP_LABELS[sk];
+  const total = labels?.length || 3;
+  state.practiceStep = n;
+
+  const bar = document.getElementById('practiceStepBar');
+  if (bar && labels) {
+    bar.classList.remove('hidden');
+    document.getElementById('practiceStepNum').textContent = `Шаг ${n} из ${total}`;
+    document.getElementById('practiceStepTitle').textContent = labels[n - 1] || '';
+    const dots = document.getElementById('practiceStepDots');
+    if (dots) {
+      dots.innerHTML = '';
+      for (let i = 1; i <= total; i++) {
+        const dot = document.createElement('span');
+        dot.className = `aa-step-dot${i < n ? ' is-done' : i === n ? ' is-active' : ''}`;
+        dots.appendChild(dot);
+      }
+    }
+  }
+
+  const sectionId =
+    sk === 'block1-practice-prompt' ? 'practicePromptSection' :
+    sk === 'block1-practice-scenario' ? 'practiceDialogueSection' :
+    'practiceAnalysisSection';
+  const section = document.getElementById(sectionId);
+  if (section) {
+    section.querySelectorAll('[data-practice-step]').forEach((pane) => {
+      pane.classList.toggle('hidden', String(pane.dataset.practiceStep) !== String(n));
+    });
+  }
+
+  const isLastStep = n >= total;
+  const submitBlock = document.getElementById('practiceSubmitBlock');
+  submitBlock?.classList.toggle('hidden', !isLastStep);
+
+  if (isLastStep) {
+    getPracticeWorkflowApi()?.renderSelfCheck(sk, state.practiceWorkflow?.self_check);
+    document.getElementById('practiceSelfCheckBlock')?.classList.remove('hidden');
+    submitBlock?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } else {
+    bar?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  scheduleAutoSave();
+}
+
+function advancePracticeStep() {
+  const sk = state.currentLesson?.scenario_key;
+  const total = PRACTICE_STEP_LABELS[sk]?.length || 3;
+  const next = (state.practiceStep || 1) + 1;
+  if (next > total) return;
+
+  const msg = PRACTICE_STEP_CELEBRATIONS[sk]?.[next - 1];
+  if (msg) showPracticeCelebration(msg);
+
+  showPracticeStep(next);
+}
+
+function showPracticeCelebration(msg) {
+  const el = document.getElementById('practiceCelebrationMsg');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(el._celebTimer);
+  el._celebTimer = setTimeout(() => el.classList.add('hidden'), 5000);
+}
+
 function configurePracticeWorkflow(scenarioKey) {
-  const wf = document.getElementById('practiceWorkflowBlock');
   const promptSec = document.getElementById('practicePromptSection');
   const dialSec = document.getElementById('practiceDialogueSection');
   const analysisSec = document.getElementById('practiceAnalysisSection');
   const pickLabel = document.getElementById('taskOptionsPickLabel');
-  if (!wf) return;
-  wf.classList.remove('hidden');
+
   promptSec?.classList.add('hidden');
   dialSec?.classList.add('hidden');
   analysisSec?.classList.add('hidden');
@@ -747,13 +854,10 @@ function configurePracticeWorkflow(scenarioKey) {
   });
   state.lastPracticeAiResult = null;
   if (pickLabel) pickLabel.textContent = TASK_PICK_LABELS[scenarioKey] || 'Выберите один из 5 вариантов';
+
   if (scenarioKey === 'block1-practice-prompt') promptSec?.classList.remove('hidden');
   else if (scenarioKey === 'block1-practice-scenario') dialSec?.classList.remove('hidden');
-  else if (scenarioKey === 'block1-practice-hallucination') {
-    analysisSec?.classList.remove('hidden');
-    getPracticeWorkflowApi()?.initRiskTable();
-  }
-  getPracticeWorkflowApi()?.renderSelfCheck(scenarioKey, null);
+  else if (scenarioKey === 'block1-practice-hallucination') analysisSec?.classList.remove('hidden');
 }
 
 function updateFragmentPreview() {
@@ -859,7 +963,14 @@ function clearPracticeFormUi() {
     btn.classList.remove('is-selected');
     btn.setAttribute('aria-checked', 'false');
   });
+  state.practiceStep = 1;
+  state.practiceWorkflow = null;
   document.getElementById('caseBriefBlock')?.classList.add('hidden');
+  document.getElementById('startPracticeBtn')?.classList.add('hidden');
+  document.getElementById('practiceWorkflowBlock')?.classList.add('hidden');
+  document.getElementById('practiceStepBar')?.classList.add('hidden');
+  document.getElementById('practiceCelebrationMsg')?.classList.add('hidden');
+  document.getElementById('practiceSubmitBlock')?.classList.add('hidden');
   document.getElementById('practiceSelfCheckBlock')?.classList.add('hidden');
   document.getElementById('practiceSelfCheckList') && (document.getElementById('practiceSelfCheckList').innerHTML = '');
   ['aiResultBlockV1', 'aiResultBlockV2', 'aiResultBlockDialogue', 'aiResultBlockAnalysis'].forEach((id) => {
@@ -1025,6 +1136,13 @@ function renderTaskOptionDetail() {
   prefillDialogueFromTask(task);
   prefillPromptFromTask(task);
   updateTaskSelectReminder();
+
+  const startBtn = document.getElementById('startPracticeBtn');
+  if (task && startBtn) {
+    startBtn.classList.remove('hidden');
+  } else if (startBtn) {
+    startBtn.classList.add('hidden');
+  }
 }
 
 function prefillPromptFromTask(task) {
@@ -1048,6 +1166,19 @@ function selectTaskOption(taskId, { persist = true } = {}) {
   if (persist && state.currentLessonId) scheduleAutoSave();
 }
 
+function startPractice() {
+  const sk = state.currentLesson?.scenario_key;
+  if (!sk) return;
+  const wf = document.getElementById('practiceWorkflowBlock');
+  wf?.classList.remove('hidden');
+  document.getElementById('startPracticeBtn')?.classList.add('hidden');
+  if (sk === 'block1-practice-hallucination') {
+    getPracticeWorkflowApi()?.initRiskTable();
+  }
+  const savedStep = state.practiceWorkflow?.currentStep;
+  showPracticeStep(savedStep && savedStep > 1 ? savedStep : 1);
+}
+
 function buildPracticeReport() {
   const wfApi = getPracticeWorkflowApi();
   const task = getSelectedTaskOption();
@@ -1066,7 +1197,7 @@ function buildPracticeReport() {
   if (ta && report) {
     ta.value = report;
     scheduleAutoSave();
-    ta.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    advancePracticeStep();
   }
 }
 
@@ -1206,7 +1337,14 @@ async function loadSubmissionForLesson(lessonId) {
     selectTaskOption(gm.selected_task_id, { persist: false });
   }
   if (gm.workflow && getPracticeWorkflowApi()) {
+    state.practiceWorkflow = gm.workflow;
     getPracticeWorkflowApi().restoreWorkflowToUi(gm.workflow, state.currentLesson?.scenario_key);
+    const savedStep = gm.workflow.currentStep;
+    if (savedStep && savedStep >= 1 && state.selectedTaskId) {
+      document.getElementById('practiceWorkflowBlock')?.classList.remove('hidden');
+      document.getElementById('startPracticeBtn')?.classList.add('hidden');
+      showPracticeStep(savedStep);
+    }
   }
   let fj = data.submission?.feedback_json;
   if (typeof fj === 'string') try { fj = JSON.parse(fj); } catch { fj = null; }
@@ -2597,6 +2735,10 @@ function wireUi() {
       alert(e.message || 'Не удалось начать разбор')
     );
   });
+  document.getElementById('startPracticeBtn')?.addEventListener('click', () => startPractice());
+  document.getElementById('practiceNextS1Btn')?.addEventListener('click', () => advancePracticeStep());
+  document.getElementById('practiceNextP2S1Btn')?.addEventListener('click', () => advancePracticeStep());
+  document.getElementById('practiceNextP3S1Btn')?.addEventListener('click', () => advancePracticeStep());
   document.getElementById('restartPracticeBtn')?.addEventListener('click', () => {
     restartPractice().catch((e) => alert(e.message || 'Не удалось сбросить задание'));
   });
