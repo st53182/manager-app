@@ -184,9 +184,6 @@ function authenticateToken(req, res, next) {
 }
 
 app.get('/', (req, res) => {
-  if (!LEGACY_MANAGER_UI_ENABLED) {
-    return res.redirect('/academy');
-  }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

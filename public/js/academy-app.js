@@ -553,7 +553,7 @@ async function init() {
   configureMarked();
   initMermaid();
   if (!getToken()) {
-    showGate();
+    window.location.replace('/');
     return;
   }
 
