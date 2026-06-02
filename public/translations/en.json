@@ -1,20 +1,59 @@
 {
   "nav": {
-    "title": "Team Manager",
+    "title": "AI Academy",
     "login": "Login",
     "register": "Register",
     "logout": "Logout",
-    "dashboard": "Dashboard"
+    "dashboard": "Workspace"
   },
   "index": {
-    "title": "Team Manager - Home",
-    "heading": "Team Manager",
-    "subtitle": "Manage your teams and employees",
-    "get_started": "Get Started",
-    "login_to_continue": "Login to continue"
+    "title": "AI Academy — Home",
+    "badge": "Platform for building AI mastery skills",
+    "heading_line1": "Learn to work with",
+    "heading_highlight": " artificial intelligence",
+    "subtitle": "AI Academy helps you master prompts, models, and real workflows through practice with an AI mentor — from your first requests to confident use on the job.",
+    "get_started": "Start learning",
+    "login_cta": "I already have an account",
+    "login_to_continue": "Free registration — access to courses and workspace",
+    "stat1_value": "Practice",
+    "stat1_label": "Assignments with feedback",
+    "stat2_value": "Mentor",
+    "stat2_label": "AI chat tied to each lesson",
+    "stat3_value": "Tools",
+    "stat3_label": "Models, KB, comparison",
+    "features_title": "What you will learn",
+    "features_lead": "The platform is built for practical AI mastery — skills you can apply at work right away, not theory for its own sake.",
+    "feat1_title": "Prompt engineering",
+    "feat1_desc": "Write requests so models return accurate, useful answers for your task.",
+    "feat2_title": "Choosing models",
+    "feat2_desc": "Learn when to use which model and compare outputs in one workspace.",
+    "feat3_title": "Structured courses",
+    "feat3_desc": "Follow modules step by step: lessons, scenarios, and progress checkpoints.",
+    "feat4_title": "Critical thinking",
+    "feat4_desc": "Verify AI answers, spot hallucinations, and build reliable workflows.",
+    "feat5_title": "Knowledge bases",
+    "feat5_desc": "Upload your documents and chat with context from your own materials.",
+    "feat6_title": "Real scenarios",
+    "feat6_desc": "Practice typical tasks — from text analysis to automation — in a safe academy environment.",
+    "steps_title": "How it works",
+    "steps_lead": "Three steps from sign-up to confident daily use of AI at work.",
+    "step1_title": "Sign up and sign in",
+    "step1_desc": "Create an account and open the workspace with courses and the mentor chat.",
+    "step2_title": "Lessons and practice",
+    "step2_desc": "Study material, complete assignments, and get hints in dialogue with AI.",
+    "step3_title": "Apply at work",
+    "step3_desc": "Bring what you learned into your projects: prompts, KB, and model comparison at hand.",
+    "cta_title": "Ready to level up your AI skills?",
+    "cta_desc": "Join AI Academy — learn by doing, not by boring slides.",
+    "welcome_back": "Keep building your AI mastery in the workspace.",
+    "dash_workspace_title": "Workspace",
+    "dash_workspace_desc": "Chats, lessons, practice, and tools",
+    "dash_admin_title": "Admin panel",
+    "dash_admin_desc": "Users, limits, and settings",
+    "footer": "© AI Academy — developing skills to master artificial intelligence"
   },
   "login": {
-    "title": "Login - Team Manager",
+    "title": "Login - AI Academy",
     "heading": "Login",
     "subtitle": "Sign in to your account",
     "email": "Email",
@@ -28,7 +67,7 @@
     "login_error": "Login error"
   },
   "register": {
-    "title": "Register - Team Manager",
+    "title": "Register - AI Academy",
     "heading": "Register",
     "subtitle": "Create an account to manage teams",
     "name": "Name",
@@ -334,5 +373,62 @@
     "success": "Success",
     "confirm": "Confirm",
     "back": "Back"
+  },
+  "academy": {
+    "brand": "AI Academy",
+    "sidebar": {
+      "new_chat": "+ New chat",
+      "dialogs": "Dialogs"
+    },
+    "chat": {
+      "title_placeholder": "Conversation title",
+      "composer_placeholder": "Message… (you can attach files)",
+      "send": "Send",
+      "regenerate": "Regenerate",
+      "retry": "Retry request"
+    },
+    "controls": {
+      "no_kb": "No knowledge base",
+      "no_persona": "No persona"
+    },
+    "tools": {
+      "title": "Tools"
+    },
+    "tabs": {
+      "kb": "Knowledge Base",
+      "prompts": "Prompts",
+      "models": "Models",
+      "assistant": "Assistants",
+      "training": "Training"
+    },
+    "kb": {
+      "heading": "Knowledge Base",
+      "name_placeholder": "Knowledge base name",
+      "create": "Create KB",
+      "upload_docs": "Upload documents",
+      "select_for_status": "Select a knowledge base to view statuses.",
+      "no_docs": "No documents yet."
+    },
+    "prompts": {
+      "heading": "Prompt tools",
+      "save": "Save prompt",
+      "evaluate": "Evaluate prompt"
+    },
+    "models": {
+      "heading": "Model compare and Playground",
+      "compare_placeholder": "model1,model2",
+      "compare": "Compare",
+      "playground": "Run in Playground"
+    },
+    "assistant": {
+      "heading": "Assistants and workflow",
+      "create": "Create assistant",
+      "run_workflow": "Run workflow"
+    },
+    "training": {
+      "heading": "Hallucination training and certificate",
+      "submit": "Submit attempt",
+      "generate_cert": "Generate certificate"
+    }
   }
 }

@@ -1,152 +1,213 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-translate="index.title">Менеджер Команд - Главная</title>
+    <title data-translate="index.title">AI Academy — Главная</title>
     <meta name="title-key" content="index.title">
+    <meta name="description" content="AI Academy — платформа для развития навыков владения искусственным интеллектом: практика, наставник и инструменты в одном месте.">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/modern-ui.css">
+    <link rel="stylesheet" href="/css/landing.css">
     <style>
+        :root { color-scheme: dark; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <nav class="bg-white shadow-sm border-b">
+<body class="modern-theme min-h-screen landing-page">
+    <nav class="modern-navbar sticky top-0 z-50">
         <div class="container mx-auto px-4 py-3">
             <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <a href="/" class="text-xl font-bold text-blue-600" data-translate="nav.title">Менеджер Команд</a>
-                </div>
-                <div class="flex items-center space-x-6">
+                <a href="/" class="text-xl font-bold modern-brand" data-translate="nav.title">AI Academy</a>
+                <div class="flex items-center space-x-4 sm:space-x-6">
                     <div id="languageSwitcher"></div>
-                    <div id="authButtons">
-                        <a href="/login" class="text-gray-600 hover:text-blue-600 transition-colors mr-4" data-translate="nav.login">Войти</a>
-                        <a href="/register" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors" data-translate="nav.register">Регистрация</a>
+                    <div id="authButtons" class="flex items-center gap-3 sm:gap-4">
+                        <a href="/login" class="modern-nav-link transition-colors text-sm sm:text-base" data-translate="nav.login">Войти</a>
+                        <a href="/register" class="modern-btn modern-btn-primary text-sm sm:text-base" data-translate="nav.register">Регистрация</a>
                     </div>
                     <div id="userMenu" class="hidden flex items-center space-x-4">
-                        <span id="userName" class="text-gray-700"></span>
-                        <a href="/dashboard" class="text-gray-600 hover:text-blue-600 transition-colors" data-translate="nav.dashboard">Панель управления</a>
-                        <button id="logoutBtn" class="text-gray-600 hover:text-red-600 transition-colors" data-translate="nav.logout">Выйти</button>
+                        <span id="userName" class="text-gray-700 text-sm max-w-[8rem] truncate sm:max-w-none"></span>
+                        <a href="/academy" class="modern-nav-link transition-colors text-sm" data-translate="nav.dashboard">Workspace</a>
+                        <button type="button" id="logoutBtn" class="modern-nav-link transition-colors text-sm" data-translate="nav.logout">Выйти</button>
                     </div>
                 </div>
             </div>
         </div>
     </nav>
-    
-    <div class="container mx-auto px-4 py-16">
-        <div class="max-w-4xl mx-auto text-center">
-            <h1 class="text-5xl font-bold text-gray-900 mb-6" data-translate="index.heading">Менеджер Команд</h1>
-            <p class="text-xl text-gray-600 mb-12" data-translate="index.subtitle">Управляйте своими командами и сотрудниками</p>
-            
-            <div id="guestContent" class="space-y-8">
-                <div class="bg-white rounded-lg shadow-lg p-8">
-                    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Возможности системы</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-                        <div class="flex items-start space-x-3">
-                            <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.196-2.121l-.004-.003A3 3 0 0117 20zM9 12a4 4 0 100-8 4 4 0 000 8zm8 0a4 4 0 100-8 4 4 0 000 8z"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 class="font-semibold text-gray-900">Управление командами</h3>
-                                <p class="text-gray-600">Создавайте и управляйте профилями команд</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start space-x-3">
-                            <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 class="font-semibold text-gray-900">Управление сотрудниками</h3>
-                                <p class="text-gray-600">Добавляйте сотрудников и назначайте их в команды</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start space-x-3">
-                            <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 class="font-semibold text-gray-900">Централизованная база</h3>
-                                <p class="text-gray-600">Единая база данных с Planning Poker</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start space-x-3">
-                            <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 class="font-semibold text-gray-900">Мультиязычность</h3>
-                                <p class="text-gray-600">Поддержка русского и английского языков</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="space-y-4">
-                    <a href="/register" class="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors" data-translate="index.get_started">
-                        Начать работу
-                    </a>
-                    <p class="text-gray-600">
-                        <span data-translate="index.login_to_continue">Войдите для продолжения</span>
-                        <a href="/login" class="text-blue-600 hover:text-blue-700 ml-1" data-translate="nav.login">Войти</a>
-                    </p>
-                </div>
-            </div>
 
-            <div id="userContent" class="hidden">
-                <div class="bg-white rounded-lg shadow-lg p-8">
-                    <h2 class="text-2xl font-semibold text-gray-900 mb-6" data-translate="dashboard.welcome">Добро пожаловать</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <a href="/dashboard" class="block bg-blue-50 hover:bg-blue-100 rounded-lg p-6 transition-colors">
-                            <div class="text-blue-600 mb-3">
-                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 012-2h2a2 2 0 002 2v2a2 2 0 002 2h6a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2-2V3a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 002 2h2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2v-4z"></path>
-                                </svg>
-                            </div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2" data-translate="nav.dashboard">Панель управления</h3>
-                            <p class="text-gray-600">Управляйте командами и сотрудниками</p>
-                        </a>
-                        <a href="/dashboard" class="block bg-green-50 hover:bg-green-100 rounded-lg p-6 transition-colors">
-                            <div class="text-green-600 mb-3">
-                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.196-2.121l-.004-.003A3 3 0 0117 20zM9 12a4 4 0 100-8 4 4 0 000 8zm8 0a4 4 0 100-8 4 4 0 000 8z"></path>
-                                </svg>
-                            </div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2" data-translate="dashboard.teams_section">Мои команды</h3>
-                            <p class="text-gray-600">Просмотр и управление командами</p>
-                        </a>
+    <main id="guestContent">
+        <section class="landing-hero container mx-auto px-4">
+            <div class="landing-hero-inner">
+                <div class="landing-badge">
+                    <span class="landing-badge-dot" aria-hidden="true"></span>
+                    <span data-translate="index.badge">Платформа развития навыков владения AI</span>
+                </div>
+                <h1 class="landing-hero-title">
+                    <span data-translate="index.heading_line1">Учитесь управлять</span>
+                    <span class="landing-gradient-text" data-translate="index.heading_highlight"> искусственным интеллектом</span>
+                </h1>
+                <p class="landing-hero-sub" data-translate="index.subtitle">
+                    AI Academy помогает освоить промпты, модели и рабочие сценарии через практику с AI-наставником — от первых запросов до уверенной работы в реальных задачах.
+                </p>
+                <div class="landing-hero-actions">
+                    <a href="/register" class="modern-btn modern-btn-primary px-8 py-3 text-lg" data-translate="index.get_started">Начать обучение</a>
+                    <a href="/login" class="modern-btn modern-btn-secondary px-6 py-3 text-lg" data-translate="index.login_cta">Уже есть аккаунт</a>
+                </div>
+                <p class="landing-hero-note modern-muted">
+                    <span data-translate="index.login_to_continue">Бесплатная регистрация — доступ к курсам и workspace</span>
+                </p>
+                <div class="landing-stats" aria-label="Показатели платформы">
+                    <div class="landing-stat">
+                        <span class="landing-stat-value" data-translate="index.stat1_value">Практика</span>
+                        <span class="landing-stat-label" data-translate="index.stat1_label">Задания с обратной связью</span>
+                    </div>
+                    <div class="landing-stat">
+                        <span class="landing-stat-value" data-translate="index.stat2_value">Наставник</span>
+                        <span class="landing-stat-label" data-translate="index.stat2_label">AI-диалог по теме урока</span>
+                    </div>
+                    <div class="landing-stat">
+                        <span class="landing-stat-value" data-translate="index.stat3_value">Инструменты</span>
+                        <span class="landing-stat-label" data-translate="index.stat3_label">Модели, KB, сравнение</span>
                     </div>
                 </div>
             </div>
+        </section>
+
+        <section class="landing-section container mx-auto px-4">
+            <h2 class="landing-section-title" data-translate="index.features_title">Чему вы научитесь</h2>
+            <p class="landing-section-lead" data-translate="index.features_lead">
+                Платформа заточена под практическое владение AI: не теория ради теории, а навыки, которые сразу применяются в работе.
+            </p>
+            <div class="landing-features max-w-6xl mx-auto">
+                <article class="landing-feature-card">
+                    <div class="landing-feature-icon" aria-hidden="true">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                    </div>
+                    <h3 data-translate="index.feat1_title">Промпт-инжиниринг</h3>
+                    <p data-translate="index.feat1_desc">Формулируйте запросы так, чтобы модель давала точные и полезные ответы под вашу задачу.</p>
+                </article>
+                <article class="landing-feature-card">
+                    <div class="landing-feature-icon" aria-hidden="true">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    </div>
+                    <h3 data-translate="index.feat2_title">Выбор моделей</h3>
+                    <p data-translate="index.feat2_desc">Понимайте, когда какую модель использовать, и сравнивайте результаты в одном workspace.</p>
+                </article>
+                <article class="landing-feature-card">
+                    <div class="landing-feature-icon" aria-hidden="true">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    </div>
+                    <h3 data-translate="index.feat3_title">Структурированные курсы</h3>
+                    <p data-translate="index.feat3_desc">Проходите модули по шагам: уроки, сценарии и чекпоинты с отслеживанием прогресса.</p>
+                </article>
+                <article class="landing-feature-card">
+                    <div class="landing-feature-icon" aria-hidden="true">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    </div>
+                    <h3 data-translate="index.feat4_title">Критическое мышление</h3>
+                    <p data-translate="index.feat4_desc">Учитесь проверять ответы AI, замечать галлюцинации и строить надёжные рабочие процессы.</p>
+                </article>
+                <article class="landing-feature-card">
+                    <div class="landing-feature-icon" aria-hidden="true">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+                    </div>
+                    <h3 data-translate="index.feat5_title">Базы знаний</h3>
+                    <p data-translate="index.feat5_desc">Подключайте свои документы и ведите диалог с контекстом ваших материалов.</p>
+                </article>
+                <article class="landing-feature-card">
+                    <div class="landing-feature-icon" aria-hidden="true">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <h3 data-translate="index.feat6_title">Реальные сценарии</h3>
+                    <p data-translate="index.feat6_desc">Отрабатывайте типовые задачи — от анализа текста до автоматизации — в безопасной среде академии.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="landing-section container mx-auto px-4" style="padding-top: 0;">
+            <h2 class="landing-section-title" data-translate="index.steps_title">Как это работает</h2>
+            <p class="landing-section-lead" data-translate="index.steps_lead">Три шага от регистрации до уверенного использования AI в ежедневной работе.</p>
+            <div class="landing-steps max-w-5xl mx-auto">
+                <article class="landing-step">
+                    <span class="landing-step-num">1</span>
+                    <h3 data-translate="index.step1_title">Регистрация и вход</h3>
+                    <p data-translate="index.step1_desc">Создайте аккаунт и откройте рабочее пространство с курсами и чатом наставника.</p>
+                </article>
+                <article class="landing-step">
+                    <span class="landing-step-num">2</span>
+                    <h3 data-translate="index.step2_title">Уроки и практика</h3>
+                    <p data-translate="index.step2_desc">Изучайте материал, выполняйте задания и получайте подсказки в диалоге с AI.</p>
+                </article>
+                <article class="landing-step">
+                    <span class="landing-step-num">3</span>
+                    <h3 data-translate="index.step3_title">Применение в работе</h3>
+                    <p data-translate="index.step3_desc">Переносите освоенные приёмы в свои проекты: промпты, KB и сравнение моделей под рукой.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="container mx-auto px-4">
+            <div class="landing-cta-band max-w-3xl mx-auto">
+                <h2 data-translate="index.cta_title">Готовы прокачать навыки владения AI?</h2>
+                <p data-translate="index.cta_desc">Присоединяйтесь к AI Academy — учитесь на практике, а не по скучным слайдам.</p>
+                <a href="/register" class="modern-btn modern-btn-primary px-8 py-3 text-lg inline-block" data-translate="index.get_started">Начать обучение</a>
+            </div>
+        </section>
+    </main>
+
+    <main id="userContent" class="hidden container mx-auto px-4 py-12">
+        <div class="max-w-3xl mx-auto text-center mb-10">
+            <h1 class="text-3xl font-bold modern-title mb-2" data-translate="dashboard.welcome">Добро пожаловать</h1>
+            <p class="modern-muted" data-translate="index.welcome_back">Продолжайте развивать навыки владения AI в рабочем пространстве.</p>
         </div>
-    </div>
+        <div class="landing-dashboard-grid max-w-2xl mx-auto">
+            <a href="/academy" class="landing-dash-card">
+                <div class="text-blue-400" aria-hidden="true">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 012-2h2a2 2 0 002 2v2a2 2 0 002 2h6a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2-2V3a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 002 2h2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2v-4z"/>
+                    </svg>
+                </div>
+                <h3 data-translate="index.dash_workspace_title">Рабочее пространство</h3>
+                <p data-translate="index.dash_workspace_desc">Чаты, уроки, практики и инструменты</p>
+            </a>
+            <a href="/academy/admin" class="landing-dash-card">
+                <div class="text-emerald-400" aria-hidden="true">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <h3 data-translate="index.dash_admin_title">Панель администратора</h3>
+                <p data-translate="index.dash_admin_desc">Пользователи, лимиты и настройки</p>
+            </a>
+        </div>
+    </main>
+
+    <footer class="landing-footer container mx-auto px-4">
+        <p data-translate="index.footer">© AI Academy — развитие навыков владения искусственным интеллектом</p>
+    </footer>
 
     <script>
         function checkAuth() {
             const token = localStorage.getItem('auth_token');
             const user = localStorage.getItem('user_info');
-            
+            const guest = document.getElementById('guestContent');
+            const loggedIn = document.getElementById('userContent');
+
             if (token && user) {
                 const userInfo = JSON.parse(user);
                 document.getElementById('userName').textContent = userInfo.name;
                 document.getElementById('authButtons').classList.add('hidden');
                 document.getElementById('userMenu').classList.remove('hidden');
-                document.getElementById('guestContent').classList.add('hidden');
-                document.getElementById('userContent').classList.remove('hidden');
+                guest.classList.add('hidden');
+                loggedIn.classList.remove('hidden');
             } else {
                 document.getElementById('authButtons').classList.remove('hidden');
                 document.getElementById('userMenu').classList.add('hidden');
-                document.getElementById('guestContent').classList.remove('hidden');
-                document.getElementById('userContent').classList.add('hidden');
+                guest.classList.remove('hidden');
+                loggedIn.classList.add('hidden');
             }
         }
 

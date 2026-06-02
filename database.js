@@ -1,5 +1,7 @@
 const { Pool } = require('pg');
 const { mergeDefaultAllowedModels } = require('./services/academy/modelCatalog');
+const { seedModuleOneCatalog } = require('./services/academy/seedModuleOneCatalog');
+const { seedModuleTwoCatalog } = require('./services/academy/seedModuleTwoCatalog');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -64,78 +66,74 @@ async function mergeExistingUsersAiAllowedModels(client) {
   }
 }
 
-async function seedAcademyCatalog(client) {
-  const courses = [
-    { slug: 'ai-basics', title: 'Основы AI', description: 'Что такое нейросети и как они работают', sort_order: 1 },
-    { slug: 'prompting-basics', title: 'Основы промптинга', description: 'Формулировки, контекст, few-shot', sort_order: 2 },
-    { slug: 'ai-work', title: 'AI для работы', description: 'Письма, резюме, исследования', sort_order: 3 },
-    { slug: 'ai-content', title: 'AI для контента', description: 'Тексты, сценарии, редактура', sort_order: 4 },
-    { slug: 'ai-analytics', title: 'AI для аналитики', description: 'Данные, таблицы, выводы', sort_order: 5 },
-    { slug: 'ai-business', title: 'AI для бизнеса', description: 'Стратегия, метрики, коммуникации', sort_order: 6 }
-  ];
+/** OpenRouter removes old model slugs; remap stored IDs so requests do not 404. */
+async function migrateDeprecatedOpenRouterModelIds(client) {
+  const DEPRECATED = {
+    'anthropic/claude-3.5-sonnet': 'anthropic/claude-3.7-sonnet'
+  };
+  try {
+    const r = await client.query(`SELECT id, ai_allowed_models FROM users`);
+    let userUpdates = 0;
+    for (const row of r.rows) {
+      let arr = row.ai_allowed_models;
+      if (typeof arr === 'string') {
+        try {
+          arr = JSON.parse(arr);
+        } catch {
+          arr = [];
+        }
+      }
+      if (!Array.isArray(arr)) continue;
+      const next = [];
+      const seen = new Set();
+      for (const id of arr) {
+        const mapped = DEPRECATED[id] || id;
+        if (!seen.has(mapped)) {
+          seen.add(mapped);
+          next.push(mapped);
+        }
+      }
+      if (JSON.stringify(next) !== JSON.stringify(arr)) {
+        await client.query(`UPDATE users SET ai_allowed_models = $1::jsonb WHERE id = $2`, [
+          JSON.stringify(next),
+          row.id
+        ]);
+        userUpdates += 1;
+      }
+    }
 
-  for (const c of courses) {
-    await client.query(
-      `INSERT INTO academy_courses (slug, title, description, sort_order)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (slug) DO UPDATE SET title = EXCLUDED.title, description = EXCLUDED.description, sort_order = EXCLUDED.sort_order`,
-      [c.slug, c.title, c.description, c.sort_order]
+    const conv = await client.query(
+      `UPDATE ai_conversations SET model = $1 WHERE model = $2`,
+      ['anthropic/claude-3.7-sonnet', 'anthropic/claude-3.5-sonnet']
     );
-  }
 
-  const lessonSeeds = [
-    { courseSlug: 'ai-basics', title: 'Введение: модели и токены', scenario_key: 'ai-basics-intro', sort_order: 1,
-      content_md: 'Изучите базовые понятия: модель, контекстное окно, токены. Задайте вопросы наставнику в чате.',
-      assignment_title: 'Практика', assignment_instructions: 'Спросите у наставника простыми словами, чем отличается обучение модели от inference.' },
-    { courseSlug: 'ai-basics', title: 'Ограничения и галлюцинации', scenario_key: 'ai-basics-limits', sort_order: 2,
-      content_md: 'Поймите риски: галлюцинации, устаревшие знания, необходимость проверки источников.',
-      assignment_title: 'Критическое мышление', assignment_instructions: 'Попросите наставника объяснить, как проверять ответы AI на факты.' },
-    { courseSlug: 'prompting-basics', title: 'Структура хорошего промпта', scenario_key: 'prompt-structure', sort_order: 1,
-      content_md: 'Роль, контекст, формат вывода, критерии успеха.',
-      assignment_title: 'Написать промпт', assignment_instructions: 'Составьте промпт для задачи «краткое резюме статьи» и попросите наставника оценить его.' },
-    { courseSlug: 'prompting-basics', title: 'Итерации и уточнения', scenario_key: 'prompt-iterate', sort_order: 2,
-      content_md: 'Как улучшать результат вторым и третьим сообщением.',
-      assignment_title: 'Итерация', assignment_instructions: 'Выполните одну задачу в два шага: черновик → уточнение.' },
-    { courseSlug: 'ai-work', title: 'Деловая переписка', scenario_key: 'work-email', sort_order: 1,
-      content_md: 'Тон, ясность, призыв к действию.',
-      assignment_title: 'Черновик письма', assignment_instructions: 'Попросите наставника помочь спланировать письмо клиенту, но напишите финальный текст сами.' },
-    { courseSlug: 'ai-content', title: 'Идея и структура', scenario_key: 'content-outline', sort_order: 1,
-      content_md: 'Заголовки, лиды, структура поста.',
-      assignment_title: 'План поста', assignment_instructions: 'Создайте структуру поста на заданную тему и попросите обратную связь по структуре.' },
-    { courseSlug: 'ai-analytics', title: 'Формулировка вопроса к данным', scenario_key: 'analytics-question', sort_order: 1,
-      content_md: 'Как спросить про метрики без ошибочных интерпретаций.',
-      assignment_title: 'Вопрос к данным', assignment_instructions: 'Опишите вымышленный датасет и попросите наставника помочь сформулировать 3 аналитических вопроса.' },
-    { courseSlug: 'ai-business', title: 'Гипотезы и проверка', scenario_key: 'business-hypothesis', sort_order: 1,
-      content_md: 'От гипотезы к эксперименту и метрикам.',
-      assignment_title: 'Гипотеза', assignment_instructions: 'Сформулируйте бизнес-гипотезу и попросите наставника указать слабые места.' }
-  ];
-
-  for (const L of lessonSeeds) {
-    const cr = await client.query(`SELECT id FROM academy_courses WHERE slug = $1`, [L.courseSlug]);
-    if (!cr.rows[0]) continue;
-    const courseId = cr.rows[0].id;
-    const ins = await client.query(
-      `INSERT INTO academy_lessons (course_id, title, content_md, scenario_key, sort_order)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (course_id, scenario_key) DO UPDATE SET
-         title = EXCLUDED.title,
-         content_md = EXCLUDED.content_md,
-         sort_order = EXCLUDED.sort_order
-       RETURNING id`,
-      [courseId, L.title, L.content_md, L.scenario_key, L.sort_order]
-    );
-    const lessonId = ins.rows[0]?.id;
-    if (lessonId) {
-      await client.query(
-        `INSERT INTO academy_assignments (lesson_id, title, instructions_md)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (lesson_id) DO UPDATE SET
-           title = EXCLUDED.title,
-           instructions_md = EXCLUDED.instructions_md`,
-        [lessonId, L.assignment_title, L.assignment_instructions]
+    if (userUpdates > 0 || conv.rowCount > 0) {
+      console.log(
+        `AI Academy: remapped deprecated OpenRouter models (users updated: ${userUpdates}, conversations: ${conv.rowCount})`
       );
     }
+  } catch (e) {
+    console.error('migrateDeprecatedOpenRouterModelIds:', e.message);
   }
+}
+
+async function migrateAcademyProgressColumns(client) {
+  const sqls=[
+    "ALTER TABLE academy_assignments ADD COLUMN IF NOT EXISTS task_options JSONB DEFAULT '[]'::jsonb",
+    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS answer_text TEXT",
+    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS answer_updated_at TIMESTAMPTZ",
+    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS assignment_status VARCHAR(30) DEFAULT 'not_started'",
+    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS feedback_json JSONB DEFAULT '{}'::jsonb",
+    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS feedback_at TIMESTAMPTZ",
+    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS practice_mode VARCHAR(20)",
+    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS group_meta JSONB DEFAULT '{}'::jsonb"
+  ];
+  for (const sql of sqls) await client.query(sql);
+}
+
+async function seedAcademyCatalog(client) {
+  await seedModuleOneCatalog(client);
+  await seedModuleTwoCatalog(client);
 }
 
 async function initializeDatabase() {
@@ -316,7 +314,7 @@ async function initializeDatabase() {
       `ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true`,
       `ADD COLUMN IF NOT EXISTS ai_daily_token_limit INTEGER DEFAULT 2000000`,
       `ADD COLUMN IF NOT EXISTS ai_monthly_token_limit INTEGER DEFAULT 60000000`,
-      `ADD COLUMN IF NOT EXISTS ai_allowed_models JSONB DEFAULT '["openai/gpt-4o-mini","google/gemini-2.0-flash-001","anthropic/claude-3.5-sonnet"]'::jsonb`
+      `ADD COLUMN IF NOT EXISTS ai_allowed_models JSONB DEFAULT '["openai/gpt-4o-mini","google/gemini-2.0-flash-001","anthropic/claude-3.7-sonnet"]'::jsonb`
     ]) {
       try {
         await client.query(`ALTER TABLE users ${col}`);
@@ -328,7 +326,7 @@ async function initializeDatabase() {
     try {
       await client.query(`
         ALTER TABLE users ALTER COLUMN ai_allowed_models SET DEFAULT
-        '["openai/gpt-4o-mini","google/gemini-2.0-flash-001","anthropic/claude-3.5-sonnet"]'::jsonb
+        '["openai/gpt-4o-mini","google/gemini-2.0-flash-001","anthropic/claude-3.7-sonnet"]'::jsonb
       `);
     } catch (e) {
       console.log('ai_allowed_models default alter skipped:', e.message);
@@ -425,6 +423,7 @@ async function initializeDatabase() {
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         conversation_id UUID REFERENCES ai_conversations(id) ON DELETE SET NULL,
         model VARCHAR(200),
+        feature_mode VARCHAR(80) DEFAULT 'chat_general',
         prompt_tokens INTEGER DEFAULT 0,
         completion_tokens INTEGER DEFAULT 0,
         cost_usd NUMERIC(14, 8),
@@ -442,9 +441,41 @@ async function initializeDatabase() {
       CREATE INDEX IF NOT EXISTS idx_ai_usage_user_created ON ai_usage_events(user_id, created_at DESC);
     `);
 
+    console.log('AI Academy: knowledge bases...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS knowledge_bases (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS knowledge_documents (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        knowledge_base_id UUID NOT NULL REFERENCES knowledge_bases(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        original_name VARCHAR(500) NOT NULL,
+        stored_name VARCHAR(500) NOT NULL,
+        mime_type VARCHAR(255) NOT NULL,
+        size_bytes BIGINT DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_kb_user_created ON knowledge_bases(user_id, created_at DESC);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_kd_kb_created ON knowledge_documents(knowledge_base_id, created_at DESC);
+    `);
+
+    await migrateAcademyProgressColumns(client);
     await seedAcademyCatalog(client);
     await bootstrapAdminEmail(client);
     await mergeExistingUsersAiAllowedModels(client);
+    await migrateDeprecatedOpenRouterModelIds(client);
     await bumpLegacyTokenLimits(client);
 
     console.log('Database initialization completed successfully');
@@ -940,6 +971,47 @@ async function deleteAiConversation(userId, conversationId) {
   }
 }
 
+async function deleteAiConversationsForLesson(userId, lessonId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `DELETE FROM ai_conversations WHERE user_id = $1 AND lesson_id = $2 RETURNING id`,
+      [userId, lessonId]
+    );
+    return r.rowCount;
+  } finally {
+    client.release();
+  }
+}
+
+async function resetLessonPractice(userId, lessonId) {
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `INSERT INTO academy_user_lesson_progress
+        (user_id, lesson_id, status, answer_text, answer_updated_at, assignment_status, practice_mode, group_meta, feedback_json, feedback_at, score, completed_at, updated_at)
+       VALUES ($1, $2, 'in_progress', NULL, NULL, 'not_started', 'individual', '{}'::jsonb, '{}'::jsonb, NULL, NULL, NULL, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, lesson_id) DO UPDATE SET
+         status = 'in_progress',
+         answer_text = NULL,
+         answer_updated_at = NULL,
+         assignment_status = 'not_started',
+         practice_mode = 'individual',
+         group_meta = '{}'::jsonb,
+         feedback_json = '{}'::jsonb,
+         feedback_at = NULL,
+         score = NULL,
+         completed_at = NULL,
+         updated_at = CURRENT_TIMESTAMP`,
+      [userId, lessonId]
+    );
+    await deleteAiConversationsForLesson(userId, lessonId);
+    return true;
+  } finally {
+    client.release();
+  }
+}
+
 async function addAiMessage(conversationId, role, content, meta = {}) {
   const client = await pool.connect();
   try {
@@ -1005,13 +1077,13 @@ async function sumAiTokensForUser(userId, start, end) {
   }
 }
 
-async function recordAiUsage({ userId, conversationId, model, promptTokens, completionTokens, costUsd }) {
+async function recordAiUsage({ userId, conversationId, model, promptTokens, completionTokens, costUsd, featureMode = 'chat_general' }) {
   const client = await pool.connect();
   try {
     await client.query(
-      `INSERT INTO ai_usage_events (user_id, conversation_id, model, prompt_tokens, completion_tokens, cost_usd)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [userId, conversationId, model, promptTokens, completionTokens, costUsd]
+      `INSERT INTO ai_usage_events (user_id, conversation_id, model, feature_mode, prompt_tokens, completion_tokens, cost_usd)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [userId, conversationId, model, featureMode, promptTokens, completionTokens, costUsd]
     );
   } finally {
     client.release();
@@ -1045,6 +1117,293 @@ async function getLessonProgressForUser(userId) {
       [userId]
     );
     return r.rows;
+  } finally {
+    client.release();
+  }
+}
+
+async function getAssignmentByLessonId(lessonId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(`SELECT * FROM academy_assignments WHERE lesson_id = $1`, [lessonId]);
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function getLessonSubmission(userId, lessonId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT * FROM academy_user_lesson_progress WHERE user_id = $1 AND lesson_id = $2`,
+      [userId, lessonId]
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function upsertLessonSubmission(userId, lessonId, data) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `INSERT INTO academy_user_lesson_progress
+        (user_id, lesson_id, status, answer_text, answer_updated_at, assignment_status, practice_mode, group_meta, updated_at)
+       VALUES ($1, $2, COALESCE($3, 'in_progress'), $4, CURRENT_TIMESTAMP, COALESCE($5, 'draft'), $6, COALESCE($7::jsonb, '{}'::jsonb), CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, lesson_id) DO UPDATE SET
+         answer_text = COALESCE(EXCLUDED.answer_text, academy_user_lesson_progress.answer_text),
+         answer_updated_at = CASE WHEN EXCLUDED.answer_text IS NOT NULL THEN CURRENT_TIMESTAMP ELSE academy_user_lesson_progress.answer_updated_at END,
+         assignment_status = COALESCE(EXCLUDED.assignment_status, academy_user_lesson_progress.assignment_status),
+         practice_mode = COALESCE(EXCLUDED.practice_mode, academy_user_lesson_progress.practice_mode),
+         group_meta = COALESCE(EXCLUDED.group_meta, academy_user_lesson_progress.group_meta),
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        userId,
+        lessonId,
+        data.status || 'in_progress',
+        data.answer_text ?? null,
+        data.assignment_status ?? null,
+        data.practice_mode ?? null,
+        data.group_meta != null ? JSON.stringify(data.group_meta) : null
+      ]
+    );
+    return r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function saveLessonFeedback(userId, lessonId, { feedbackJson, score, assignmentStatus }) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `INSERT INTO academy_user_lesson_progress
+        (user_id, lesson_id, status, feedback_json, feedback_at, score, assignment_status, updated_at)
+       VALUES ($1, $2, 'in_progress', $3::jsonb, CURRENT_TIMESTAMP, $4, COALESCE($5, 'reviewed'), CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, lesson_id) DO UPDATE SET
+         feedback_json = EXCLUDED.feedback_json,
+         feedback_at = CURRENT_TIMESTAMP,
+         score = COALESCE(EXCLUDED.score, academy_user_lesson_progress.score),
+         assignment_status = COALESCE(EXCLUDED.assignment_status, academy_user_lesson_progress.assignment_status),
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [userId, lessonId, JSON.stringify(feedbackJson || {}), score ?? null, assignmentStatus || 'reviewed']
+    );
+    return r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function getProgressSummary(userId) {
+  const client = await pool.connect();
+  try {
+    const lessons = await client.query(
+      `SELECT l.id, l.title, l.scenario_key, c.slug AS course_slug, c.title AS course_title
+       FROM academy_lessons l
+       JOIN academy_courses c ON c.id = l.course_id
+       WHERE c.slug IN ('ai-work-business-talk', 'ai-prompt-context-m2')
+       ORDER BY c.sort_order, l.sort_order`
+    );
+    const progress = await client.query(`SELECT * FROM academy_user_lesson_progress WHERE user_id = $1`, [userId]);
+    const progressMap = {};
+    for (const p of progress.rows) progressMap[p.lesson_id] = p;
+    const practiceLessons = lessons.rows.filter(
+      (l) => l.scenario_key && /^block[12]-practice-/.test(l.scenario_key)
+    );
+    let completed = 0;
+    const lessonStatuses = practiceLessons.map((l) => {
+      const p = progressMap[l.id];
+      if (p?.status === 'completed') completed += 1;
+      return {
+        lesson_id: l.id,
+        title: l.title,
+        assignment_status: p?.assignment_status || 'not_started',
+        has_feedback: !!(p?.feedback_json && Object.keys(p.feedback_json).length),
+        status: p?.status || 'not_started'
+      };
+    });
+    const lastActivity = await client.query(
+      `SELECT GREATEST(
+         COALESCE((SELECT MAX(updated_at) FROM academy_user_lesson_progress WHERE user_id = $1), 'epoch'::timestamptz),
+         COALESCE((SELECT MAX(updated_at) FROM ai_conversations WHERE user_id = $1), 'epoch'::timestamptz)
+       ) AS last_activity_at`,
+      [userId]
+    );
+    const total = practiceLessons.length || 1;
+    return {
+      course_slug: 'ai-work-business-talk',
+      practices_completed: completed,
+      practices_total: total,
+      percent: Math.round((completed / total) * 100),
+      last_activity_at: lastActivity.rows[0]?.last_activity_at || null,
+      lessons: lessonStatuses
+    };
+  } finally {
+    client.release();
+  }
+}
+
+async function createKnowledgeBase(userId, { name, description = null }) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `INSERT INTO knowledge_bases (user_id, name, description)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [userId, name, description]
+    );
+    return r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function listKnowledgeBases(userId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT kb.*,
+              COALESCE(COUNT(kd.id), 0)::int AS documents_count
+       FROM knowledge_bases kb
+       LEFT JOIN knowledge_documents kd ON kd.knowledge_base_id = kb.id
+       WHERE kb.user_id = $1
+       GROUP BY kb.id
+       ORDER BY kb.created_at DESC`,
+      [userId]
+    );
+    return r.rows;
+  } finally {
+    client.release();
+  }
+}
+
+async function getKnowledgeBaseForUser(userId, knowledgeBaseId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT * FROM knowledge_bases WHERE id = $1 AND user_id = $2`,
+      [knowledgeBaseId, userId]
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function deleteKnowledgeBase(userId, knowledgeBaseId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `DELETE FROM knowledge_bases WHERE id = $1 AND user_id = $2 RETURNING id`,
+      [knowledgeBaseId, userId]
+    );
+    return !!r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function updateKnowledgeBase(userId, knowledgeBaseId, { name, description }) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `UPDATE knowledge_bases
+       SET name = COALESCE($3, name),
+           description = COALESCE($4, description),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND user_id = $2
+       RETURNING *`,
+      [knowledgeBaseId, userId, name ?? null, description ?? null]
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function addKnowledgeDocument(userId, knowledgeBaseId, fileMeta) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `INSERT INTO knowledge_documents
+        (knowledge_base_id, user_id, original_name, stored_name, mime_type, size_bytes)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [
+        knowledgeBaseId,
+        userId,
+        fileMeta.name,
+        fileMeta.stored,
+        fileMeta.mime,
+        fileMeta.sizeBytes
+      ]
+    );
+    return r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function listKnowledgeDocuments(userId, knowledgeBaseId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT *
+       FROM knowledge_documents
+       WHERE user_id = $1 AND knowledge_base_id = $2
+       ORDER BY created_at DESC`,
+      [userId, knowledgeBaseId]
+    );
+    return r.rows;
+  } finally {
+    client.release();
+  }
+}
+
+async function searchKnowledgeDocuments(userId, knowledgeBaseId, queryText) {
+  const client = await pool.connect();
+  try {
+    const q = `%${String(queryText || '').trim()}%`;
+    const r = await client.query(
+      `SELECT *
+       FROM knowledge_documents
+       WHERE user_id = $1
+         AND knowledge_base_id = $2
+         AND (original_name ILIKE $3 OR mime_type ILIKE $3)
+       ORDER BY created_at DESC`,
+      [userId, knowledgeBaseId, q]
+    );
+    return r.rows;
+  } finally {
+    client.release();
+  }
+}
+
+async function getKnowledgeDocumentForUser(userId, documentId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT * FROM knowledge_documents WHERE id = $1 AND user_id = $2`,
+      [documentId, userId]
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function deleteKnowledgeDocument(userId, documentId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `DELETE FROM knowledge_documents WHERE id = $1 AND user_id = $2 RETURNING id`,
+      [documentId, userId]
+    );
+    return !!r.rows[0];
   } finally {
     client.release();
   }
@@ -1195,6 +1554,8 @@ module.exports = {
   updateAiConversation,
   touchConversationUpdated,
   deleteAiConversation,
+  deleteAiConversationsForLesson,
+  resetLessonPractice,
   addAiMessage,
   listAiMessagesAsc,
   deleteLastAssistantMessage,
@@ -1202,10 +1563,25 @@ module.exports = {
   recordAiUsage,
   upsertLessonProgress,
   getLessonProgressForUser,
+  getAssignmentByLessonId,
+  getLessonSubmission,
+  upsertLessonSubmission,
+  saveLessonFeedback,
+  getProgressSummary,
   listUsersForAdmin,
   adminUpdateUser,
   adminListAllConversations,
   adminGetConversation,
   adminExportUsage,
-  adminSumUsageByUser
+  adminSumUsageByUser,
+  createKnowledgeBase,
+  listKnowledgeBases,
+  getKnowledgeBaseForUser,
+  updateKnowledgeBase,
+  deleteKnowledgeBase,
+  addKnowledgeDocument,
+  listKnowledgeDocuments,
+  searchKnowledgeDocuments,
+  getKnowledgeDocumentForUser,
+  deleteKnowledgeDocument
 };

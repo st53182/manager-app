@@ -100,6 +100,27 @@ function createRouter({ JWT_SECRET }) {
     }
   });
 
+  router.get('/usage/by-feature', async (req, res) => {
+    try {
+      const start = req.query.start ? new Date(req.query.start) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const end = req.query.end ? new Date(req.query.end) : new Date();
+      const rows = await db.adminExportUsage(start, end);
+      const byFeature = {};
+      for (const r of rows) {
+        const key = r.feature_mode || 'chat_general';
+        if (!byFeature[key]) byFeature[key] = { feature_mode: key, prompt_tokens: 0, completion_tokens: 0, cost_usd: 0, events: 0 };
+        byFeature[key].prompt_tokens += Number(r.prompt_tokens || 0);
+        byFeature[key].completion_tokens += Number(r.completion_tokens || 0);
+        byFeature[key].cost_usd += Number(r.cost_usd || 0);
+        byFeature[key].events += 1;
+      }
+      res.json({ start, end, by_feature: Object.values(byFeature) });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed feature usage summary' });
+    }
+  });
+
   router.get('/usage/export', async (req, res) => {
     try {
       const start = req.query.start ? new Date(req.query.start) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -109,13 +130,14 @@ function createRouter({ JWT_SECRET }) {
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', 'attachment; filename="usage-export.csv"');
 
-      const header = ['created_at', 'user_email', 'model', 'prompt_tokens', 'completion_tokens', 'cost_usd', 'conversation_id'];
+      const header = ['created_at', 'user_email', 'model', 'feature_mode', 'prompt_tokens', 'completion_tokens', 'cost_usd', 'conversation_id'];
       res.write(header.join(',') + '\n');
       for (const r of rows) {
         const vals = [
           r.created_at,
           r.user_email,
           r.model,
+          r.feature_mode,
           r.prompt_tokens,
           r.completion_tokens,
           r.cost_usd,

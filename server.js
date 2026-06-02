@@ -14,6 +14,13 @@ const LEGACY_MANAGER_UI_ENABLED = process.env.LEGACY_MANAGER_UI_ENABLED === 'tru
 
 const { createRouter: createAcademyRouter } = require('./routes/academy');
 const { createRouter: createAdminRouter } = require('./routes/admin');
+const {
+  initializePracticumSchema,
+  upsertBuiltinPersonas,
+  upsertCourseExerciseFields,
+  seedHallucinationScenarios,
+  seedBuiltinPromptTemplates
+} = require('./services/academy/practicumStore');
 
 const { 
   initializeDatabase,
@@ -86,17 +93,62 @@ function normalizeProfileBody(body = {}) {
 
 app.set('trust proxy', 1);
 
+/** Optional extra script hosts (comma-separated), e.g. AV browser injection URLs if they change subdomain. */
+const CSP_EXTRA_SCRIPT_SRC = (process.env.CSP_EXTRA_SCRIPT_SRC || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+/** Kaspersky (and similar) inject scripts into pages for «safe browsing»; CSP blocks them unless listed. */
+const CSP_ALLOW_KASPERSKY =
+  process.env.CSP_ALLOW_KASPERSKY_INJECTION !== 'false';
+
+/** Extra hosts when HTML artifacts load Angular/scripts from CDN (see ACADEMY_ARTIFACT_ALLOW_SCRIPTS). */
+const CSP_ARTIFACT_SCRIPT_SRC = (
+  process.env.ACADEMY_ARTIFACT_ALLOW_SCRIPTS === 'true'
+    ? ['https://unpkg.com', 'https://esm.sh']
+    : []
+).concat((process.env.CSP_EXTRA_ARTIFACT_SCRIPT_SRC || '').split(',').map((s) => s.trim()).filter(Boolean));
+
+const cspScriptSrc = [
+  "'self'",
+  "'unsafe-inline'",
+  "'unsafe-hashes'",
+  'https://cdn.tailwindcss.com',
+  'https://cdn.jsdelivr.net',
+  ...(CSP_ALLOW_KASPERSKY ? ['https://gc.kis.v2.scr.kaspersky-labs.com'] : []),
+  ...CSP_EXTRA_SCRIPT_SRC,
+  ...CSP_ARTIFACT_SCRIPT_SRC
+];
+
+const cspConnectExtra =
+  process.env.ACADEMY_ARTIFACT_ALLOW_SCRIPTS === 'true'
+    ? ['https://unpkg.com', 'https://esm.sh']
+    : [];
+
+const cspStyleArtifactExtra =
+  process.env.ACADEMY_ARTIFACT_ALLOW_SCRIPTS === 'true' ? ['https://fonts.googleapis.com'] : [];
+
+const cspFontArtifactExtra =
+  process.env.ACADEMY_ARTIFACT_ALLOW_SCRIPTS === 'true' ? ['https://fonts.gstatic.com'] : [];
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-hashes'", "https://cdn.tailwindcss.com", "https://cdn.jsdelivr.net"],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        'https://cdn.jsdelivr.net',
+        'https://cdn.tailwindcss.com',
+        ...cspStyleArtifactExtra
+      ],
+      scriptSrc: cspScriptSrc,
       scriptSrcAttr: ["'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
+      /** DevTools fetch *.js.map from CDNs; blocked requests were noisy (not required for the app). */
+      connectSrc: ["'self'", 'https://cdn.jsdelivr.net', ...cspConnectExtra],
       workerSrc: ["'self'", "blob:"],
-      fontSrc: ["'self'", "https://cdn.jsdelivr.net"],
+      fontSrc: ["'self'", 'https://cdn.jsdelivr.net', ...cspFontArtifactExtra],
     },
   },
 }));
@@ -132,9 +184,6 @@ function authenticateToken(req, res, next) {
 }
 
 app.get('/', (req, res) => {
-  if (!LEGACY_MANAGER_UI_ENABLED) {
-    return res.redirect('/academy');
-  }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
@@ -763,8 +812,9 @@ app.post('/api/team/:id/motivation-advice', authenticateToken, async (req, res) 
       return res.status(500).json({ error: 'OpenAI API key not configured' });
     }
 
+    const normalizedLanguage = ['ru', 'lv', 'en'].includes(language) ? language : 'en';
     let prompt;
-    if (language === 'ru') {
+    if (normalizedLanguage === 'ru') {
       prompt = `Проанализируй топ мотивационные триггеры этой команды и предоставь конкретные советы по их мотивации:
 
 Команда: ${team.name}
@@ -774,6 +824,16 @@ app.post('/api/team/:id/motivation-advice', authenticateToken, async (req, res) 
 Предоставь 3-4 конкретных, практических рекомендации для мотивации этой команды на основе их доминирующих мотивационных триггеров. Сосредоточься на практических управленческих стратегиях, которые учитывают эти конкретные триггеры.
 
 Структурируй ответ в виде пронумерованного списка. Каждая рекомендация должна быть конкретной и применимой на практике.`;
+    } else if (normalizedLanguage === 'lv') {
+      prompt = `Analizē šīs komandas galvenos motivācijas trigerus un sniedz konkrētus ieteikumus, kā motivēt komandu:
+
+Komanda: ${team.name}
+Komandas lielums: ${employees.length} dalībnieki
+Top 4 motivācijas trigeri (visbiežāk sastopamie komandā): ${topTriggers.join(', ')}
+
+Sniedz 3-4 konkrētus, praktiski pielietojamus ieteikumus komandas motivēšanai, balstoties uz dominējošajiem motivācijas trigeriem. Koncentrējies uz vadības pieejām, kuras var ieviest praksē.
+
+Noformē atbildi kā numurētu sarakstu. Katram ieteikumam jābūt konkrētam un izpildāmam.`;
     } else {
       prompt = `Analyze this team's top motivational triggers and provide specific advice for motivating them:
 
@@ -1217,6 +1277,11 @@ app.get('/api/custom-trees', authenticateToken, async (req, res) => {
 async function startServer() {
   try {
     await initializeDatabase();
+    await initializePracticumSchema();
+    await upsertBuiltinPersonas();
+    await upsertCourseExerciseFields();
+    await seedHallucinationScenarios();
+    await seedBuiltinPromptTemplates();
     server.listen(PORT, () => {
       console.log(`Manager app server running on port ${PORT}`);
     });

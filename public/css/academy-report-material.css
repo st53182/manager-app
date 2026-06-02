@@ -1,0 +1,214 @@
+/**
+ * Статические стили отчёта в духе Angular Material (без Angular — только CSS).
+ * В HTML-отчёте добавьте в <head>:
+ *   <link rel="stylesheet" href="/css/academy-report-material.css">
+ * Обёртка: <body class="ar-report"> … </body>
+ *
+ * Блоки: .ar-header .ar-toolbar .ar-title .ar-subtitle
+ *        .ar-main .ar-grid .ar-card .ar-card-title .ar-card-body
+ *        .ar-kpis .ar-kpi .ar-kpi-value .ar-kpi-label
+ *        .ar-table-wrap table.ar-table
+ *        .ar-chip .ar-chip-row .ar-muted .ar-section-title
+ */
+
+:root {
+  --ar-primary: #3f51b5;
+  --ar-primary-light: #e8eaf6;
+  --ar-accent: #ff4081;
+  --ar-bg: #fafafa;
+  --ar-surface: #ffffff;
+  --ar-text: rgba(0, 0, 0, 0.87);
+  --ar-text-secondary: rgba(0, 0, 0, 0.6);
+  --ar-divider: rgba(0, 0, 0, 0.12);
+  --ar-radius: 4px;
+  --ar-elev: 0 2px 4px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+  --ar-elev-hover: 0 4px 8px rgba(0, 0, 0, 0.14);
+  --ar-font: 'Roboto', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.ar-report {
+  margin: 0;
+  font-family: var(--ar-font);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ar-text);
+  background: var(--ar-bg);
+  min-height: 100vh;
+}
+
+.ar-header {
+  background: var(--ar-primary);
+  color: #fff;
+  box-shadow: var(--ar-elev);
+}
+
+.ar-toolbar {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+}
+
+.ar-title {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.ar-subtitle {
+  font-size: 13px;
+  opacity: 0.9;
+  width: 100%;
+  flex-basis: 100%;
+  margin: 0;
+  font-weight: 400;
+}
+
+.ar-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.ar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.ar-card {
+  background: var(--ar-surface);
+  border-radius: var(--ar-radius);
+  box-shadow: var(--ar-elev);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.ar-card:hover {
+  box-shadow: var(--ar-elev-hover);
+}
+
+.ar-card-title {
+  padding: 16px 16px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ar-text);
+}
+
+.ar-card-body {
+  padding: 16px;
+  color: var(--ar-text-secondary);
+}
+
+.ar-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.ar-kpi {
+  background: var(--ar-surface);
+  border-radius: var(--ar-radius);
+  box-shadow: var(--ar-elev);
+  padding: 16px 20px;
+  text-align: center;
+  border-top: 4px solid var(--ar-primary);
+}
+
+.ar-kpi-value {
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--ar-text);
+  line-height: 1.2;
+}
+
+.ar-kpi-label {
+  font-size: 12px;
+  color: var(--ar-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 8px;
+}
+
+.ar-section-title {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 24px 0 12px;
+  color: var(--ar-text);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--ar-divider);
+}
+
+.ar-table-wrap {
+  background: var(--ar-surface);
+  border-radius: var(--ar-radius);
+  box-shadow: var(--ar-elev);
+  overflow: auto;
+  margin-bottom: 24px;
+}
+
+table.ar-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ar-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 500;
+  color: var(--ar-text-secondary);
+  border-bottom: 1px solid var(--ar-divider);
+  background: var(--ar-primary-light);
+}
+
+.ar-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ar-divider);
+}
+
+.ar-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ar-table tbody tr:hover {
+  background: rgba(63, 81, 181, 0.04);
+}
+
+.ar-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.ar-chip {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  background: var(--ar-primary-light);
+  color: var(--ar-primary);
+}
+
+.ar-muted {
+  color: var(--ar-text-secondary);
+  font-size: 13px;
+}
+
+@media print {
+  .ar-report {
+    background: #fff;
+  }
+  .ar-card,
+  .ar-kpi,
+  .ar-table-wrap {
+    box-shadow: none;
+    border: 1px solid var(--ar-divider);
+  }
+}

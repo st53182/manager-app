@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        :root { color-scheme: light; }
         .team-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 12px;
@@ -95,10 +96,7 @@
                     <h1 class="text-xl font-semibold text-gray-900" data-translate="nav.title">Менеджер Команд</h1>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <div class="flex space-x-2">
-                        <button id="langRu" class="px-2 py-1 text-sm bg-blue-600 text-white rounded">RU</button>
-                        <button id="langEn" class="px-2 py-1 text-sm bg-gray-300 text-gray-700 rounded">EN</button>
-                    </div>
+                    <div id="languageSwitcher"></div>
                     <span id="userName" class="text-gray-700"></span>
                     <button onclick="window.location.href='/dashboard'" class="text-blue-600 hover:text-blue-800" data-translate="team.back_to_dashboard">
                         Назад к панели

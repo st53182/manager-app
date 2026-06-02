@@ -79,7 +79,7 @@ function displayTeams(teams) {
 
     teams.forEach(team => {
         const teamCard = document.createElement('div');
-        teamCard.className = 'bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer';
+        teamCard.className = 'modern-card p-6 transition-shadow cursor-pointer';
         teamCard.onclick = (e) => {
             if (e.target.closest('button')) {
                 return;
@@ -90,22 +90,22 @@ function displayTeams(teams) {
         const createdDate = new Date(team.created_at).toLocaleDateString('ru-RU');
         teamCard.innerHTML = `
             <div class="flex items-start justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900 truncate hover:text-blue-600 transition-colors">${escapeHtml(team.name)}</h3>
+                <h3 class="text-lg font-semibold modern-title truncate hover:text-blue-300 transition-colors">${escapeHtml(team.name)}</h3>
                 <div class="flex space-x-2">
-                    <button onclick="editTeam('${team.id}')" class="text-blue-600 hover:text-blue-800">
+                    <button onclick="editTeam('${team.id}')" class="modern-nav-link">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                         </svg>
                     </button>
-                    <button onclick="deleteTeam('${team.id}', '${escapeHtml(team.name)}')" class="text-red-600 hover:text-red-800">
+                    <button onclick="deleteTeam('${team.id}', '${escapeHtml(team.name)}')" class="text-rose-300 hover:text-rose-200">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                         </svg>
                     </button>
                 </div>
             </div>
-            <p class="text-gray-600 text-sm mb-4">${team.description ? escapeHtml(team.description) : 'Нет описания'}</p>
-            <p class="text-gray-500 text-xs">Создана: ${createdDate}</p>
+            <p class="modern-muted text-sm mb-4">${team.description ? escapeHtml(team.description) : 'Нет описания'}</p>
+            <p class="modern-muted text-xs">Создана: ${createdDate}</p>
         `;
         
         teamsList.appendChild(teamCard);
@@ -156,7 +156,7 @@ function displayEmployees(employees) {
 
     employees.forEach(employee => {
         const employeeCard = document.createElement('div');
-        employeeCard.className = 'bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer';
+        employeeCard.className = 'modern-card p-6 transition-shadow cursor-pointer';
         
         employeeCard.addEventListener('click', (e) => {
             if (e.target.closest('button')) {
@@ -168,29 +168,29 @@ function displayEmployees(employees) {
         const hireDate = employee.hire_date ? new Date(employee.hire_date).toLocaleDateString('ru-RU') : 'Не указана';
         employeeCard.innerHTML = `
             <div class="flex items-start justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900 truncate">${escapeHtml(employee.name)}</h3>
+                <h3 class="text-lg font-semibold modern-title truncate">${escapeHtml(employee.name)}</h3>
                 <div class="flex space-x-2">
-                    <button onclick="editEmployee('${employee.id}')" class="text-blue-600 hover:text-blue-800 z-10 relative">
+                    <button onclick="editEmployee('${employee.id}')" class="modern-nav-link z-10 relative">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                         </svg>
                     </button>
-                    <button onclick="deleteEmployee('${employee.id}', '${escapeHtml(employee.name)}')" class="text-red-600 hover:text-red-800 z-10 relative">
+                    <button onclick="deleteEmployee('${employee.id}', '${escapeHtml(employee.name)}')" class="text-rose-300 hover:text-rose-200 z-10 relative">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                         </svg>
                     </button>
                 </div>
             </div>
-            <div class="space-y-2 text-sm text-gray-600">
-                ${employee.position ? `<p><span class="font-medium">Должность:</span> ${escapeHtml(employee.position)}</p>` : ''}
-                ${employee.email ? `<p><span class="font-medium">Email:</span> ${escapeHtml(employee.email)}</p>` : ''}
-                ${employee.phone ? `<p><span class="font-medium">Телефон:</span> ${escapeHtml(employee.phone)}</p>` : ''}
-                ${employee.team_name ? `<p><span class="font-medium">Команда:</span> ${escapeHtml(employee.team_name)}</p>` : ''}
-                <p><span class="font-medium">Дата найма:</span> ${hireDate}</p>
+            <div class="space-y-2 text-sm modern-muted">
+                ${employee.position ? `<p><span class="font-medium text-slate-200">Должность:</span> ${escapeHtml(employee.position)}</p>` : ''}
+                ${employee.email ? `<p><span class="font-medium text-slate-200">Email:</span> ${escapeHtml(employee.email)}</p>` : ''}
+                ${employee.phone ? `<p><span class="font-medium text-slate-200">Телефон:</span> ${escapeHtml(employee.phone)}</p>` : ''}
+                ${employee.team_name ? `<p><span class="font-medium text-slate-200">Команда:</span> ${escapeHtml(employee.team_name)}</p>` : ''}
+                <p><span class="font-medium text-slate-200">Дата найма:</span> ${hireDate}</p>
             </div>
-            <div class="mt-4 pt-3 border-t border-gray-200">
-                <button onclick="window.location.href='/employee/${employee.id}'" class="text-xs text-blue-600 hover:text-blue-800 underline" data-translate="employees.click_to_view_profile">
+            <div class="mt-4 pt-3 border-t border-slate-700">
+                <button onclick="window.location.href='/employee/${employee.id}'" class="text-xs modern-nav-link underline" data-translate="employees.click_to_view_profile">
                     Нажмите для просмотра полного профиля
                 </button>
             </div>

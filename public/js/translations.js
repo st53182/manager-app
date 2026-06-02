@@ -1,18 +1,23 @@
 class TranslationManager {
     constructor() {
-        this.currentLanguage = localStorage.getItem('language') || 'ru';
+        this.supportedLanguages = ['ru', 'lv', 'en'];
+        const savedLanguage = localStorage.getItem('language') || 'ru';
+        this.currentLanguage = this.supportedLanguages.includes(savedLanguage) ? savedLanguage : 'ru';
+        this.defaultLanguage = 'en';
         this.translations = {};
         this.loadTranslations();
     }
 
     async loadTranslations() {
         try {
-            const [ruResponse, enResponse] = await Promise.all([
+            const [ruResponse, lvResponse, enResponse] = await Promise.all([
                 fetch('/translations/ru.json'),
+                fetch('/translations/lv.json'),
                 fetch('/translations/en.json')
             ]);
             
             this.translations.ru = await ruResponse.json();
+            this.translations.lv = await lvResponse.json();
             this.translations.en = await enResponse.json();
             
             this.updatePageContent();
@@ -23,6 +28,10 @@ class TranslationManager {
     }
 
     setLanguage(language) {
+        if (!this.supportedLanguages.includes(language)) {
+            return;
+        }
+
         this.currentLanguage = language;
         localStorage.setItem('language', language);
         this.updatePageContent();
@@ -34,18 +43,33 @@ class TranslationManager {
         }
     }
 
-    t(key) {
+    getNestedValue(obj, key) {
         const keys = key.split('.');
-        let value = this.translations[this.currentLanguage];
+        let value = obj;
         
         for (const k of keys) {
             value = value?.[k];
         }
+
+        return value;
+    }
+
+    t(key) {
+        const current = this.getNestedValue(this.translations[this.currentLanguage], key);
+        if (typeof current !== 'undefined') return current;
+
+        const fallback = this.getNestedValue(this.translations[this.defaultLanguage], key);
+        if (typeof fallback !== 'undefined') return fallback;
+
+        const ruFallback = this.getNestedValue(this.translations.ru, key);
+        if (typeof ruFallback !== 'undefined') return ruFallback;
         
-        return value || key;
+        return key;
     }
 
     updatePageContent() {
+        document.documentElement.lang = this.currentLanguage;
+
         document.querySelectorAll('[data-translate]').forEach(element => {
             const key = element.getAttribute('data-translate');
             const translation = this.t(key);
@@ -79,16 +103,31 @@ class TranslationManager {
                 }
             }
         });
+
+        document.querySelectorAll('[data-translate-placeholder]').forEach(element => {
+            const key = element.getAttribute('data-translate-placeholder');
+            element.placeholder = this.t(key);
+        });
+
+        document.querySelectorAll('[data-translate-title]').forEach(element => {
+            const key = element.getAttribute('data-translate-title');
+            element.title = this.t(key);
+        });
     }
 
     updateLanguageSwitcher() {
         const ruBtn = document.getElementById('langRu');
+        const lvBtn = document.getElementById('langLv');
         const enBtn = document.getElementById('langEn');
         
-        if (ruBtn && enBtn) {
+        if (ruBtn && lvBtn && enBtn) {
             ruBtn.classList.toggle('bg-blue-100', this.currentLanguage === 'ru');
             ruBtn.classList.toggle('text-blue-700', this.currentLanguage === 'ru');
             ruBtn.classList.toggle('text-gray-600', this.currentLanguage !== 'ru');
+
+            lvBtn.classList.toggle('bg-blue-100', this.currentLanguage === 'lv');
+            lvBtn.classList.toggle('text-blue-700', this.currentLanguage === 'lv');
+            lvBtn.classList.toggle('text-gray-600', this.currentLanguage !== 'lv');
             
             enBtn.classList.toggle('bg-blue-100', this.currentLanguage === 'en');
             enBtn.classList.toggle('text-blue-700', this.currentLanguage === 'en');
@@ -101,6 +140,9 @@ class TranslationManager {
             <div class="flex items-center space-x-2 border-l border-gray-200 pl-4">
                 <button id="langRu" class="px-2 py-1 text-sm rounded transition-colors ${this.currentLanguage === 'ru' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-blue-600'}">
                     RU
+                </button>
+                <button id="langLv" class="px-2 py-1 text-sm rounded transition-colors ${this.currentLanguage === 'lv' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-blue-600'}">
+                    LV
                 </button>
                 <button id="langEn" class="px-2 py-1 text-sm rounded transition-colors ${this.currentLanguage === 'en' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-blue-600'}">
                     EN
@@ -116,6 +158,10 @@ class TranslationManager {
             
             document.getElementById('langRu')?.addEventListener('click', () => {
                 this.setLanguage('ru');
+            });
+
+            document.getElementById('langLv')?.addEventListener('click', () => {
+                this.setLanguage('lv');
             });
             
             document.getElementById('langEn')?.addEventListener('click', () => {

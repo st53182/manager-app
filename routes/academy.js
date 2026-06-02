@@ -2,19 +2,31 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 const db = require('../database');
-const { getMentorSystemPrompt, MENTOR_PROMPT_VERSION } = require('../prompts/mentorPrompt');
+const { getMentorSystemPrompt, getPracticeRunSystemPrompt, MENTOR_PROMPT_VERSION } = require('../prompts/mentorPrompt');
 const { createOpenRouterClient, getDefaultModel } = require('../services/ai/openRouterClient');
 const { streamChatCompletion, estimateTokensFromText, estimateCostUsd } = require('../services/ai/streamChat');
 const {
   persistMulterFiles,
   buildUserContentForApi,
   estimatePayloadFootprintForLimits,
+  userUploadDir,
   MAX_FILES,
   MAX_FILE_BYTES
 } = require('../services/academy/multimodal');
 const { getModelCatalog } = require('../services/academy/modelCatalog');
 const { generateImageForEducation, getImageModel } = require('../services/ai/imageGeneration');
+const practicum = require('../services/academy/practicumStore');
+const {
+  parseDocumentText,
+  chunkText,
+  embedTextSimple,
+  buildRetrieval,
+  strictNoSourceMessage
+} = require('../services/academy/knowledgeService');
+const { randomUUID } = require('crypto');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -28,6 +40,9 @@ const MAX_PROMPT_CHARS = parseInt(process.env.MAX_PROMPT_CHARS || '32000', 10);
 const MAX_CONTEXT_MESSAGES = parseInt(process.env.MAX_CONTEXT_MESSAGES || '40', 10);
 /** Soft guard; PDF/audio/video base64 is capped in footprint calculation (see multimodal). */
 const MAX_CONTEXT_CHARS = parseInt(process.env.MAX_CONTEXT_CHARS || '500000', 10);
+
+/** When true, HTML artifacts may contain scripts (Angular/CDN). XSS risk — enable only in trusted environments. */
+const ARTIFACT_ALLOW_SCRIPTS = process.env.ACADEMY_ARTIFACT_ALLOW_SCRIPTS === 'true';
 
 function createRouter({ JWT_SECRET }) {
   const router = express.Router();
@@ -63,6 +78,76 @@ function createRouter({ JWT_SECRET }) {
     });
   }
 
+  /**
+   * Builds OpenRouter messages; truncates long assistant replies for token budget and drops
+   * oldest turns until under MAX_CONTEXT_CHARS (CSV/HTML-heavy chats).
+   */
+  async function buildMessagesWithBudget(
+    rows,
+    lessonForPrompt,
+    req,
+    modelId,
+    assignmentForPrompt = null,
+    chatMode = 'general',
+    practiceRunContext = null
+  ) {
+    const maxAssist = parseInt(process.env.MAX_ASSISTANT_CHARS_IN_CONTEXT || '42000', 10);
+    let subset = [...rows];
+    let droppedTurns = 0;
+
+    async function rebuild() {
+      const apiMessages = [];
+      const systemContent =
+        chatMode === 'practice_run'
+          ? getPracticeRunSystemPrompt({
+              lesson: lessonForPrompt,
+              runKind: practiceRunContext?.runKind || 'prompt',
+              taskTitle: practiceRunContext?.taskTitle || '',
+              taskContext: practiceRunContext?.taskContext || '',
+              taskDescription: practiceRunContext?.taskDescription || '',
+              aiRole: practiceRunContext?.aiRole || '',
+              studentRole: practiceRunContext?.studentRole || '',
+              studentGoal: practiceRunContext?.studentGoal || '',
+              hardReaction: practiceRunContext?.hardReaction || '',
+              dialogueRules: practiceRunContext?.dialogueRules || [],
+              fragmentText: practiceRunContext?.fragmentText || '',
+              pass: practiceRunContext?.pass || null,
+              passportText: practiceRunContext?.passportText || ''
+            })
+          : getMentorSystemPrompt({ lesson: lessonForPrompt, assignment: assignmentForPrompt });
+      apiMessages.push({
+        role: 'system',
+        content: systemContent
+      });
+      let totalChars = estimatePayloadFootprintForLimits(apiMessages[0].content);
+      for (const m of subset) {
+        if (m.role !== 'user' && m.role !== 'assistant') continue;
+        let content;
+        if (m.role === 'user') {
+          content = await buildUserContentForApi(m.content, req.dbUser.id, m.meta, modelId);
+        } else {
+          const raw = m.content || '';
+          content =
+            typeof raw === 'string' && raw.length > maxAssist
+              ? raw.slice(0, maxAssist) +
+                '\n\n[… предыдущий ответ обрезан в контексте (длинный отчёт/HTML); полный текст — в истории чата …]'
+              : raw;
+        }
+        totalChars += estimatePayloadFootprintForLimits(content);
+        apiMessages.push({ role: m.role, content });
+      }
+      return { apiMessages, totalChars };
+    }
+
+    let { apiMessages, totalChars } = await rebuild();
+    while (totalChars > MAX_CONTEXT_CHARS && subset.length > 1) {
+      subset = subset.slice(1);
+      droppedTurns += 1;
+      ({ apiMessages, totalChars } = await rebuild());
+    }
+    return { apiMessages, totalChars, droppedTurns };
+  }
+
   router.get('/catalog', authenticateAcademy, async (req, res) => {
     try {
       const catalog = await db.getAcademyCatalog();
@@ -87,6 +172,277 @@ function createRouter({ JWT_SECRET }) {
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: 'Failed to save progress' });
+    }
+  });
+
+
+  router.get('/progress/summary', authenticateAcademy, async (req, res) => {
+    try { res.json(await db.getProgressSummary(req.dbUser.id)); }
+    catch (e) { console.error(e); res.status(500).json({ error: 'Failed to load progress summary' }); }
+  });
+  router.get('/lessons/:lessonId/submission', authenticateAcademy, async (req, res) => {
+    try {
+      const lesson = await db.getLessonById(req.params.lessonId);
+      if (!lesson) return res.status(404).json({ error: 'Lesson not found' });
+      res.json({ lesson, assignment: await db.getAssignmentByLessonId(req.params.lessonId), submission: await db.getLessonSubmission(req.dbUser.id, req.params.lessonId) });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to load submission' }); }
+  });
+  router.put('/lessons/:lessonId/submission', authenticateAcademy, async (req, res) => {
+    try {
+      if (!await db.getLessonById(req.params.lessonId)) return res.status(404).json({ error: 'Lesson not found' });
+      const b = req.body || {};
+      const submission = await db.upsertLessonSubmission(req.dbUser.id, req.params.lessonId, { answer_text: b.answer_text, assignment_status: b.assignment_status, practice_mode: b.practice_mode, group_meta: b.group_meta, status: 'in_progress' });
+      res.json({ submission });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to save submission' }); }
+  });
+  router.post('/lessons/:lessonId/restart', authenticateAcademy, async (req, res) => {
+    try {
+      const lesson = await db.getLessonById(req.params.lessonId);
+      if (!lesson) return res.status(404).json({ error: 'Lesson not found' });
+      await db.resetLessonPractice(req.dbUser.id, req.params.lessonId);
+      res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to restart practice' });
+    }
+  });
+  router.post('/lessons/:lessonId/feedback', authenticateAcademy, aiChatLimiter, async (req, res) => {
+    const openai = createOpenRouterClient();
+    if (!openai) return res.status(503).json({ error: 'AI service not configured' });
+    try {
+      const lessonId = req.params.lessonId;
+      const assignment = await db.getAssignmentByLessonId(lessonId);
+      const submission = await db.getLessonSubmission(req.dbUser.id, lessonId);
+      const answerText = String(req.body?.answer_text || submission?.answer_text || '').trim();
+      if (!answerText) return res.status(400).json({ error: 'answer_text required' });
+      const model = pickModel(req.body?.model, req.dbUser);
+      const criteria = assignment?.rubric_json?.criteria ? assignment.rubric_json.criteria.join(', ') : 'general';
+      let taskLine = '';
+      const gm = submission?.group_meta;
+      const meta = typeof gm === 'string' ? (() => { try { return JSON.parse(gm); } catch { return {}; } })() : gm || {};
+      const taskId = meta.selected_task_id;
+      if (taskId && assignment?.task_options) {
+        let opts = assignment.task_options;
+        if (typeof opts === 'string') try { opts = JSON.parse(opts); } catch { opts = []; }
+        const picked = Array.isArray(opts) ? opts.find((t) => t.id === taskId) : null;
+        if (picked) {
+          taskLine = `\nSelected task variant: ${picked.title}\n`;
+          if (picked.description) taskLine += `Description: ${picked.description}\n`;
+          if (picked.bad_prompt) taskLine += `Bad prompt example: ${picked.bad_prompt}\n`;
+          if (picked.raw_input) taskLine += `Raw input: ${picked.raw_input}\n`;
+          if (picked.fragment_text) {
+            const frag = picked.fragment_text;
+            taskLine += `Fragment (reference): ${frag.length > 800 ? `${frag.slice(0, 800)}…` : frag}\n`;
+          }
+          else taskLine += `Context: ${picked.context || picked.summary || ''}\n`;
+        }
+      }
+      let workflowLine = '';
+      if (meta.workflow && typeof meta.workflow === 'object') {
+        try {
+          const wfJson = JSON.stringify(meta.workflow);
+          workflowLine =
+            '\nStructured student workflow (prompt v1/v2, dialogue analysis, risk table, self-check):\n' +
+            wfJson.slice(0, 8000) +
+            (wfJson.length > 8000 ? '…' : '') +
+            '\n';
+        } catch {
+          workflowLine = '';
+        }
+      }
+      const graderPrompt =
+        'Grade assignment. JSON: score, criteria_scores, strengths, weaknesses, recommendations. Criteria: ' +
+        criteria +
+        taskLine +
+        workflowLine +
+        '\nAnswer:\n' +
+        answerText;
+      await assertQuota(req, estimateTokensFromText(graderPrompt));
+      let text = '', usage = null;
+      for await (const part of streamChatCompletion(openai, { model, messages: [{ role: 'system', content: 'JSON only' }, { role: 'user', content: graderPrompt }], maxTokens: 1200 })) {
+        if (part.type === 'chunk') text += part.text;
+        if (part.type === 'done') usage = part.usage;
+      }
+      let parsed;
+      try {
+        const m = text.match(/\{[\s\S]*\}/);
+        parsed = JSON.parse(m ? m[0] : text);
+      } catch {
+        parsed = { score: 6, strengths: [], weaknesses: [], recommendations: [] };
+      }
+      const row = await db.saveLessonFeedback(req.dbUser.id, lessonId, { feedbackJson: parsed, score: parsed.score, assignmentStatus: 'reviewed' });
+      await recordFeatureUsage(req, { model, promptTokens: usage?.prompt_tokens||0, completionTokens: usage?.completion_tokens||0, costUsd: estimateCostUsd(usage?.prompt_tokens||0, usage?.completion_tokens||0, model), featureMode: 'assignment_feedback' });
+      res.json({ feedback: parsed, submission: row });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to generate feedback' }); }
+  });
+  router.get('/knowledge-bases', authenticateAcademy, async (req, res) => {
+    try {
+      const bases = await db.listKnowledgeBases(req.dbUser.id);
+      res.json({ knowledgeBases: bases });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to load knowledge bases' });
+    }
+  });
+
+  router.post('/knowledge-bases', authenticateAcademy, async (req, res) => {
+    try {
+      const name = String(req.body?.name || '').trim();
+      const description = String(req.body?.description || '').trim();
+      if (!name) {
+        return res.status(400).json({ error: 'Knowledge base name is required' });
+      }
+      const kb = await db.createKnowledgeBase(req.dbUser.id, {
+        name,
+        description: description || null
+      });
+      res.json(kb);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to create knowledge base' });
+    }
+  });
+
+  router.delete('/knowledge-bases/:id', authenticateAcademy, async (req, res) => {
+    try {
+      const kb = await db.getKnowledgeBaseForUser(req.dbUser.id, req.params.id);
+      if (!kb) return res.status(404).json({ error: 'Knowledge base not found' });
+
+      const docs = await db.listKnowledgeDocuments(req.dbUser.id, kb.id);
+      for (const d of docs) {
+        if (!d.stored_name) continue;
+        const abs = path.join(userUploadDir(req.dbUser.id), d.stored_name);
+        if (fs.existsSync(abs)) {
+          try {
+            fs.unlinkSync(abs);
+          } catch (unlinkErr) {
+            console.warn('Failed to remove document file:', unlinkErr.message);
+          }
+        }
+      }
+
+      await db.deleteKnowledgeBase(req.dbUser.id, kb.id);
+      res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to delete knowledge base' });
+    }
+  });
+
+  router.patch('/knowledge-bases/:id', authenticateAcademy, async (req, res) => {
+    try {
+      const kb = await db.getKnowledgeBaseForUser(req.dbUser.id, req.params.id);
+      if (!kb) return res.status(404).json({ error: 'Knowledge base not found' });
+      const name = typeof req.body?.name === 'string' ? req.body.name.trim() : null;
+      const description = typeof req.body?.description === 'string' ? req.body.description.trim() : null;
+      if (name !== null && !name) {
+        return res.status(400).json({ error: 'Knowledge base name cannot be empty' });
+      }
+      const updated = await db.updateKnowledgeBase(req.dbUser.id, kb.id, {
+        name,
+        description
+      });
+      res.json(updated);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to update knowledge base' });
+    }
+  });
+
+  router.get('/knowledge-bases/:id/documents', authenticateAcademy, async (req, res) => {
+    try {
+      const kb = await db.getKnowledgeBaseForUser(req.dbUser.id, req.params.id);
+      if (!kb) return res.status(404).json({ error: 'Knowledge base not found' });
+      const docs = await db.listKnowledgeDocuments(req.dbUser.id, kb.id);
+      res.json({ documents: docs });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to load documents' });
+    }
+  });
+
+  router.get('/knowledge-bases/:id/documents/search', authenticateAcademy, async (req, res) => {
+    try {
+      const kb = await db.getKnowledgeBaseForUser(req.dbUser.id, req.params.id);
+      if (!kb) return res.status(404).json({ error: 'Knowledge base not found' });
+      const q = String(req.query.q || '').trim();
+      if (!q) {
+        const docs = await db.listKnowledgeDocuments(req.dbUser.id, kb.id);
+        return res.json({ documents: docs });
+      }
+      const docs = await db.searchKnowledgeDocuments(req.dbUser.id, kb.id, q);
+      res.json({ documents: docs });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to search documents' });
+    }
+  });
+
+  router.post(
+    '/knowledge-bases/:id/documents',
+    authenticateAcademy,
+    upload.array('files', MAX_FILES),
+    async (req, res) => {
+      try {
+        const kb = await db.getKnowledgeBaseForUser(req.dbUser.id, req.params.id);
+        if (!kb) return res.status(404).json({ error: 'Knowledge base not found' });
+        if (!req.files?.length) return res.status(400).json({ error: 'Upload at least one file' });
+
+        const saved = persistMulterFiles(req.dbUser.id, req.files);
+        const created = [];
+        for (let i = 0; i < saved.length; i += 1) {
+          const item = saved[i];
+          const source = (req.files || [])[i];
+          created.push(
+            await db.addKnowledgeDocument(req.dbUser.id, kb.id, {
+              ...item,
+              sizeBytes: source?.size || 0
+            })
+          );
+        }
+        res.json({ documents: created });
+      } catch (e) {
+        console.error(e);
+        res.status(400).json({ error: e.message || 'Failed to upload documents' });
+      }
+    }
+  );
+
+  router.delete('/knowledge-documents/:id', authenticateAcademy, async (req, res) => {
+    try {
+      const doc = await db.getKnowledgeDocumentForUser(req.dbUser.id, req.params.id);
+      if (!doc) return res.status(404).json({ error: 'Document not found' });
+      if (doc.stored_name) {
+        const abs = path.join(userUploadDir(req.dbUser.id), doc.stored_name);
+        if (fs.existsSync(abs)) {
+          try {
+            fs.unlinkSync(abs);
+          } catch (unlinkErr) {
+            console.warn('Failed to remove document file:', unlinkErr.message);
+          }
+        }
+      }
+      await db.deleteKnowledgeDocument(req.dbUser.id, req.params.id);
+      res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to delete document' });
+    }
+  });
+
+  router.get('/knowledge-documents/:id/download', authenticateAcademy, async (req, res) => {
+    try {
+      const doc = await db.getKnowledgeDocumentForUser(req.dbUser.id, req.params.id);
+      if (!doc) return res.status(404).json({ error: 'Document not found' });
+      const abs = path.join(userUploadDir(req.dbUser.id), doc.stored_name);
+      if (!fs.existsSync(abs)) {
+        return res.status(404).json({ error: 'Stored file not found' });
+      }
+      res.setHeader('Content-Type', doc.mime_type || 'application/octet-stream');
+      return res.download(abs, doc.original_name);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to download document' });
     }
   });
 
@@ -132,12 +488,460 @@ function createRouter({ JWT_SECRET }) {
         },
         allowed_models: allowedModels,
         default_model: getDefaultModel(),
-        model_catalog: getModelCatalog()
+        model_catalog: getModelCatalog(),
+        artifact_allow_scripts: ARTIFACT_ALLOW_SCRIPTS
       });
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: 'Usage unavailable' });
     }
+  });
+
+  router.get('/usage/education', authenticateAcademy, async (req, res) => {
+    try {
+      const now = new Date();
+      const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+      const usageRows = await db.adminExportUsage(monthStart, monthEnd);
+      const mine = usageRows.filter((r) => r.user_id === req.dbUser.id);
+      const byModel = {};
+      for (const r of mine) {
+        if (!byModel[r.model]) byModel[r.model] = { model: r.model, tokens: 0, cost_usd: 0 };
+        byModel[r.model].tokens += Number(r.prompt_tokens || 0) + Number(r.completion_tokens || 0);
+        byModel[r.model].cost_usd += Number(r.cost_usd || 0);
+      }
+      const sorted = Object.values(byModel).sort((a, b) => b.cost_usd - a.cost_usd);
+      const cheapest = sorted[sorted.length - 1] || null;
+      const expensive = sorted[0] || null;
+      res.json({
+        by_model: sorted,
+        guidance: [
+          'Use concise prompts and shorter context when possible.',
+          'Choose lower-cost models for drafting, expensive models for final pass.',
+          'Use Knowledge Base retrieval to avoid re-sending large source texts.'
+        ],
+        cheapest_model: cheapest,
+        expensive_model: expensive
+      });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to build educational usage insights' });
+    }
+  });
+
+  async function recordFeatureUsage(req, data) {
+    await db.recordAiUsage({
+      userId: req.dbUser.id,
+      conversationId: data.conversationId || null,
+      model: data.model,
+      promptTokens: data.promptTokens || 0,
+      completionTokens: data.completionTokens || 0,
+      costUsd: data.costUsd || 0,
+      featureMode: data.featureMode || 'chat_general'
+    });
+  }
+
+  router.get('/knowledge-bases', authenticateAcademy, async (req, res) => {
+    try {
+      const bases = await practicum.listKnowledgeBases(req.dbUser.id);
+      res.json({ knowledgeBases: bases });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to load knowledge bases' });
+    }
+  });
+
+  router.post('/knowledge-bases', authenticateAcademy, async (req, res) => {
+    try {
+      const name = String(req.body?.name || '').trim();
+      if (!name) return res.status(400).json({ error: 'name required' });
+      const kb = await practicum.createKnowledgeBase(req.dbUser.id, name, String(req.body?.description || ''));
+      res.json(kb);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to create knowledge base' });
+    }
+  });
+
+  router.get('/knowledge-bases/:id/documents', authenticateAcademy, async (req, res) => {
+    try {
+      const docs = await practicum.listKnowledgeDocuments(req.dbUser.id, req.params.id);
+      res.json({ documents: docs });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to load documents' });
+    }
+  });
+
+  router.post('/knowledge-bases/:id/documents/url', authenticateAcademy, async (req, res) => {
+    try {
+      const sourceUrl = String(req.body?.url || '').trim();
+      if (!sourceUrl) return res.status(400).json({ error: 'url required' });
+      const doc = await practicum.createKnowledgeDocument({
+        knowledgeBaseId: req.params.id,
+        userId: req.dbUser.id,
+        name: sourceUrl,
+        sourceType: 'url',
+        sourceUrl,
+        status: 'uploaded'
+      });
+      const job = await practicum.createIndexJob({
+        userId: req.dbUser.id,
+        knowledgeBaseId: req.params.id,
+        documentId: doc.id
+      });
+      setImmediate(async () => {
+        try {
+          await practicum.setIndexJobStatus(job.id, 'processing');
+          await practicum.clearChunksForDocument(doc.id);
+          const text = await parseDocumentText(doc);
+          const chunks = chunkText(text);
+          let i = 0;
+          for (const c of chunks) {
+            await practicum.addKnowledgeChunk({
+              documentId: doc.id,
+              userId: req.dbUser.id,
+              chunkIndex: i++,
+              content: c,
+              embedding: embedTextSimple(c)
+            });
+          }
+          await practicum.updateKnowledgeDocument(doc.id, req.dbUser.id, { status: 'indexed', chunkCount: chunks.length });
+          await practicum.setIndexJobStatus(job.id, 'indexed');
+        } catch (err) {
+          await practicum.updateKnowledgeDocument(doc.id, req.dbUser.id, { status: 'failed', errorMessage: err.message });
+          await practicum.setIndexJobStatus(job.id, 'failed', err.message);
+        }
+      });
+      res.json({ document: doc, job });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to add URL source' });
+    }
+  });
+
+  router.post('/knowledge-bases/:id/documents/upload', authenticateAcademy, upload.array('files', MAX_FILES), async (req, res) => {
+    try {
+      if (!req.files?.length) return res.status(400).json({ error: 'No files uploaded' });
+      const saved = persistMulterFiles(req.dbUser.id, req.files);
+      const out = [];
+      for (let i = 0; i < saved.length; i += 1) {
+        const f = saved[i];
+        const sourceFile = req.files[i];
+        const doc = await practicum.createKnowledgeDocument({
+          knowledgeBaseId: req.params.id,
+          userId: req.dbUser.id,
+          name: f.name,
+          mimeType: f.mime,
+          sourceType: 'file',
+          storagePath: f.path,
+          status: 'uploaded',
+          sizeBytes: sourceFile?.size || 0
+        });
+        const job = await practicum.createIndexJob({
+          userId: req.dbUser.id,
+          knowledgeBaseId: req.params.id,
+          documentId: doc.id
+        });
+        out.push({ document: doc, job });
+        setImmediate(async () => {
+          try {
+            await practicum.setIndexJobStatus(job.id, 'processing');
+            await practicum.updateKnowledgeDocument(doc.id, req.dbUser.id, { status: 'processing' });
+            await practicum.clearChunksForDocument(doc.id);
+            const text = await parseDocumentText(doc);
+            const chunks = chunkText(text);
+            let i = 0;
+            for (const c of chunks) {
+              await practicum.addKnowledgeChunk({
+                documentId: doc.id,
+                userId: req.dbUser.id,
+                chunkIndex: i++,
+                content: c,
+                embedding: embedTextSimple(c)
+              });
+            }
+            await practicum.updateKnowledgeDocument(doc.id, req.dbUser.id, { status: 'indexed', chunkCount: chunks.length });
+            await practicum.setIndexJobStatus(job.id, 'indexed');
+          } catch (err) {
+            await practicum.updateKnowledgeDocument(doc.id, req.dbUser.id, { status: 'failed', errorMessage: err.message });
+            await practicum.setIndexJobStatus(job.id, 'failed', err.message);
+          }
+        });
+      }
+      res.json({ items: out });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Upload failed' });
+    }
+  });
+
+  router.get('/personas', authenticateAcademy, async (req, res) => {
+    const personas = await practicum.listPersonas(req.dbUser.id);
+    res.json({ personas });
+  });
+
+  router.post('/personas', authenticateAcademy, async (req, res) => {
+    const persona = await practicum.createPersona(req.dbUser.id, req.body || {});
+    res.json(persona);
+  });
+
+  router.get('/prompts', authenticateAcademy, async (req, res) => {
+    const prompts = await practicum.listPromptTemplates(req.dbUser.id, req.query.category || null);
+    res.json({ prompts });
+  });
+
+  router.post('/prompts', authenticateAcademy, async (req, res) => {
+    const prompt = await practicum.createPromptTemplate(req.dbUser.id, req.body || {});
+    res.json(prompt);
+  });
+
+  router.patch('/prompts/:id', authenticateAcademy, async (req, res) => {
+    const prompt = await practicum.updatePromptTemplate(req.dbUser.id, req.params.id, req.body || {});
+    if (!prompt) return res.status(404).json({ error: 'prompt not found' });
+    res.json(prompt);
+  });
+
+  router.post('/prompts/:id/duplicate', authenticateAcademy, async (req, res) => {
+    const prompt = await practicum.duplicatePromptTemplate(req.dbUser.id, req.params.id);
+    if (!prompt) return res.status(404).json({ error: 'prompt not found' });
+    res.json(prompt);
+  });
+
+  router.post('/prompt-evaluate', authenticateAcademy, aiChatLimiter, async (req, res) => {
+    const openai = createOpenRouterClient();
+    const promptText = String(req.body?.prompt || '').trim();
+    if (!promptText) return res.status(400).json({ error: 'prompt required' });
+    const model = pickModel(req.body?.model, req.dbUser);
+    await assertQuota(req, estimateTokensFromText(promptText));
+    const evalPrompt = `Evaluate this prompt as teaching feedback.\nPrompt:\n${promptText}\n\nReturn JSON with: score(1-10), strengths[], weaknesses[], improved_prompt, explanation.`;
+    const gen = streamChatCompletion(openai, {
+      model,
+      messages: [{ role: 'system', content: 'You are a prompt engineering tutor. Return compact JSON only.' }, { role: 'user', content: evalPrompt }],
+      maxTokens: 800
+    });
+    let text = '';
+    let usage = null;
+    for await (const part of gen) {
+      if (part.type === 'chunk') text += part.text;
+      if (part.type === 'done') usage = part.usage;
+    }
+    let parsed = null;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = { score: 6, strengths: ['Intent provided'], weaknesses: ['Output format unclear'], improved_prompt: promptText, explanation: text };
+    }
+    await recordFeatureUsage(req, {
+      model,
+      promptTokens: usage?.prompt_tokens || estimateTokensFromText(evalPrompt),
+      completionTokens: usage?.completion_tokens || estimateTokensFromText(text),
+      costUsd: estimateCostUsd(usage?.prompt_tokens || 0, usage?.completion_tokens || 0, model),
+      featureMode: 'prompt_evaluation'
+    });
+    res.json(parsed);
+  });
+
+  router.post('/model-compare', authenticateAcademy, aiChatLimiter, async (req, res) => {
+    const openai = createOpenRouterClient();
+    const promptText = String(req.body?.prompt || '').trim();
+    const models = Array.isArray(req.body?.models) ? req.body.models.slice(0, 4) : [];
+    if (!promptText || !models.length) return res.status(400).json({ error: 'prompt and models required' });
+    const results = [];
+    for (const m of models) {
+      const model = pickModel(m, req.dbUser);
+      const started = Date.now();
+      const gen = streamChatCompletion(openai, {
+        model,
+        messages: [{ role: 'user', content: promptText }],
+        maxTokens: 1000
+      });
+      let text = '';
+      let usage = null;
+      for await (const part of gen) {
+        if (part.type === 'chunk') text += part.text;
+        if (part.type === 'done') usage = part.usage;
+      }
+      const latency = Date.now() - started;
+      const pt = usage?.prompt_tokens || estimateTokensFromText(promptText);
+      const ct = usage?.completion_tokens || estimateTokensFromText(text);
+      const cost = estimateCostUsd(pt, ct, model);
+      await recordFeatureUsage(req, {
+        model,
+        promptTokens: pt,
+        completionTokens: ct,
+        costUsd: cost,
+        featureMode: 'model_compare'
+      });
+      results.push({
+        model,
+        response: text,
+        latency_ms: latency,
+        input_tokens: pt,
+        output_tokens: ct,
+        estimated_cost: cost,
+        quality_note: text.length > 500 ? 'Detailed response with good coverage.' : 'Concise response.'
+      });
+    }
+    const session = await practicum.createModelCompareSession({
+      userId: req.dbUser.id,
+      promptText,
+      models,
+      results
+    });
+    res.json({ results, session_id: session?.id || null });
+  });
+
+  router.post('/model-compare/:sessionId/choice', authenticateAcademy, async (req, res) => {
+    const chosen = String(req.body?.chosen_model || '').trim();
+    if (!chosen) return res.status(400).json({ error: 'chosen_model required' });
+    const row = await practicum.saveModelCompareChoice(req.params.sessionId, req.dbUser.id, chosen);
+    if (!row) return res.status(404).json({ error: 'session not found' });
+    res.json(row);
+  });
+
+  router.post('/playground', authenticateAcademy, aiChatLimiter, async (req, res) => {
+    const openai = createOpenRouterClient();
+    const input = String(req.body?.prompt || '').trim();
+    if (!input) return res.status(400).json({ error: 'prompt required' });
+    const model = pickModel(req.body?.model, req.dbUser);
+    const temperature = Number.isFinite(Number(req.body?.temperature)) ? Number(req.body.temperature) : 0.7;
+    const topP = Number.isFinite(Number(req.body?.top_p)) ? Number(req.body.top_p) : 1;
+    const maxTokens = Number.isFinite(Number(req.body?.max_tokens)) ? Number(req.body.max_tokens) : 1200;
+    const systemPrompt = String(req.body?.system_prompt || 'You are a helpful assistant.');
+    await assertQuota(req, estimateTokensFromText(input + systemPrompt));
+    const gen = streamChatCompletion(openai, {
+      model,
+      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: input }],
+      maxTokens,
+      temperature,
+      topP
+    });
+    let text = '';
+    let usage = null;
+    for await (const part of gen) {
+      if (part.type === 'chunk') text += part.text;
+      if (part.type === 'done') usage = part.usage;
+    }
+    await recordFeatureUsage(req, {
+      model,
+      promptTokens: usage?.prompt_tokens || estimateTokensFromText(input + systemPrompt),
+      completionTokens: usage?.completion_tokens || estimateTokensFromText(text),
+      costUsd: estimateCostUsd(usage?.prompt_tokens || 0, usage?.completion_tokens || 0, model),
+      featureMode: 'playground'
+    });
+    res.json({ response: text });
+  });
+
+  router.get('/assistants', authenticateAcademy, async (req, res) => {
+    const assistants = await practicum.listAssistants(req.dbUser.id);
+    res.json({ assistants });
+  });
+
+  router.post('/assistants', authenticateAcademy, async (req, res) => {
+    const assistant = await practicum.createAssistant(req.dbUser.id, req.body || {});
+    res.json(assistant);
+  });
+
+  router.patch('/assistants/:id', authenticateAcademy, async (req, res) => {
+    const assistant = await practicum.updateAssistant(req.dbUser.id, req.params.id, req.body || {});
+    if (!assistant) return res.status(404).json({ error: 'assistant not found' });
+    res.json(assistant);
+  });
+
+  router.post('/assistants/:id/duplicate', authenticateAcademy, async (req, res) => {
+    const assistant = await practicum.duplicateAssistant(req.dbUser.id, req.params.id);
+    if (!assistant) return res.status(404).json({ error: 'assistant not found' });
+    res.json(assistant);
+  });
+
+  router.delete('/assistants/:id', authenticateAcademy, async (req, res) => {
+    const ok = await practicum.softDeleteAssistant(req.dbUser.id, req.params.id);
+    if (!ok) return res.status(404).json({ error: 'assistant not found' });
+    res.json({ ok: true });
+  });
+
+  router.post('/workflows', authenticateAcademy, async (req, res) => {
+    const workflow = await practicum.createWorkflow(req.dbUser.id, req.body || {});
+    for (const s of req.body?.steps || []) {
+      await practicum.addWorkflowStep(workflow.id, s);
+    }
+    res.json(workflow);
+  });
+
+  router.post('/workflows/:id/run', authenticateAcademy, aiChatLimiter, async (req, res) => {
+    const openai = createOpenRouterClient();
+    const wf = await practicum.getWorkflowForUser(req.params.id, req.dbUser.id);
+    if (!wf) return res.status(404).json({ error: 'workflow not found' });
+    const steps = await practicum.listWorkflowSteps(wf.id);
+    const run = await practicum.createWorkflowRun(wf.id, req.dbUser.id, String(req.body?.input || ''));
+    let prev = String(req.body?.input || '');
+    const outputs = [];
+    try {
+      for (const s of steps) {
+        const filledPrompt = String(s.prompt_text || '').replace(/\{\{previous_output\}\}/g, prev);
+        const model = pickModel(req.body?.model, req.dbUser);
+        const gen = streamChatCompletion(openai, {
+          model,
+          messages: [{ role: 'user', content: filledPrompt }],
+          maxTokens: 1000
+        });
+        let text = '';
+        let usage = null;
+        for await (const part of gen) {
+          if (part.type === 'chunk') text += part.text;
+          if (part.type === 'done') usage = part.usage;
+        }
+        await practicum.addWorkflowStepRun(run.id, s.id, text);
+        await recordFeatureUsage(req, {
+          model,
+          promptTokens: usage?.prompt_tokens || estimateTokensFromText(filledPrompt),
+          completionTokens: usage?.completion_tokens || estimateTokensFromText(text),
+          costUsd: estimateCostUsd(usage?.prompt_tokens || 0, usage?.completion_tokens || 0, model),
+          featureMode: 'workflow_builder'
+        });
+        outputs.push({ stepId: s.id, title: s.title, output: text });
+        prev = text;
+      }
+      await practicum.finishWorkflowRun(run.id, 'completed');
+    } catch (e) {
+      await practicum.finishWorkflowRun(run.id, 'failed');
+      throw e;
+    }
+    res.json({ runId: run.id, outputs });
+  });
+
+  router.get('/hallucination/scenarios', authenticateAcademy, async (req, res) => {
+    const scenarios = await practicum.listHallucinationScenarios();
+    res.json({ scenarios });
+  });
+
+  router.post('/hallucination/attempt', authenticateAcademy, async (req, res) => {
+    const selectedIssue = String(req.body?.selected_issue || '');
+    const explanation = String(req.body?.explanation || '');
+    const score = explanation.length > 40 ? 10 : explanation.length > 10 ? 6 : 3;
+    const attempt = await practicum.createHallucinationAttempt({
+      scenarioId: req.body?.scenario_id,
+      userId: req.dbUser.id,
+      selectedIssue,
+      explanation,
+      score,
+      feedback: score >= 8 ? 'Отлично: вы корректно нашли проблему и обосновали.' : 'Уточните тип ошибки и почему утверждение ненадежно.'
+    });
+    const progress = await practicum.getHallucinationProgress(req.dbUser.id);
+    res.json({ attempt, progress: progress[0] || { attempts: 0, avg_score: 0 } });
+  });
+
+  router.post('/certificate', authenticateAcademy, async (req, res) => {
+    const cert = await practicum.upsertCertificate({
+      certificateId: req.body?.certificate_id || randomUUID().replace(/-/g, '').slice(0, 16).toUpperCase(),
+      userId: req.dbUser.id,
+      userName: req.dbUser.name || req.dbUser.email,
+      courseName: String(req.body?.course_name || 'AI Practicum'),
+      completionDate: req.body?.completion_date || new Date().toISOString().slice(0, 10),
+      completedModules: req.body?.completed_modules || []
+    });
+    res.json(cert);
   });
 
   router.get('/conversations', authenticateAcademy, async (req, res) => {
@@ -287,7 +1091,8 @@ function createRouter({ JWT_SECRET }) {
         model: imgModel,
         promptTokens: pt,
         completionTokens: ct,
-        costUsd
+        costUsd,
+        featureMode: 'image_generation'
       });
 
       let autoTitle;
@@ -394,6 +1199,10 @@ function createRouter({ JWT_SECRET }) {
       const message = body.message != null ? String(body.message) : '';
       const regenerate = body.regenerate === true || body.regenerate === 'true';
       const bodyModel = body.model;
+      const chatMode = String(body.chatMode || 'general');
+      const knowledgeBaseId = body.knowledgeBaseId || null;
+      const strictMode = body.strictMode === true || body.strictMode === 'true' || chatMode === 'strict_knowledge';
+      const personaId = body.personaId || null;
 
       let savedFiles = [];
       if (!regenerate && req.files?.length) {
@@ -454,28 +1263,72 @@ function createRouter({ JWT_SECRET }) {
         let rows = await db.listAiMessagesAsc(conversationId, 500);
         rows = rows.slice(-MAX_CONTEXT_MESSAGES);
 
-        let totalChars = 0;
-        const apiMessages = [];
         const lessonForPrompt = lesson || (conv.lesson_id ? await db.getLessonById(conv.lesson_id) : null);
-        apiMessages.push({
-          role: 'system',
-          content: getMentorSystemPrompt({ lesson: lessonForPrompt })
-        });
-
-        for (const m of rows) {
-          if (m.role !== 'user' && m.role !== 'assistant') continue;
-          let content;
-          if (m.role === 'user') {
-            content = await buildUserContentForApi(m.content, req.dbUser.id, m.meta);
-          } else {
-            content = m.content;
+        const assignmentForPrompt = lessonForPrompt ? await db.getAssignmentByLessonId(lessonForPrompt.id) : null;
+        let practiceRunContext = null;
+        if (chatMode === 'practice_run' && body.practiceRunContext && typeof body.practiceRunContext === 'object') {
+          practiceRunContext = body.practiceRunContext;
+        } else if (chatMode === 'practice_run' && typeof body.practiceRunContext === 'string') {
+          try {
+            practiceRunContext = JSON.parse(body.practiceRunContext);
+          } catch {
+            practiceRunContext = null;
           }
-          totalChars += estimatePayloadFootprintForLimits(content);
-          apiMessages.push({ role: m.role, content });
+        }
+        const { apiMessages, totalChars, droppedTurns } = await buildMessagesWithBudget(
+          rows,
+          lessonForPrompt,
+          req,
+          model,
+          assignmentForPrompt,
+          chatMode,
+          practiceRunContext
+        );
+
+        if (personaId) {
+          const persona = await practicum.getPersonaForUser(personaId, req.dbUser.id);
+          if (persona) {
+            apiMessages.splice(1, 0, {
+              role: 'system',
+              content: `Persona: ${persona.name}\nTone: ${persona.tone}\nExpertise: ${persona.expertise}\nTeaching style: ${persona.teaching_style}\nInstructions:\n${persona.system_prompt}`
+            });
+          }
+        }
+
+        let retrievalCitations = [];
+        let strictFallbackText = null;
+        if ((chatMode === 'knowledge' || chatMode === 'strict_knowledge' || chatMode === 'agent_knowledge') && knowledgeBaseId) {
+          const allChunks = await practicum.getChunksForKnowledgeBase(req.dbUser.id, knowledgeBaseId);
+          const retrieved = buildRetrieval(message || 'last user message', allChunks, 5);
+          retrievalCitations = retrieved.map((r, idx) => ({
+            id: idx + 1,
+            document: r.document_name,
+            score: Number((r.score || 0).toFixed(3)),
+            preview: String(r.content || '').slice(0, 220)
+          }));
+          if (!retrieved.length && strictMode) strictFallbackText = strictNoSourceMessage();
+          if (retrieved.length) {
+            const kbContext = retrieved
+              .map((r, idx) => `[Source ${idx + 1}] ${r.document_name}\n${r.content}`)
+              .join('\n\n');
+            apiMessages.splice(1, 0, {
+              role: 'system',
+              content: `Knowledge base context (use as source of truth):\n${kbContext}\nAlways cite source numbers in the answer.`
+            });
+          }
+        }
+
+        if (droppedTurns > 0) {
+          console.info(
+            `[academy/chat] context shrink: dropped ${droppedTurns} oldest message(s), chars=${totalChars}`
+          );
         }
 
         if (totalChars > MAX_CONTEXT_CHARS) {
-          return res.status(400).json({ error: 'Context too large. Start a new chat or shorten messages.' });
+          return res.status(400).json({
+            error:
+              'Контекст слишком большой даже после сжатия истории. Начните новый диалог или отправьте файл отдельным коротким чатом.'
+          });
         }
 
         const estTokens = estimateTokensFromText(JSON.stringify(apiMessages));
@@ -491,6 +1344,27 @@ function createRouter({ JWT_SECRET }) {
         };
 
         send({ type: 'start', conversationId, model });
+
+        if (strictFallbackText) {
+          await db.addAiMessage(conversationId, 'assistant', strictFallbackText, {
+            model,
+            feature_mode: 'chat_strict_knowledge',
+            citations: [],
+            confidence: 'low'
+          });
+          await recordFeatureUsage(req, {
+            conversationId,
+            model,
+            promptTokens: estTokens,
+            completionTokens: estimateTokensFromText(strictFallbackText),
+            costUsd: estimateCostUsd(estTokens, estimateTokensFromText(strictFallbackText), model),
+            featureMode: 'chat_strict_knowledge'
+          });
+          send({ type: 'chunk', text: strictFallbackText });
+          send({ type: 'done', conversationId, citations: [], confidence: 'low' });
+          res.end();
+          return;
+        }
 
         let finalUsage = null;
         let fullAssistant = '';
@@ -521,7 +1395,17 @@ function createRouter({ JWT_SECRET }) {
 
         const meta = {
           model,
-          mentor_prompt_version: MENTOR_PROMPT_VERSION
+          mentor_prompt_version: MENTOR_PROMPT_VERSION,
+          feature_mode:
+            chatMode === 'knowledge'
+              ? 'chat_knowledge'
+              : chatMode === 'strict_knowledge'
+                ? 'chat_strict_knowledge'
+                : chatMode === 'agent_knowledge'
+                  ? 'chat_agent_knowledge'
+                  : 'chat_general',
+          citations: retrievalCitations,
+          confidence: retrievalCitations.length ? 'medium' : 'low'
         };
         await db.addAiMessage(conversationId, 'assistant', fullAssistant || ' ', meta);
 
@@ -533,13 +1417,13 @@ function createRouter({ JWT_SECRET }) {
             ? costFromApi
             : estimateCostUsd(promptTokens, completionTokens, model);
 
-        await db.recordAiUsage({
-          userId: req.dbUser.id,
+        await recordFeatureUsage(req, {
           conversationId,
           model,
           promptTokens,
           completionTokens,
-          costUsd
+          costUsd,
+          featureMode: meta.feature_mode
         });
 
         let autoTitle;
@@ -558,6 +1442,8 @@ function createRouter({ JWT_SECRET }) {
         send({
           type: 'done',
           conversationId,
+          citations: retrievalCitations,
+          confidence: retrievalCitations.length ? 'medium' : 'low',
           usage: {
             prompt_tokens: promptTokens,
             completion_tokens: completionTokens,

@@ -987,9 +987,6 @@ document.addEventListener('DOMContentLoaded', function() {
     employeeId = getEmployeeIdFromUrl();
     loadEmployeeProfile();
 
-    document.getElementById('langRu').addEventListener('click', () => window.translationManager.setLanguage('ru'));
-    document.getElementById('langEn').addEventListener('click', () => window.translationManager.setLanguage('en'));
-
     document.getElementById('shareProfileBtn').addEventListener('click', generateSecureLink);
     document.getElementById('closeShareModal').addEventListener('click', () => {
         document.getElementById('shareModal').classList.add('hidden');
