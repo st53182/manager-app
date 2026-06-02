@@ -2260,21 +2260,17 @@ function initResizableLayout() {
       if (side === 'left' && window.innerWidth < 768) return;
       if (side === 'lesson' && window.innerWidth < 1280) return;
       if (side === 'right' && (window.innerWidth < 1280 || app.classList.contains('tools-panel-collapsed'))) return;
-      e.preventDefault();
+      splitter.setPointerCapture(e.pointerId);
       splitter.classList.add('is-dragging');
-      document.body.style.userSelect = 'none';
-      document.body.style.webkitUserSelect = 'none';
-      document.body.style.cursor = 'col-resize';
       const startX = e.clientX;
       const leftStart = leftSidebar.getBoundingClientRect().width;
       const lessonStart = lessonPanel ? lessonPanel.getBoundingClientRect().width : 352;
       const rightStart = toolsPanel.getBoundingClientRect().width;
       const onMove = (ev) => {
-        ev.preventDefault();
         if (side === 'left') {
           setWidths(Math.max(220, Math.min(400, leftStart + (ev.clientX - startX))), lessonStart, rightStart);
         } else if (side === 'lesson' && lessonPanel) {
-          const nextLesson = Math.max(280, Math.min(900, lessonStart + (ev.clientX - startX)));
+          const nextLesson = Math.max(280, Math.min(672, lessonStart + (startX - ev.clientX)));
           if (app.classList.contains('tools-panel-collapsed')) {
             app.style.setProperty('--lesson-pane-expanded-width', `${nextLesson}px`);
             lessonPanel.style.width = `${nextLesson}px`;
@@ -2283,19 +2279,16 @@ function initResizableLayout() {
             setWidths(leftStart, nextLesson, rightStart);
           }
         } else {
-          setWidths(leftStart, lessonStart, Math.max(260, Math.min(600, rightStart + (startX - ev.clientX))));
+          setWidths(leftStart, lessonStart, Math.max(260, Math.min(480, rightStart - (ev.clientX - startX))));
         }
       };
       const onUp = () => {
         splitter.classList.remove('is-dragging');
-        document.body.style.userSelect = '';
-        document.body.style.webkitUserSelect = '';
-        document.body.style.cursor = '';
-        document.removeEventListener('pointermove', onMove);
-        document.removeEventListener('pointerup', onUp);
+        splitter.removeEventListener('pointermove', onMove);
+        splitter.removeEventListener('pointerup', onUp);
       };
-      document.addEventListener('pointermove', onMove);
-      document.addEventListener('pointerup', onUp);
+      splitter.addEventListener('pointermove', onMove);
+      splitter.addEventListener('pointerup', onUp);
     });
   }
 
@@ -2761,6 +2754,9 @@ function wireUi() {
   document.getElementById('openPracticeChatBtn')?.addEventListener('click', () => openPracticeChat());
   document.getElementById('closePracticeChatBtn')?.addEventListener('click', () => closePracticeChat());
   document.getElementById('backToAssignmentBtn')?.addEventListener('click', () => closePracticeChat());
+  document.getElementById('sidebarOpenChatBtn')?.addEventListener('click', () => {
+    document.getElementById('newChatBtn')?.click();
+  });
   document.getElementById('toggleChatAdvancedBtn')?.addEventListener('click', () => {
     document.getElementById('chatAdvancedBlock')?.classList.toggle('hidden');
     document.getElementById('modelHint')?.classList.toggle('hidden');
