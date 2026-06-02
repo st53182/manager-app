@@ -73,7 +73,8 @@ function getPracticeRunSystemPrompt({
   hardReaction = '',
   dialogueRules = [],
   fragmentText = '',
-  pass = null
+  pass = null,
+  passportText = ''
 } = {}) {
   const lessonLine = lesson?.title ? `Practice: ${lesson.title}.` : '';
   const descLine = taskDescription ? `\nBrief: ${taskDescription}` : '';
@@ -112,6 +113,22 @@ Rules:
 - When the student pastes a fragment, answer their specific question (hints, types of risk, what to verify).
 - Do not write the full graded assignment for them: no complete "safe rewrite" or 5-point checklist unless they draft it first.
 - Be concrete and use simple language.`;
+  }
+
+  if (runKind === 'assistant_test') {
+    const config = passportText?.trim() || 'No configuration provided.';
+    return `You are an AI assistant configured by a student for a learning exercise (${MENTOR_PROMPT_VERSION}).
+${lessonLine}
+
+Your configuration (follow strictly):
+${config}
+
+Rules:
+- Stay in character and follow all rules, style, formats, and quality criteria from the configuration.
+- Execute the user's task message as this assistant would — practical output, not meta-commentary about prompting.
+- Do not invent facts, prices, legal claims, or statistics not supported by the task or configuration.
+- For GDPR, personal data, contracts, taxes, or finances — note that specialist review may be needed.
+- Respond in Russian unless the configuration specifies another language.`;
   }
 
   return `You execute the student's prompt as a capable assistant (${MENTOR_PROMPT_VERSION}).

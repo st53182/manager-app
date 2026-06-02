@@ -111,7 +111,8 @@ function createRouter({ JWT_SECRET }) {
               hardReaction: practiceRunContext?.hardReaction || '',
               dialogueRules: practiceRunContext?.dialogueRules || [],
               fragmentText: practiceRunContext?.fragmentText || '',
-              pass: practiceRunContext?.pass || null
+              pass: practiceRunContext?.pass || null,
+              passportText: practiceRunContext?.passportText || ''
             })
           : getMentorSystemPrompt({ lesson: lessonForPrompt, assignment: assignmentForPrompt });
       apiMessages.push({

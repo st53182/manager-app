@@ -1,6 +1,7 @@
 const { Pool } = require('pg');
 const { mergeDefaultAllowedModels } = require('./services/academy/modelCatalog');
 const { seedModuleOneCatalog } = require('./services/academy/seedModuleOneCatalog');
+const { seedModuleTwoCatalog } = require('./services/academy/seedModuleTwoCatalog');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -132,6 +133,7 @@ async function migrateAcademyProgressColumns(client) {
 
 async function seedAcademyCatalog(client) {
   await seedModuleOneCatalog(client);
+  await seedModuleTwoCatalog(client);
 }
 
 async function initializeDatabase() {
@@ -1200,13 +1202,18 @@ async function getProgressSummary(userId) {
   const client = await pool.connect();
   try {
     const lessons = await client.query(
-      `SELECT l.id, l.title, l.scenario_key FROM academy_lessons l
-       JOIN academy_courses c ON c.id = l.course_id WHERE c.slug = 'ai-work-business-talk' ORDER BY l.sort_order`
+      `SELECT l.id, l.title, l.scenario_key, c.slug AS course_slug, c.title AS course_title
+       FROM academy_lessons l
+       JOIN academy_courses c ON c.id = l.course_id
+       WHERE c.slug IN ('ai-work-business-talk', 'ai-prompt-context-m2')
+       ORDER BY c.sort_order, l.sort_order`
     );
     const progress = await client.query(`SELECT * FROM academy_user_lesson_progress WHERE user_id = $1`, [userId]);
     const progressMap = {};
     for (const p of progress.rows) progressMap[p.lesson_id] = p;
-    const practiceLessons = lessons.rows.filter((l) => l.scenario_key && l.scenario_key.startsWith('block1-practice'));
+    const practiceLessons = lessons.rows.filter(
+      (l) => l.scenario_key && /^block[12]-practice-/.test(l.scenario_key)
+    );
     let completed = 0;
     const lessonStatuses = practiceLessons.map((l) => {
       const p = progressMap[l.id];
