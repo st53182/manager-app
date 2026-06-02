@@ -1278,8 +1278,7 @@ function setPracticeChatOpen(open) {
 function setPracticeFocusMode(on, lesson = null) {
   const app = document.getElementById('app');
   if (!app) return;
-  const hasAssignment = Boolean(lesson?.assignment);
-  if (on && lesson && (isModuleOnePractice(lesson) || hasAssignment)) {
+  if (on && lesson && isModuleOnePractice(lesson)) {
     app.classList.add('practice-focus');
     document.getElementById('sidebarFreeChatBlock')?.classList.add('hidden');
     document.getElementById('practiceActionsRow')?.classList.remove('hidden');
@@ -2261,17 +2260,21 @@ function initResizableLayout() {
       if (side === 'left' && window.innerWidth < 768) return;
       if (side === 'lesson' && window.innerWidth < 1280) return;
       if (side === 'right' && (window.innerWidth < 1280 || app.classList.contains('tools-panel-collapsed'))) return;
-      splitter.setPointerCapture(e.pointerId);
+      e.preventDefault();
       splitter.classList.add('is-dragging');
+      document.body.style.userSelect = 'none';
+      document.body.style.webkitUserSelect = 'none';
+      document.body.style.cursor = 'col-resize';
       const startX = e.clientX;
       const leftStart = leftSidebar.getBoundingClientRect().width;
       const lessonStart = lessonPanel ? lessonPanel.getBoundingClientRect().width : 352;
       const rightStart = toolsPanel.getBoundingClientRect().width;
       const onMove = (ev) => {
+        ev.preventDefault();
         if (side === 'left') {
           setWidths(Math.max(220, Math.min(400, leftStart + (ev.clientX - startX))), lessonStart, rightStart);
         } else if (side === 'lesson' && lessonPanel) {
-          const nextLesson = Math.max(280, Math.min(672, lessonStart + (startX - ev.clientX)));
+          const nextLesson = Math.max(280, Math.min(900, lessonStart + (ev.clientX - startX)));
           if (app.classList.contains('tools-panel-collapsed')) {
             app.style.setProperty('--lesson-pane-expanded-width', `${nextLesson}px`);
             lessonPanel.style.width = `${nextLesson}px`;
@@ -2280,16 +2283,19 @@ function initResizableLayout() {
             setWidths(leftStart, nextLesson, rightStart);
           }
         } else {
-          setWidths(leftStart, lessonStart, Math.max(260, Math.min(480, rightStart - (ev.clientX - startX))));
+          setWidths(leftStart, lessonStart, Math.max(260, Math.min(600, rightStart + (startX - ev.clientX))));
         }
       };
       const onUp = () => {
         splitter.classList.remove('is-dragging');
-        splitter.removeEventListener('pointermove', onMove);
-        splitter.removeEventListener('pointerup', onUp);
+        document.body.style.userSelect = '';
+        document.body.style.webkitUserSelect = '';
+        document.body.style.cursor = '';
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
       };
-      splitter.addEventListener('pointermove', onMove);
-      splitter.addEventListener('pointerup', onUp);
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
     });
   }
 
