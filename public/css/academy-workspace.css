@@ -261,27 +261,40 @@
 }
 
 .academy-light .aa-splitter {
-  width: 8px;
-  flex: 0 0 8px;
+  width: 12px;
+  flex: 0 0 12px;
   cursor: col-resize;
-  background: var(--aa-border);
-  transition: background 0.15s;
+  background: #e2e8f0;
+  transition: background 0.12s;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Увеличиваем зону захвата через псевдоэлемент */
-.academy-light .aa-splitter::after {
+/* Вертикальные полоски — визуальная ручка для перетягивания */
+.academy-light .aa-splitter::before {
   content: '';
-  position: absolute;
-  inset: 0 -6px;
+  display: block;
+  width: 2px;
+  height: 36px;
+  border-left: 1px dotted #94a3b8;
+  border-right: 1px dotted #94a3b8;
+  border-radius: 2px;
+  pointer-events: none;
 }
 
 .academy-light .aa-splitter:hover,
 .academy-light .aa-splitter.is-dragging {
-  background: #94a3b8;
+  background: #cbd5e1;
+}
+
+.academy-light .aa-splitter:hover::before,
+.academy-light .aa-splitter.is-dragging::before {
+  border-color: #475569;
 }
 
 .academy-light .aa-chat-toolbar {
