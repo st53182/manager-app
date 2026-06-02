@@ -1278,7 +1278,8 @@ function setPracticeChatOpen(open) {
 function setPracticeFocusMode(on, lesson = null) {
   const app = document.getElementById('app');
   if (!app) return;
-  if (on && lesson && isModuleOnePractice(lesson)) {
+  const hasAssignment = Boolean(lesson?.assignment);
+  if (on && lesson && (isModuleOnePractice(lesson) || hasAssignment)) {
     app.classList.add('practice-focus');
     document.getElementById('sidebarFreeChatBlock')?.classList.add('hidden');
     document.getElementById('practiceActionsRow')?.classList.remove('hidden');

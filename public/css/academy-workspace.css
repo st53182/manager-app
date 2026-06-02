@@ -59,6 +59,13 @@
     flex: 0 0 var(--lesson-pane-expanded-width, 36rem) !important;
     max-width: min(48vw, 42rem) !important;
   }
+
+  /* В режиме выполнения задания панель должна занимать всю доступную ширину. */
+  .academy-light #app.practice-focus:not(.practice-chat-open) #lessonPanel {
+    width: auto !important;
+    flex: 1 1 auto !important;
+    max-width: none !important;
+  }
 }
 
 .academy-light .aa-tools-reopen {
@@ -265,6 +272,8 @@
   flex: 0 0 6px;
   cursor: col-resize;
   background: var(--aa-border);
+  touch-action: none;
+  user-select: none;
   transition: background 0.15s;
 }
 
