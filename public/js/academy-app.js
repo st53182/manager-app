@@ -1513,6 +1513,8 @@ function setPracticeFocusMode(on, lesson = null) {
     updateOpenPracticeChatLabel(lesson.scenario_key);
     setPracticeChatOpen(false);
     if (!isToolsPanelCollapsed()) applyToolsPanelCollapsed(true);
+    const lp = document.getElementById('lessonPanel');
+    if (lp) { lp.style.width = ''; lp.style.flexBasis = ''; lp.style.maxWidth = ''; }
   } else {
     app.classList.remove('practice-focus', 'practice-chat-open', 'practice-chat-mobile');
     document.getElementById('sidebarFreeChatBlock')?.classList.remove('hidden');
@@ -2471,6 +2473,7 @@ function initResizableLayout() {
 
   function setWidths(leftPx, lessonPx, rightPx) {
     const collapsed = app.classList.contains('tools-panel-collapsed');
+    const practiceFocus = app.classList.contains('practice-focus');
     app.style.setProperty('--left-pane-width', `${leftPx}px`);
     app.style.setProperty('--lesson-pane-width', `${lessonPx}px`);
     app.style.setProperty('--right-pane-width', `${rightPx}px`);
@@ -2482,7 +2485,12 @@ function initResizableLayout() {
       leftSidebar.style.flexBasis = '';
     }
     if (lessonPanel && window.innerWidth >= 1280) {
-      if (collapsed) {
+      if (practiceFocus) {
+        // В режиме практики lessonPanel управляется CSS (flex:1 1 auto)
+        lessonPanel.style.width = '';
+        lessonPanel.style.flexBasis = '';
+        lessonPanel.style.maxWidth = '';
+      } else if (collapsed) {
         const savedRight = parseInt(localStorage.getItem(TOOLS_RIGHT_WIDTH_KEY), 10) || rightPx;
         let expanded = parseInt(getComputedStyle(app).getPropertyValue('--lesson-pane-expanded-width'), 10);
         if (!expanded || Number.isNaN(expanded)) {
