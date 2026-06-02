@@ -270,9 +270,23 @@
   user-select: none;
   -webkit-user-select: none;
   position: relative;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
+}
+
+/* Показываем левый разделитель только на md+ */
+@media (min-width: 768px) {
+  .academy-light .aa-splitter-left {
+    display: flex;
+  }
+}
+
+/* Показываем разделители чат/задание и задание/инструменты только на xl+ */
+@media (min-width: 1280px) {
+  .academy-light .aa-splitter-wide {
+    display: flex;
+  }
 }
 
 /* Вертикальные полоски — визуальная ручка для перетягивания */
