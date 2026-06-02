@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Academy — Workspace</title>
+  <title>AI Academy — Рабочая зона</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/academy-workspace.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github.min.css">
@@ -34,7 +34,7 @@
           <span class="font-semibold text-slate-900 tracking-tight" data-i18n="academy.brand">AI Academy</span>
           <div class="flex items-center gap-1 shrink-0">
             <div id="languageSwitcher"></div>
-            <a id="adminLink" href="/academy/admin" class="hidden text-xs text-blue-600 hover:underline">Admin</a>
+            <a id="adminLink" href="/academy/admin" class="hidden text-xs text-blue-600 hover:underline">Админ (управление)</a>
           </div>
         </div>
         <p id="usageBadge" class="aa-usage" title="Использование токенов"></p>
@@ -178,7 +178,7 @@
                   <!-- Шаг 1: Написать промпт v1 -->
                   <div class="aa-step-pane aa-practice-workflow-box space-y-3" data-practice-step="1">
                     <details class="aa-rtc-details mb-2">
-                      <summary class="text-sm text-blue-700 cursor-pointer">Подсказка: блоки RTCFSC (раскрыть)</summary>
+                      <summary class="text-sm text-blue-700 cursor-pointer">Подсказка: блоки RTCFSC (структура, раскрыть)</summary>
                       <div class="mt-2 space-y-2">
                         <label class="block text-xs"><span class="font-medium">R — роль</span><textarea id="promptFieldR" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
                         <label class="block text-xs"><span class="font-medium">T — задача</span><textarea id="promptFieldT" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
@@ -366,7 +366,7 @@
           <div class="px-4 py-3 border-b shrink-0 flex items-start justify-between gap-2" style="border-color: var(--aa-border);">
             <div class="min-w-0">
               <h2 class="font-semibold text-slate-900" data-i18n="academy.tools.title">Инструменты</h2>
-              <p class="text-xs text-slate-500 mt-0.5 leading-snug">Промпты, модели, база знаний и тренировки</p>
+              <p class="text-xs text-slate-500 mt-0.5 leading-snug">Промпты (запросы), модели и база знаний</p>
             </div>
             <button type="button" id="collapseToolsPanelBtn" class="aa-btn aa-btn-ghost shrink-0 text-xs px-2 min-h-0 h-8" title="Скрыть панель" aria-label="Скрыть инструменты">×</button>
           </div>
@@ -374,7 +374,7 @@
           <div class="p-3 border-b shrink-0" style="border-color: var(--aa-border);">
             <div id="toolsTabs" class="grid grid-cols-2 gap-2">
               <button type="button" class="aa-tool-tab is-active" data-tool-tab="kb">База знаний</button>
-              <button type="button" class="aa-tool-tab" data-tool-tab="prompts">Промпты</button>
+              <button type="button" class="aa-tool-tab" data-tool-tab="prompts">Промпты (запросы)</button>
               <button type="button" class="aa-tool-tab" data-tool-tab="models">Модели</button>
               <button type="button" class="aa-tool-tab" data-tool-tab="assistant">Ассистенты</button>
               <button type="button" class="aa-tool-tab col-span-2" data-tool-tab="training">Тренировка</button>
@@ -404,12 +404,12 @@
             </div>
 
             <div class="tool-panel" data-tool-panel="prompts">
-              <h3 id="promptsHeading" class="font-medium text-slate-800 mb-2">Библиотека промптов</h3>
+              <h3 id="promptsHeading" class="font-medium text-slate-800 mb-2">Библиотека промптов (запросов)</h3>
               <ul id="promptLibraryList" class="text-xs text-slate-600 space-y-1 mb-3 max-h-32 overflow-y-auto"></ul>
               <textarea id="promptTrainerInput" rows="3" class="aa-textarea mb-2" placeholder="Промпт для оценки…"></textarea>
               <div class="aa-btn-row">
                 <button type="button" id="savePromptBtn" class="aa-btn">Сохранить</button>
-                <button type="button" id="evaluatePromptBtn" class="aa-btn aa-btn-primary">Оценить (RTCFSC)</button>
+                <button type="button" id="evaluatePromptBtn" class="aa-btn aa-btn-primary">Оценить (RTCFSC, структура)</button>
               </div>
               <div id="promptCompareBeforeAfter" class="hidden mt-3 grid grid-cols-1 gap-2">
                 <div><span class="aa-label">До</span><pre id="promptBefore" class="text-xs bg-slate-50 border rounded-lg p-2 mt-1 whitespace-pre-wrap max-h-24 overflow-auto"></pre></div>
@@ -423,7 +423,7 @@
               <input id="compareModelsInput" type="text" placeholder="model1, model2" class="aa-input mb-2" />
               <div class="aa-btn-row">
                 <button type="button" id="runCompareBtn" class="aa-btn aa-btn-primary">Сравнить</button>
-                <button type="button" id="runPlaygroundBtn" class="aa-btn">Playground</button>
+                <button type="button" id="runPlaygroundBtn" class="aa-btn">Песочница (Playground)</button>
               </div>
               <p id="compareChoiceHint" class="text-xs text-slate-500 mt-1"></p>
               <div id="compareOutput" class="mt-2 text-xs max-h-48 overflow-y-auto"></div>
@@ -433,7 +433,7 @@
               <h3 id="assistantHeading" class="font-medium text-slate-800 mb-2">Ассистенты</h3>
               <div class="aa-btn-row">
                 <button type="button" id="createAssistantBtn" class="aa-btn">Создать</button>
-                <button type="button" id="runWorkflowBtn" class="aa-btn">Workflow</button>
+                <button type="button" id="runWorkflowBtn" class="aa-btn">Сценарий (Workflow)</button>
               </div>
               <pre id="builderOutput" class="mt-2 text-xs whitespace-pre-wrap max-h-48 overflow-auto bg-slate-50 border rounded-lg p-2"></pre>
             </div>

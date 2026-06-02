@@ -396,7 +396,7 @@
     },
     "tabs": {
       "kb": "База знаний",
-      "prompts": "Промпты",
+      "prompts": "Промпты (запросы)",
       "models": "Модели",
       "assistant": "Ассистенты",
       "training": "Тренировка"
@@ -404,26 +404,26 @@
     "kb": {
       "heading": "База знаний",
       "name_placeholder": "Название базы знаний",
-      "create": "Создать KB",
+      "create": "Создать БЗ (базу знаний)",
       "upload_docs": "Загрузить документы",
       "select_for_status": "Выберите базу знаний для просмотра статусов.",
       "no_docs": "Документов пока нет."
     },
     "prompts": {
-      "heading": "Инструменты промптов",
-      "save": "Сохранить prompt",
-      "evaluate": "Оценить prompt"
+      "heading": "Инструменты промптов (запросов)",
+      "save": "Сохранить промпт (запрос)",
+      "evaluate": "Оценить промпт (запрос)"
     },
     "models": {
-      "heading": "Сравнение моделей и Playground",
-      "compare_placeholder": "model1,model2",
+      "heading": "Сравнение моделей и песочница (Playground)",
+      "compare_placeholder": "модель1,модель2",
       "compare": "Сравнить",
-      "playground": "Запуск в Playground"
+      "playground": "Запуск в песочнице (Playground)"
     },
     "assistant": {
-      "heading": "Ассистенты и workflow",
+      "heading": "Ассистенты и сценарии (workflow)",
       "create": "Создать ассистента",
-      "run_workflow": "Запустить workflow"
+      "run_workflow": "Запустить сценарий (workflow)"
     },
     "training": {
       "heading": "Тренировка галлюцинаций и сертификат",
