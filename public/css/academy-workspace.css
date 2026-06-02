@@ -507,9 +507,11 @@
   }
 }
 
-.academy-light #app.practice-focus #lessonPanel {
-  flex: 1 1 auto;
-  max-width: none;
+.academy-light #app.practice-focus #lessonPanel,
+.academy-light #app.practice-focus.tools-panel-collapsed #lessonPanel {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  max-width: none !important;
   max-height: none !important;
   min-height: 0;
 }
