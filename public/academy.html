@@ -60,6 +60,15 @@
           <span class="aa-label block mb-1">Прогресс практики</span>
           <span id="progressSummaryText">—</span>
         </div>
+        <div id="continuePracticeCard" class="hidden aa-continue-card mt-3 p-3 rounded-xl border border-blue-200 bg-blue-50/80">
+          <span class="aa-label block mb-1">Продолжить</span>
+          <p id="continuePracticeTitle" class="text-sm text-slate-800 leading-snug"></p>
+          <button type="button" id="continuePracticeBtn" class="aa-btn aa-btn-primary w-full text-sm mt-2">Открыть практику</button>
+        </div>
+        <div id="courseCompleteCard" class="hidden mt-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-sm text-emerald-900">
+          <span class="font-medium">Модуль пройден</span>
+          <p class="text-xs mt-1 text-emerald-800">Все практики завершены. Можно повторить любую из списка.</p>
+        </div>
       </div>
 
       <div class="overflow-y-auto flex-1 p-3 space-y-4 chat-scroll min-h-0">
@@ -90,6 +99,12 @@
     </aside>
 
     <div id="leftSplitter" class="aa-splitter aa-splitter-left" aria-hidden="true"></div>
+
+    <nav id="mobileWorkspaceTabs" class="aa-mobile-tabs xl:hidden shrink-0" aria-label="Разделы workspace">
+      <button type="button" class="aa-mobile-tab is-active" data-pane="chat">Чат</button>
+      <button type="button" class="aa-mobile-tab" data-pane="lesson">Задание</button>
+      <button type="button" class="aa-mobile-tab" data-pane="sidebar">Курсы</button>
+    </nav>
 
     <main id="workspaceMain" class="flex-1 flex flex-col min-h-0 min-w-0 bg-slate-100">
       <div class="flex-1 flex flex-col xl:flex-row min-h-0 min-w-0">
@@ -159,15 +174,24 @@
               <h2 class="font-semibold text-slate-900">Задание</h2>
               <p id="lessonPanelSubtitle" class="text-xs text-slate-500 mt-0.5">Выберите практику в списке слева</p>
             </div>
+            <div class="flex flex-col items-end gap-1 shrink-0">
+              <button type="button" id="newLessonChatBtn" class="hidden aa-btn aa-btn-ghost text-xs px-2 min-h-0 h-8" title="Создать новый диалог по этому уроку">
+                Новый диалог
+              </button>
             <button type="button" id="hideToolsPanelBtn" class="aa-btn aa-btn-ghost shrink-0 text-xs hidden xl:inline-flex" title="Скрыть панель инструментов и расширить задание">
               Скрыть инструменты
             </button>
+            </div>
           </div>
           <div class="flex-1 overflow-y-auto chat-scroll p-4 min-h-0">
             <p id="lessonEmpty" class="text-sm text-slate-500">Выберите практику в списке слева — откроется полное задание.</p>
             <div id="lessonContent" class="hidden prose prose-sm max-w-none text-slate-700"></div>
 
             <div id="assignmentBlock" class="hidden mt-6">
+              <p id="practiceFlowHint" class="hidden text-xs text-slate-600 bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 mb-3 leading-relaxed">
+                <strong class="text-slate-800">Чат с наставником</strong> — для подсказок и вопросов по шагам.
+                <strong class="text-slate-800"> Отчёт и «Отправить»</strong> — официальная сдача задания; после этого доступна обратная связь ИИ по рубрике.
+              </p>
               <div class="aa-assignment-box">
                 <h3 id="assignmentTitle" class="font-semibold text-slate-900 mb-2">Задание</h3>
                 <div id="assignmentText" class="text-sm text-slate-700 prose prose-sm max-w-none aa-assignment-prose"></div>
@@ -475,7 +499,8 @@
                   <button type="button" id="submitAnswerBtn" class="aa-btn aa-btn-primary flex-1">Отправить</button>
                   <button type="button" id="requestFeedbackBtn" class="aa-btn flex-1">Обратная связь ИИ</button>
                 </div>
-                <div id="assignmentFeedback" class="aa-feedback-box hidden whitespace-pre-wrap"></div>
+                <div id="assignmentFeedback" class="aa-feedback-box hidden"></div>
+                <p id="assignmentFeedbackLoading" class="hidden text-sm text-slate-500 mt-2" aria-live="polite">Формируем обратную связь по рубрике…</p>
               </div>
 
               <div id="practiceActionsRow" class="hidden mt-4 space-y-3">

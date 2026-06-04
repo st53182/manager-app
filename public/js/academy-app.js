@@ -656,6 +656,7 @@ async function loadWorkspace() {
     await loadPromptLibrary();
     await loadHallucinationScenarios();
     showApp();
+    initMobileWorkspaceTabs();
   } catch (e) {
     if (e.status === 401 || e.status === 403) {
       localStorage.removeItem('auth_token');
@@ -720,6 +721,130 @@ function renderProgressSummary() {
   const s = state.progressSummary;
   if (!s) { el.textContent = '—'; return; }
   el.textContent = `Практик: ${s.practices_completed}/${s.practices_total} (${s.percent}%)`;
+  renderContinuePractice();
+}
+
+function getLessonProgressMeta(lessonId) {
+  const catalogProg = state.catalog?.progress?.[lessonId];
+  const sum = state.progressSummary?.lessons?.find((l) => l.lesson_id === lessonId);
+  return {
+    status: catalogProg?.status || sum?.status || 'not_started',
+    assignment_status: catalogProg?.assignment_status || sum?.assignment_status || 'not_started',
+    has_feedback: sum?.has_feedback || !!(catalogProg?.feedback_json && Object.keys(catalogProg.feedback_json).length)
+  };
+}
+
+function getLessonStatusPrefix(lessonId) {
+  const m = getLessonProgressMeta(lessonId);
+  if (m.status === 'completed') return '✓ ';
+  if (m.has_feedback || m.assignment_status === 'reviewed') return '★ ';
+  if (m.assignment_status === 'submitted' || m.assignment_status === 'in_progress') return '◐ ';
+  return '';
+}
+
+function findNextPracticeLesson() {
+  const lessons = getMvpLessons().slice().sort((a, b) => {
+    const ca = state.catalog?.courses?.find((c) => c.id === a.course_id);
+    const cb = state.catalog?.courses?.find((c) => c.id === b.course_id);
+    return (ca?.sort_order || 0) - (cb?.sort_order || 0) || (a.sort_order || 0) - (b.sort_order || 0);
+  });
+  for (const l of lessons) {
+    const m = getLessonProgressMeta(l.id);
+    if (m.status !== 'completed') return l;
+  }
+  return null;
+}
+
+function renderContinuePractice() {
+  const card = document.getElementById('continuePracticeCard');
+  const doneCard = document.getElementById('courseCompleteCard');
+  const titleEl = document.getElementById('continuePracticeTitle');
+  const btn = document.getElementById('continuePracticeBtn');
+  if (!card || !titleEl || !btn) return;
+
+  const next = findNextPracticeLesson();
+  const s = state.progressSummary;
+  const allDone = s && s.practices_completed >= s.practices_total && s.practices_total > 0;
+
+  if (allDone && !next) {
+    card.classList.add('hidden');
+    doneCard?.classList.remove('hidden');
+    return;
+  }
+  doneCard?.classList.add('hidden');
+
+  if (!next) {
+    card.classList.add('hidden');
+    return;
+  }
+
+  card.classList.remove('hidden');
+  const meta = getLessonProgressMeta(next.id);
+  let hint = 'Не начато';
+  if (meta.assignment_status === 'submitted' || meta.assignment_status === 'in_progress') hint = 'В процессе';
+  if (meta.has_feedback) hint = 'Есть обратная связь';
+  titleEl.textContent = `${next.title} · ${hint}`;
+
+  btn.onclick = () => {
+    selectLesson(next);
+    setMobilePane('lesson');
+  };
+}
+
+function setMobilePane(pane) {
+  const app = document.getElementById('app');
+  if (!app || window.innerWidth >= 1280) return;
+  app.classList.remove('aa-mobile-pane-sidebar', 'aa-mobile-pane-chat', 'aa-mobile-pane-lesson');
+  app.classList.add(`aa-mobile-pane-${pane}`);
+  document.querySelectorAll('#mobileWorkspaceTabs [data-pane]').forEach((el) => {
+    el.classList.toggle('is-active', el.dataset.pane === pane);
+  });
+}
+
+function initMobileWorkspaceTabs() {
+  const app = document.getElementById('app');
+  if (!app) return;
+  const syncDefault = () => {
+    if (window.innerWidth >= 1280) {
+      app.classList.remove('aa-mobile-pane-sidebar', 'aa-mobile-pane-chat', 'aa-mobile-pane-lesson');
+      return;
+    }
+    if (!['aa-mobile-pane-sidebar', 'aa-mobile-pane-chat', 'aa-mobile-pane-lesson'].some((c) => app.classList.contains(c))) {
+      setMobilePane('chat');
+    }
+  };
+  syncDefault();
+  window.addEventListener('resize', syncDefault);
+  document.querySelectorAll('#mobileWorkspaceTabs [data-pane]').forEach((btn) => {
+    btn.addEventListener('click', () => setMobilePane(btn.dataset.pane));
+  });
+}
+
+function updateNewLessonChatBtn() {
+  const btn = document.getElementById('newLessonChatBtn');
+  if (!btn) return;
+  const hasLesson = Boolean(state.currentLessonId);
+  const hasConv = hasLesson && state.conversations.some((c) => c.lesson_id === state.currentLessonId);
+  btn.classList.toggle('hidden', !hasConv);
+}
+
+async function startNewLessonChat() {
+  if (!state.currentLessonId || !state.currentLesson) return;
+  const lesson = state.currentLesson;
+  const conv = await api('/api/academy/conversations', {
+    method: 'POST',
+    body: JSON.stringify({
+      lessonId: lesson.id,
+      courseId: lesson.course_id,
+      title: `${lesson.title} (новый)`,
+      model: document.getElementById('modelSelect').value
+    })
+  });
+  state.conversations.unshift(conv);
+  state.currentConversationId = conv.id;
+  renderConversationList();
+  await loadConversation(conv.id, { skipFetchList: true, skipLessonRestore: true });
+  setMobilePane('chat');
 }
 function syncPracticeModeUi() {
   const g = document.getElementById('practiceModeSelect')?.value === 'group';
@@ -728,14 +853,51 @@ function syncPracticeModeUi() {
 }
 function renderAssignmentFeedback(fb) {
   const box = document.getElementById('assignmentFeedback');
+  const loading = document.getElementById('assignmentFeedbackLoading');
+  loading?.classList.add('hidden');
   if (!box || !fb) return;
   box.classList.remove('hidden');
-  const lines = [];
-  if (fb.score != null) lines.push('Оценка: ' + fb.score + '/10');
-  if (fb.recommendations?.length) lines.push('Рекомендации:\n• ' + fb.recommendations.join('\n• '));
-  if (fb.strengths?.length) lines.push('Сильные:\n• ' + fb.strengths.join('\n• '));
-  if (fb.weaknesses?.length) lines.push('Слабые:\n• ' + fb.weaknesses.join('\n• '));
-  box.textContent = lines.join('\n\n');
+  box.innerHTML = '';
+
+  if (fb.score != null) {
+    const score = document.createElement('p');
+    score.className = 'text-sm font-semibold text-slate-900 mb-2';
+    score.textContent = `Оценка: ${fb.score}/10`;
+    box.appendChild(score);
+  }
+
+  const addListSection = (title, items) => {
+    if (!items?.length) return;
+    const sec = document.createElement('div');
+    sec.className = 'aa-feedback-section';
+    sec.innerHTML = `<h4>${escapeHtml(title)}</h4>`;
+    const ul = document.createElement('ul');
+    items.forEach((t) => {
+      const li = document.createElement('li');
+      li.textContent = String(t);
+      ul.appendChild(li);
+    });
+    sec.appendChild(ul);
+    box.appendChild(sec);
+  };
+
+  addListSection('Сильные стороны', fb.strengths);
+  addListSection('Что улучшить', fb.weaknesses);
+  addListSection('Следующие шаги', fb.recommendations);
+
+  if (fb.criteria_scores && typeof fb.criteria_scores === 'object') {
+    const sec = document.createElement('div');
+    sec.className = 'aa-feedback-section';
+    sec.innerHTML = '<h4>Критерии</h4>';
+    const ul = document.createElement('ul');
+    for (const [k, v] of Object.entries(fb.criteria_scores)) {
+      const li = document.createElement('li');
+      li.textContent = `${k}: ${v}`;
+      ul.appendChild(li);
+    }
+    sec.appendChild(ul);
+    box.appendChild(sec);
+  }
 }
 function parseTaskOptions(assignment) {
   let opts = assignment?.task_options;
@@ -1658,6 +1820,7 @@ async function markLessonCompleted() {
   state.catalog = await api('/api/academy/catalog');
   renderCourseTree();
   await loadProgressSummary();
+  renderContinuePractice();
 }
 
 async function submitPracticeAnswer() {
@@ -1669,6 +1832,8 @@ async function submitPracticeAnswer() {
   await saveSubmission('submitted');
   await markLessonCompleted();
   showAutosaveStatus('Задание отправлено · практика пройдена', { hideAfterMs: 4000 });
+  renderContinuePractice();
+  setMobilePane('lesson');
 }
 
 function initAssignmentAutoSave() {
@@ -1836,12 +2001,12 @@ function renderCourseTree() {
     ul.className = 'space-y-0.5 ml-2 border-l-2 border-blue-200 pl-2';
     for (const l of byCourse[c.id] || []) {
       const li = document.createElement('li');
-      const prog = state.catalog.progress[l.id];
-      const check = prog?.status === 'completed' ? '✓ ' : '';
+      const prefix = getLessonStatusPrefix(l.id);
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'aa-lesson-btn' + (state.currentLessonId === l.id ? ' is-active' : '');
-      btn.textContent = check + l.title;
+      btn.textContent = prefix + l.title;
+      btn.title = prefix === '✓ ' ? 'Пройдено' : prefix === '★ ' ? 'Есть обратная связь' : prefix === '◐ ' ? 'В процессе' : 'Не начато';
       btn.addEventListener('click', () => selectLesson(l));
       li.appendChild(btn);
       ul.appendChild(li);
@@ -2147,7 +2312,9 @@ function clearLessonPanel() {
   document.getElementById('lessonEmpty')?.classList.remove('hidden');
   document.getElementById('lessonContent')?.classList.add('hidden');
   document.getElementById('assignmentBlock')?.classList.add('hidden');
+  document.getElementById('practiceFlowHint')?.classList.add('hidden');
   document.getElementById('askMentorAssignmentBtn')?.classList.add('hidden');
+  document.getElementById('newLessonChatBtn')?.classList.add('hidden');
 }
 
 async function openLessonPanel(lesson) {
@@ -2188,6 +2355,9 @@ async function openLessonPanel(lesson) {
   } catch (e) {
     console.warn(e);
   }
+  document.getElementById('practiceFlowHint')?.classList.remove('hidden');
+  updateNewLessonChatBtn();
+  setMobilePane('lesson');
 }
 
 async function selectLesson(lesson) {
@@ -2225,6 +2395,7 @@ async function loadConversation(id, opts = {}) {
   if (!opts.skipFetchList) {
     renderConversationList();
   }
+  updateNewLessonChatBtn();
 }
 
 function renderMessages(messages) {
@@ -2753,6 +2924,8 @@ function wireUi() {
     window.location.href = '/login';
   });
 
+  document.getElementById('newLessonChatBtn')?.addEventListener('click', () => startNewLessonChat());
+
   document.getElementById('newChatBtn').addEventListener('click', async () => {
     clearLessonPanel();
     const conv = await api('/api/academy/conversations', {
@@ -3203,13 +3376,37 @@ function wireUi() {
     if (!state.currentLessonId) return;
     if (!warnIfNoTaskSelected()) return;
     const answer_text = document.getElementById('assignmentAnswer')?.value?.trim();
-    if (!answer_text) return alert('Введите ответ');
-    await saveSubmission('submitted');
-    const out = await api('/api/academy/lessons/' + state.currentLessonId + '/feedback', { method: 'POST', body: JSON.stringify({ answer_text, model: document.getElementById('modelSelect').value }) });
-    renderAssignmentFeedback(out.feedback);
-    state.catalog = await api('/api/academy/catalog');
-    renderCourseTree();
-    await loadProgressSummary();
+    if (!answer_text) return alert('Введите ответ или соберите отчёт перед запросом обратной связи.');
+    const btn = document.getElementById('requestFeedbackBtn');
+    const loading = document.getElementById('assignmentFeedbackLoading');
+    const fbBox = document.getElementById('assignmentFeedback');
+    const prevLabel = btn?.textContent;
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Получаем обратную связь…';
+    }
+    loading?.classList.remove('hidden');
+    fbBox?.classList.add('hidden');
+    try {
+      await saveSubmission('submitted');
+      const out = await api('/api/academy/lessons/' + state.currentLessonId + '/feedback', {
+        method: 'POST',
+        body: JSON.stringify({ answer_text, model: document.getElementById('modelSelect').value })
+      });
+      renderAssignmentFeedback(out.feedback);
+      state.catalog = await api('/api/academy/catalog');
+      renderCourseTree();
+      await loadProgressSummary();
+      updateNewLessonChatBtn();
+    } catch (e) {
+      loading?.classList.add('hidden');
+      alert(e.message || 'Не удалось получить обратную связь');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = prevLabel || 'Обратная связь ИИ';
+      }
+    }
   });
   document.getElementById('askMentorAssignmentBtn')?.addEventListener('click', () => {
     openPracticeChat();

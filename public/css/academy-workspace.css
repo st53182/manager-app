@@ -42,6 +42,111 @@
   animation: aa-shimmer 1.4s ease-in-out infinite;
 }
 
+.aa-continue-card .aa-label {
+  color: var(--aa-primary);
+}
+
+.aa-mobile-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--aa-border);
+  background: var(--aa-surface);
+  padding: 0 0.5rem;
+}
+
+.aa-mobile-tab {
+  flex: 1;
+  min-height: 2.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--aa-text-muted);
+  border: none;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.aa-mobile-tab.is-active {
+  color: var(--aa-primary);
+  border-bottom-color: var(--aa-primary);
+}
+
+@media (max-width: 1279px) {
+  #app.aa-mobile-pane-sidebar #leftSidebar,
+  #app.aa-mobile-pane-sidebar #leftSplitter {
+    display: flex !important;
+    max-height: none !important;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  #app.aa-mobile-pane-sidebar #workspaceMain {
+    display: none !important;
+  }
+
+  #app.aa-mobile-pane-chat #leftSidebar,
+  #app.aa-mobile-pane-chat #leftSplitter {
+    display: none !important;
+  }
+  #app.aa-mobile-pane-chat #workspaceMain {
+    display: flex !important;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  #app.aa-mobile-pane-chat #chatSection {
+    display: flex !important;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none !important;
+  }
+  #app.aa-mobile-pane-chat #lessonPanel,
+  #app.aa-mobile-pane-chat #rightSplitter,
+  #app.aa-mobile-pane-chat #toolsPanel {
+    display: none !important;
+  }
+
+  #app.aa-mobile-pane-lesson #leftSidebar,
+  #app.aa-mobile-pane-lesson #leftSplitter {
+    display: none !important;
+  }
+  #app.aa-mobile-pane-lesson #workspaceMain {
+    display: flex !important;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  #app.aa-mobile-pane-lesson #chatSection,
+  #app.aa-mobile-pane-lesson #rightSplitter,
+  #app.aa-mobile-pane-lesson #toolsPanel {
+    display: none !important;
+  }
+  #app.aa-mobile-pane-lesson #lessonPanel {
+    display: flex !important;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none !important;
+    width: 100% !important;
+  }
+}
+
+.aa-feedback-section {
+  margin-bottom: 0.75rem;
+}
+
+.aa-feedback-section h4 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--aa-text-muted);
+  margin: 0 0 0.35rem;
+}
+
+.aa-feedback-section ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.875rem;
+  color: var(--aa-text);
+}
+
 .academy-light #app {
   --left-pane-width: 17rem;
   --lesson-pane-width: 22rem;
