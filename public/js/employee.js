@@ -1820,7 +1820,7 @@ function trackSkillHistory(skillId, skillType, action, level = null, previousLev
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + localStorage.getItem('token')
+            'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
         },
         body: JSON.stringify({
             skillId: skillId,
@@ -1841,7 +1841,7 @@ function showSkillHistory() {
     fetch('/api/employee/' + currentEmployee.id + '/skill-history', {
         method: 'GET',
         headers: {
-            'Authorization': 'Bearer ' + localStorage.getItem('token')
+            'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
         }
     })
     .then(response => response.json())
@@ -2067,7 +2067,7 @@ function saveCustomTree() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + localStorage.getItem('token')
+            'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
         },
         body: JSON.stringify({
             name: treeName,
@@ -3118,7 +3118,7 @@ function generateOkrWithAI() {
     
     const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
     };
     
     const endpoint = `/api/employee/${getEmployeeIdFromUrl()}/okr-generate`;
@@ -3170,7 +3170,7 @@ function improveOkrWithAI() {
     
     const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
     };
     
     const endpoint = `/api/employee/${getEmployeeIdFromUrl()}/okr-improve`;

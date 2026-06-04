@@ -34,6 +34,138 @@ function createRouter({ JWT_SECRET }) {
 
   router.use(authenticateAdmin);
 
+  function parseJsonField(raw, fallback) {
+    if (raw === undefined || raw === null) return fallback;
+    if (typeof raw === 'object') return raw;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return fallback;
+    }
+  }
+
+  router.get('/catalog', async (req, res) => {
+    try {
+      const catalog = await db.getAcademyCatalog();
+      res.json(catalog);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to load catalog' });
+    }
+  });
+
+  router.post('/courses', async (req, res) => {
+    try {
+      const { slug, title, description, sort_order } = req.body;
+      if (!slug || !title) return res.status(400).json({ error: 'slug and title required' });
+      const course = await db.adminCreateCourse({ slug, title, description, sort_order });
+      res.status(201).json({ course });
+    } catch (e) {
+      console.error(e);
+      if (e.code === '23505') return res.status(400).json({ error: 'Course slug already exists' });
+      res.status(500).json({ error: 'Failed to create course' });
+    }
+  });
+
+  router.patch('/courses/:id', async (req, res) => {
+    try {
+      const patch = {};
+      for (const k of ['slug', 'title', 'description', 'sort_order']) {
+        if (typeof req.body[k] !== 'undefined') patch[k] = req.body[k];
+      }
+      const course = await db.adminUpdateCourse(req.params.id, patch);
+      if (!course) return res.status(404).json({ error: 'Course not found' });
+      res.json({ course });
+    } catch (e) {
+      console.error(e);
+      if (e.code === '23505') return res.status(400).json({ error: 'Course slug already exists' });
+      res.status(500).json({ error: 'Failed to update course' });
+    }
+  });
+
+  router.delete('/courses/:id', async (req, res) => {
+    try {
+      const ok = await db.adminDeleteCourse(req.params.id);
+      if (!ok) return res.status(404).json({ error: 'Course not found' });
+      res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to delete course' });
+    }
+  });
+
+  router.post('/courses/:courseId/lessons', async (req, res) => {
+    try {
+      const course = await db.getAcademyCourseById(req.params.courseId);
+      if (!course) return res.status(404).json({ error: 'Course not found' });
+      const { title, content_md, scenario_key, sort_order } = req.body;
+      if (!title) return res.status(400).json({ error: 'title required' });
+      const lesson = await db.adminCreateLesson(course.id, { title, content_md, scenario_key, sort_order });
+      res.status(201).json({ lesson });
+    } catch (e) {
+      console.error(e);
+      if (e.code === '23505') return res.status(400).json({ error: 'scenario_key already exists for this course' });
+      res.status(500).json({ error: 'Failed to create lesson' });
+    }
+  });
+
+  router.patch('/lessons/:id', async (req, res) => {
+    try {
+      const patch = {};
+      for (const k of ['title', 'content_md', 'scenario_key', 'sort_order', 'course_id']) {
+        if (typeof req.body[k] !== 'undefined') patch[k] = req.body[k];
+      }
+      const lesson = await db.adminUpdateLesson(req.params.id, patch);
+      if (!lesson) return res.status(404).json({ error: 'Lesson not found' });
+      res.json({ lesson });
+    } catch (e) {
+      console.error(e);
+      if (e.code === '23505') return res.status(400).json({ error: 'scenario_key already exists for this course' });
+      res.status(500).json({ error: 'Failed to update lesson' });
+    }
+  });
+
+  router.delete('/lessons/:id', async (req, res) => {
+    try {
+      const ok = await db.adminDeleteLesson(req.params.id);
+      if (!ok) return res.status(404).json({ error: 'Lesson not found' });
+      res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to delete lesson' });
+    }
+  });
+
+  router.put('/lessons/:lessonId/assignment', async (req, res) => {
+    try {
+      const lesson = await db.getLessonById(req.params.lessonId);
+      if (!lesson) return res.status(404).json({ error: 'Lesson not found' });
+      const { title, instructions_md, rubric_json, task_options } = req.body;
+      if (!title) return res.status(400).json({ error: 'title required' });
+      const assignment = await db.adminUpsertAssignment(lesson.id, {
+        title,
+        instructions_md,
+        rubric_json: parseJsonField(rubric_json, {}),
+        task_options: parseJsonField(task_options, [])
+      });
+      res.json({ assignment });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to save assignment' });
+    }
+  });
+
+  router.delete('/lessons/:lessonId/assignment', async (req, res) => {
+    try {
+      const ok = await db.adminDeleteAssignment(req.params.lessonId);
+      if (!ok) return res.status(404).json({ error: 'Assignment not found' });
+      res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to delete assignment' });
+    }
+  });
+
   router.get('/users', async (req, res) => {
     try {
       const limit = Math.min(parseInt(req.query.limit || '100', 10), 500);

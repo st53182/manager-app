@@ -1256,7 +1256,7 @@ app.post('/api/employee/:id/skill-history', authenticateToken, async (req, res) 
 app.post('/api/custom-trees', authenticateToken, async (req, res) => {
   try {
     const { name, description, treeData, isTemplate } = req.body;
-    const tree = await createCustomSkillTree(req.user.id, name, description, treeData, isTemplate);
+    const tree = await createCustomSkillTree(req.user.userId, name, description, treeData, isTemplate);
     res.json(tree);
   } catch (error) {
     console.error('Error creating custom tree:', error);
@@ -1266,7 +1266,7 @@ app.post('/api/custom-trees', authenticateToken, async (req, res) => {
 
 app.get('/api/custom-trees', authenticateToken, async (req, res) => {
   try {
-    const trees = await getCustomSkillTrees(req.user.id);
+    const trees = await getCustomSkillTrees(req.user.userId);
     res.json(trees);
   } catch (error) {
     console.error('Error fetching custom trees:', error);

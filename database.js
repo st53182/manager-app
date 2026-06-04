@@ -1522,6 +1522,176 @@ async function adminSumUsageByUser(start, end) {
   }
 }
 
+async function getAcademyCourseById(courseId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(`SELECT * FROM academy_courses WHERE id = $1`, [courseId]);
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function adminCreateCourse({ slug, title, description, sort_order = 0 }) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `INSERT INTO academy_courses (slug, title, description, sort_order)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [slug, title, description || null, sort_order]
+    );
+    return r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function adminUpdateCourse(courseId, patch) {
+  const client = await pool.connect();
+  try {
+    const fields = [];
+    const vals = [courseId];
+    let i = 2;
+    if (typeof patch.slug !== 'undefined') {
+      fields.push(`slug = $${i++}`);
+      vals.push(patch.slug);
+    }
+    if (typeof patch.title !== 'undefined') {
+      fields.push(`title = $${i++}`);
+      vals.push(patch.title);
+    }
+    if (typeof patch.description !== 'undefined') {
+      fields.push(`description = $${i++}`);
+      vals.push(patch.description);
+    }
+    if (typeof patch.sort_order !== 'undefined') {
+      fields.push(`sort_order = $${i++}`);
+      vals.push(patch.sort_order);
+    }
+    if (!fields.length) return getAcademyCourseById(courseId);
+    const r = await client.query(
+      `UPDATE academy_courses SET ${fields.join(', ')} WHERE id = $1 RETURNING *`,
+      vals
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function adminDeleteCourse(courseId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(`DELETE FROM academy_courses WHERE id = $1 RETURNING id`, [courseId]);
+    return !!r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function adminCreateLesson(courseId, data) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `INSERT INTO academy_lessons (course_id, title, content_md, scenario_key, sort_order)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [
+        courseId,
+        data.title,
+        data.content_md || null,
+        data.scenario_key || null,
+        data.sort_order ?? 0
+      ]
+    );
+    return r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function adminUpdateLesson(lessonId, data) {
+  const client = await pool.connect();
+  try {
+    const fields = [];
+    const vals = [lessonId];
+    let i = 2;
+    if (typeof data.title !== 'undefined') {
+      fields.push(`title = $${i++}`);
+      vals.push(data.title);
+    }
+    if (typeof data.content_md !== 'undefined') {
+      fields.push(`content_md = $${i++}`);
+      vals.push(data.content_md);
+    }
+    if (typeof data.scenario_key !== 'undefined') {
+      fields.push(`scenario_key = $${i++}`);
+      vals.push(data.scenario_key);
+    }
+    if (typeof data.sort_order !== 'undefined') {
+      fields.push(`sort_order = $${i++}`);
+      vals.push(data.sort_order);
+    }
+    if (typeof data.course_id !== 'undefined') {
+      fields.push(`course_id = $${i++}`);
+      vals.push(data.course_id);
+    }
+    if (!fields.length) return getLessonById(lessonId);
+    const r = await client.query(
+      `UPDATE academy_lessons SET ${fields.join(', ')} WHERE id = $1 RETURNING *`,
+      vals
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+async function adminDeleteLesson(lessonId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(`DELETE FROM academy_lessons WHERE id = $1 RETURNING id`, [lessonId]);
+    return !!r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function adminUpsertAssignment(lessonId, data) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      `INSERT INTO academy_assignments (lesson_id, title, instructions_md, rubric_json, task_options)
+       VALUES ($1, $2, $3, $4::jsonb, $5::jsonb)
+       ON CONFLICT (lesson_id) DO UPDATE SET
+         title = EXCLUDED.title,
+         instructions_md = EXCLUDED.instructions_md,
+         rubric_json = EXCLUDED.rubric_json,
+         task_options = EXCLUDED.task_options
+       RETURNING *`,
+      [
+        lessonId,
+        data.title,
+        data.instructions_md || null,
+        JSON.stringify(data.rubric_json || {}),
+        JSON.stringify(data.task_options || [])
+      ]
+    );
+    return r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+async function adminDeleteAssignment(lessonId) {
+  const client = await pool.connect();
+  try {
+    const r = await client.query(`DELETE FROM academy_assignments WHERE lesson_id = $1 RETURNING id`, [lessonId]);
+    return !!r.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   initializeDatabase,
   createTeam,
@@ -1574,6 +1744,15 @@ module.exports = {
   adminGetConversation,
   adminExportUsage,
   adminSumUsageByUser,
+  getAcademyCourseById,
+  adminCreateCourse,
+  adminUpdateCourse,
+  adminDeleteCourse,
+  adminCreateLesson,
+  adminUpdateLesson,
+  adminDeleteLesson,
+  adminUpsertAssignment,
+  adminDeleteAssignment,
   createKnowledgeBase,
   listKnowledgeBases,
   getKnowledgeBaseForUser,
