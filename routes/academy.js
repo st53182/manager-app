@@ -708,6 +708,12 @@ function createRouter({ JWT_SECRET }) {
     res.json(prompt);
   });
 
+  router.delete('/prompts/:id', authenticateAcademy, async (req, res) => {
+    const ok = await practicum.deletePromptTemplate(req.dbUser.id, req.params.id);
+    if (!ok) return res.status(404).json({ error: 'prompt not found' });
+    res.json({ ok: true });
+  });
+
   router.post('/prompt-evaluate', authenticateAcademy, aiChatLimiter, async (req, res) => {
     const openai = createOpenRouterClient();
     const promptText = String(req.body?.prompt || '').trim();
@@ -957,11 +963,15 @@ function createRouter({ JWT_SECRET }) {
   router.post('/conversations', authenticateAcademy, async (req, res) => {
     try {
       const { lessonId, courseId, title, model } = req.body;
+      const chatContext = req.body?.chatContext;
+      const meta =
+        chatContext && typeof chatContext === 'object' ? { chat_context: chatContext } : null;
       const conv = await db.createAiConversation(req.dbUser.id, {
         lessonId: lessonId || null,
         courseId: courseId || null,
         title: title || 'New chat',
-        model: model || getDefaultModel()
+        model: model || getDefaultModel(),
+        meta
       });
       res.json(conv);
     } catch (e) {
@@ -984,8 +994,12 @@ function createRouter({ JWT_SECRET }) {
 
   router.patch('/conversations/:id', authenticateAcademy, async (req, res) => {
     try {
-      const { title, model } = req.body;
-      const updated = await db.updateAiConversation(req.dbUser.id, req.params.id, { title, model });
+      const { title, model, chatContext } = req.body || {};
+      const updated = await db.updateAiConversation(req.dbUser.id, req.params.id, {
+        title,
+        model,
+        chatContext: chatContext !== undefined ? chatContext : undefined
+      });
       if (!updated) return res.status(404).json({ error: 'Not found' });
       res.json(updated);
     } catch (e) {
@@ -1203,6 +1217,7 @@ function createRouter({ JWT_SECRET }) {
       const knowledgeBaseId = body.knowledgeBaseId || null;
       const strictMode = body.strictMode === true || body.strictMode === 'true' || chatMode === 'strict_knowledge';
       const personaId = body.personaId || null;
+      const assistantInstructions = String(body.assistantInstructions || '').trim();
 
       let savedFiles = [];
       if (!regenerate && req.files?.length) {
@@ -1293,6 +1308,13 @@ function createRouter({ JWT_SECRET }) {
               content: `Persona: ${persona.name}\nTone: ${persona.tone}\nExpertise: ${persona.expertise}\nTeaching style: ${persona.teaching_style}\nInstructions:\n${persona.system_prompt}`
             });
           }
+        }
+
+        if (assistantInstructions) {
+          apiMessages.splice(1, 0, {
+            role: 'system',
+            content: `User assistant instructions:\n${assistantInstructions}`
+          });
         }
 
         let retrievalCitations = [];

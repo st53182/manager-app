@@ -236,6 +236,14 @@ async function ensurePromptLibrarySchema(client = null) {
     ON prompt_templates(title) WHERE is_builtin = true
   `);
   await run(`
+    ALTER TABLE prompt_templates
+    ADD COLUMN IF NOT EXISTS source_lesson_id UUID REFERENCES academy_lessons(id) ON DELETE SET NULL
+  `);
+  await run(`
+    ALTER TABLE user_assistants
+    ADD COLUMN IF NOT EXISTS source_lesson_id UUID REFERENCES academy_lessons(id) ON DELETE SET NULL
+  `);
+  await run(`
     CREATE TABLE IF NOT EXISTS model_compare_sessions (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -451,8 +459,8 @@ async function listPromptTemplates(userId, category = null) {
 async function createPromptTemplate(userId, body) {
   const rows = await q(
     `INSERT INTO prompt_templates
-    (user_id, title, description, category, tags, prompt_text, recommended_persona_id, recommended_model, example_output, is_favorite)
-    VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10) RETURNING *`,
+    (user_id, title, description, category, tags, prompt_text, recommended_persona_id, recommended_model, example_output, is_favorite, source_lesson_id)
+    VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11) RETURNING *`,
     [
       userId,
       body.title,
@@ -463,7 +471,8 @@ async function createPromptTemplate(userId, body) {
       body.recommended_persona_id || null,
       body.recommended_model || null,
       body.example_output || '',
-      !!body.is_favorite
+      !!body.is_favorite,
+      body.source_lesson_id || null
     ]
   );
   return rows[0];
@@ -502,12 +511,22 @@ async function updatePromptTemplate(userId, id, body) {
 async function duplicatePromptTemplate(userId, id) {
   const rows = await q(
     `INSERT INTO prompt_templates
-    (user_id, title, description, category, tags, prompt_text, recommended_persona_id, recommended_model, example_output, is_favorite, is_builtin)
-    SELECT $2, title || ' (copy)', description, category, tags, prompt_text, recommended_persona_id, recommended_model, example_output, is_favorite, false
+    (user_id, title, description, category, tags, prompt_text, recommended_persona_id, recommended_model, example_output, is_favorite, is_builtin, source_lesson_id)
+    SELECT $2, title || ' (copy)', description, category, tags, prompt_text, recommended_persona_id, recommended_model, example_output, is_favorite, false, source_lesson_id
     FROM prompt_templates WHERE id = $1 AND (user_id = $2 OR is_builtin = true) RETURNING *`,
     [id, userId]
   );
   return rows[0] || null;
+}
+
+async function deletePromptTemplate(userId, id) {
+  const rows = await q(
+    `DELETE FROM prompt_templates
+     WHERE id = $1 AND user_id = $2 AND COALESCE(is_builtin, false) = false
+     RETURNING id`,
+    [id, userId]
+  );
+  return !!rows[0];
 }
 
 async function listAssistants(userId) {
@@ -517,8 +536,8 @@ async function listAssistants(userId) {
 async function createAssistant(userId, body) {
   const rows = await q(
     `INSERT INTO user_assistants
-    (user_id, name, description, role, instructions, tone, output_format, restrictions, connected_kb_id, default_model, starter_prompts)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb) RETURNING *`,
+    (user_id, name, description, role, instructions, tone, output_format, restrictions, connected_kb_id, default_model, starter_prompts, source_lesson_id)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12) RETURNING *`,
     [
       userId,
       body.name,
@@ -530,7 +549,8 @@ async function createAssistant(userId, body) {
       body.restrictions || '',
       body.connected_kb_id || null,
       body.default_model || null,
-      JSON.stringify(body.starter_prompts || [])
+      JSON.stringify(body.starter_prompts || []),
+      body.source_lesson_id || null
     ]
   );
   return rows[0];
@@ -802,6 +822,7 @@ module.exports = {
   createPromptTemplate,
   updatePromptTemplate,
   duplicatePromptTemplate,
+  deletePromptTemplate,
   listAssistants,
   createAssistant,
   updateAssistant,

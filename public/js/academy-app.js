@@ -533,7 +533,11 @@ const PRACTICE_SECTION_IDS = {
 
 const TOOLS_COLLAPSED_KEY = 'academy_tools_panel_collapsed';
 const TOOLS_RIGHT_WIDTH_KEY = 'academy_right_pane_width';
+const CHAT_CONTEXT_KEY = 'academy_chat_context_v1';
+const CHAT_TOOLBAR_EXPANDED_KEY = 'academy_chat_toolbar_expanded';
 let academyLayoutSetWidths = null;
+let toastHideTimer = null;
+let chatContextSaveTimer = null;
 
 
 const state = {
@@ -546,6 +550,8 @@ const state = {
   compareSessionId: null,
   hallucinationScenarios: [],
   promptLibrary: [],
+  assistants: [],
+  activeAssistant: null,
   usage: null,
   streaming: false,
   selectedModel: null,
@@ -562,6 +568,333 @@ const state = {
 let kbStatusPollTimer = null;
 let kbStatusPollBusy = false;
 let uiWired = false;
+
+function showToast(message) {
+  let el = document.getElementById('aaToast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'aaToast';
+    el.className = 'aa-toast hidden';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    document.body.appendChild(el);
+  }
+  el.textContent = message;
+  el.classList.remove('hidden');
+  if (toastHideTimer) clearTimeout(toastHideTimer);
+  toastHideTimer = setTimeout(() => el.classList.add('hidden'), 2800);
+}
+
+function readChatContextFromStorage() {
+  try {
+    const raw = localStorage.getItem(CHAT_CONTEXT_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function parseConversationMeta(conv) {
+  let meta = conv?.meta;
+  if (typeof meta === 'string') {
+    try {
+      meta = JSON.parse(meta);
+    } catch {
+      meta = {};
+    }
+  }
+  return meta && typeof meta === 'object' ? meta : {};
+}
+
+function buildChatContextPayload() {
+  return {
+    model: document.getElementById('modelSelect')?.value || null,
+    chatMode: document.getElementById('chatModeSelect')?.value || 'general',
+    knowledgeBaseId: document.getElementById('knowledgeBaseSelect')?.value || null,
+    personaId: document.getElementById('personaSelect')?.value || null,
+    assistantId: state.activeAssistant?.id || null
+  };
+}
+
+function flushChatContextToServer() {
+  if (!state.currentConversationId) return;
+  const ctx = buildChatContextPayload();
+  api(`/api/academy/conversations/${state.currentConversationId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ chatContext: ctx })
+  }).catch(() => {});
+}
+
+function persistChatContext() {
+  const ctx = buildChatContextPayload();
+  localStorage.setItem(CHAT_CONTEXT_KEY, JSON.stringify(ctx));
+  if (state.currentConversationId) {
+    clearTimeout(chatContextSaveTimer);
+    chatContextSaveTimer = setTimeout(flushChatContextToServer, 450);
+  }
+  return ctx;
+}
+
+function findLessonById(lessonId) {
+  if (!lessonId || !state.catalog?.lessons) return null;
+  return state.catalog.lessons.find((l) => l.id === lessonId) || null;
+}
+
+function lessonLabelForId(lessonId) {
+  return findLessonById(lessonId)?.title || null;
+}
+
+async function openLessonFromLibrary(lessonId) {
+  const lesson = findLessonById(lessonId);
+  if (!lesson) {
+    showToast('Урок не найден в каталоге');
+    return;
+  }
+  await openLessonPanel(lesson);
+  setMobilePane('lesson');
+}
+
+function appendLibraryLessonLink(actions, sourceLessonId) {
+  if (!sourceLessonId) return;
+  const label = lessonLabelForId(sourceLessonId);
+  const lessonBtn = document.createElement('button');
+  lessonBtn.type = 'button';
+  lessonBtn.className = 'aa-btn aa-btn-ghost text-xs min-h-0 h-7 px-2';
+  lessonBtn.textContent = label ? `Урок: ${label.length > 28 ? `${label.slice(0, 28)}…` : label}` : 'К уроку';
+  lessonBtn.title = label || 'Открыть урок';
+  lessonBtn.addEventListener('click', () => openLessonFromLibrary(sourceLessonId));
+  actions.appendChild(lessonBtn);
+}
+
+function applyChatContext(ctx = {}) {
+  const modelSel = document.getElementById('modelSelect');
+  const modeSel = document.getElementById('chatModeSelect');
+  const kbSel = document.getElementById('knowledgeBaseSelect');
+  const personaSel = document.getElementById('personaSelect');
+  if (ctx.model && modelSel && [...modelSel.options].some((o) => o.value === ctx.model)) {
+    modelSel.value = ctx.model;
+    state.selectedModel = ctx.model;
+  }
+  if (ctx.chatMode && modeSel) modeSel.value = ctx.chatMode;
+  if (kbSel) {
+    const kbId = ctx.knowledgeBaseId || '';
+    if (!kbId || state.knowledgeBases.some((k) => k.id === kbId)) {
+      kbSel.value = kbId;
+      state.selectedKnowledgeBaseId = kbId || null;
+      state.activeKnowledgeBaseId = kbId || null;
+      const actionSel = document.getElementById('kbActionSelect');
+      if (actionSel) actionSel.value = kbId;
+    }
+  }
+  if (personaSel) {
+    const pid = ctx.personaId || '';
+    if (!pid || state.personas.some((p) => p.id === pid)) personaSel.value = pid;
+  }
+  if (ctx.assistantId && state.assistants.length) {
+    const found = state.assistants.find((a) => a.id === ctx.assistantId);
+    if (found) applyAssistantToChat(found, { silent: true });
+  }
+  updateModelHint();
+  updateActiveAssistantChip();
+}
+
+function syncChatToolbarVisibility() {
+  const inPractice = document.getElementById('app')?.classList.contains('practice-focus');
+  const toggleBtn = document.getElementById('toggleChatAdvancedBtn');
+  const toolbar = document.getElementById('chatAdvancedBlock');
+  const hint = document.getElementById('modelHint');
+  if (!toolbar || !toggleBtn) return;
+
+  if (inPractice) {
+    const expanded = localStorage.getItem(CHAT_TOOLBAR_EXPANDED_KEY) !== '0';
+    toolbar.classList.toggle('hidden', !expanded);
+    hint?.classList.toggle('hidden', !expanded);
+    toggleBtn.classList.remove('hidden');
+    toggleBtn.textContent = expanded ? 'Скрыть настройки чата' : 'Дополнительные настройки чата';
+  } else {
+    toolbar.classList.remove('hidden');
+    hint?.classList.remove('hidden');
+    toggleBtn.classList.add('hidden');
+  }
+}
+
+function practiceCategoryLabel() {
+  const sk = state.currentLesson?.scenario_key;
+  const title = state.currentLesson?.title;
+  if (sk && title) return `${title}`;
+  if (sk) return sk;
+  return 'Из практики';
+}
+
+async function savePromptToLibrary({ text, title, category }) {
+  const promptText = String(text || '').trim();
+  if (!promptText) {
+    showToast('Нечего сохранять — заполните текст промпта');
+    return null;
+  }
+  const defaultTitle = title || `Промпт ${new Date().toLocaleString('ru-RU')}`;
+  const name = window.prompt('Название в библиотеке:', defaultTitle);
+  if (name === null) return null;
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+  const prompt = await api('/api/academy/prompts', {
+    method: 'POST',
+    body: JSON.stringify({
+      title: trimmed,
+      category: category || practiceCategoryLabel() || 'Personal Productivity',
+      prompt_text: promptText,
+      recommended_model: document.getElementById('modelSelect')?.value || null,
+      source_lesson_id: state.currentLessonId || null
+    })
+  });
+  await loadPromptLibrary();
+  activateToolTab('prompts');
+  showToast('Промпт сохранён в «Инструменты»');
+  return prompt;
+}
+
+async function savePromptFromElement(btn) {
+  const sourceId = btn.getAttribute('data-prompt-source');
+  const el = sourceId ? document.getElementById(sourceId) : null;
+  const text = el?.value ?? el?.textContent ?? '';
+  await savePromptToLibrary({
+    text,
+    title: btn.getAttribute('data-prompt-title') || undefined,
+    category: btn.getAttribute('data-prompt-category') || practiceCategoryLabel()
+  });
+}
+
+async function saveLibraryCardToLibrary(card) {
+  if (!card) return;
+  const name = card.querySelector('.lib-name')?.value?.trim();
+  const template = card.querySelector('.lib-template')?.value?.trim();
+  const task = card.querySelector('.lib-task')?.value?.trim();
+  const variables = card.querySelector('.lib-variables')?.value?.trim();
+  const example = card.querySelector('.lib-example')?.value?.trim();
+  const criteria = card.querySelector('.lib-criteria')?.value?.trim();
+  const category = card.querySelector('.lib-category')?.value?.trim() || 'Библиотека промптов';
+  const parts = [template, task && `Задача: ${task}`, variables && `Переменные: ${variables}`, example && `Пример: ${example}`, criteria && `Критерии: ${criteria}`].filter(Boolean);
+  const text = parts.join('\n\n');
+  await savePromptToLibrary({ text, title: name || 'Шаблон из библиотеки', category });
+}
+
+async function saveAssistantFromElement(btn) {
+  const sourceId = btn.getAttribute('data-assistant-source');
+  const el = sourceId ? document.getElementById(sourceId) : null;
+  const instructions = (el?.value || '').trim();
+  if (!instructions) {
+    showToast('Сначала соберите паспорт ассистента');
+    return;
+  }
+  const ver = btn.getAttribute('data-assistant-version') || '';
+  const roleField = document.getElementById(`passportRoleV${ver === 'v2' ? '2' : '1'}`)?.value?.trim();
+  const defaultName = state.currentLesson?.title
+    ? `Ассистент: ${state.currentLesson.title}${ver ? ` ${ver}` : ''}`
+    : `Мой ассистент${ver ? ` ${ver}` : ''}`;
+  const name = window.prompt('Название ассистента:', defaultName);
+  if (name === null) return;
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  const assistant = await api('/api/academy/assistants', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: trimmed,
+      description: practiceCategoryLabel(),
+      role: roleField || 'Рабочий ассистент',
+      instructions,
+      connected_kb_id: state.selectedKnowledgeBaseId || null,
+      default_model: document.getElementById('modelSelect')?.value || null,
+      source_lesson_id: state.currentLessonId || null
+    })
+  });
+  await loadAssistants();
+  applyAssistantToChat(assistant);
+  activateToolTab('assistant');
+  showToast('Ассистент сохранён и применён в чате');
+}
+
+async function deletePromptFromLibrary(promptId, title) {
+  if (!confirm(`Удалить промпт «${title}»?`)) return;
+  await api(`/api/academy/prompts/${promptId}`, { method: 'DELETE' });
+  await loadPromptLibrary();
+  showToast('Промпт удалён');
+}
+
+function applyAssistantToChat(assistant, { silent = false } = {}) {
+  if (!assistant) return;
+  state.activeAssistant = assistant;
+  const modelSel = document.getElementById('modelSelect');
+  if (assistant.default_model && modelSel && [...modelSel.options].some((o) => o.value === assistant.default_model)) {
+    modelSel.value = assistant.default_model;
+    state.selectedModel = assistant.default_model;
+  }
+  if (assistant.connected_kb_id) {
+    const kbSel = document.getElementById('knowledgeBaseSelect');
+    if (kbSel) kbSel.value = assistant.connected_kb_id;
+    state.selectedKnowledgeBaseId = assistant.connected_kb_id;
+    state.activeKnowledgeBaseId = assistant.connected_kb_id;
+    const actionSel = document.getElementById('kbActionSelect');
+    if (actionSel) actionSel.value = assistant.connected_kb_id;
+    openKnowledgeBase(assistant.connected_kb_id).catch(() => {});
+  }
+  updateModelHint();
+  updateActiveAssistantChip();
+  renderAssistantLibrary();
+  persistChatContext();
+  if (!silent) showToast(`Ассистент «${assistant.name}» активен в чате`);
+}
+
+function clearActiveAssistant() {
+  state.activeAssistant = null;
+  updateActiveAssistantChip();
+  persistChatContext();
+  renderAssistantLibrary();
+}
+
+function updateActiveAssistantChip() {
+  const chip = document.getElementById('chatActiveAssistantChip');
+  if (!chip) return;
+  if (!state.activeAssistant) {
+    chip.classList.add('hidden');
+    chip.innerHTML = '';
+    return;
+  }
+  chip.classList.remove('hidden');
+  chip.innerHTML = `Активный ассистент: <strong>${escapeHtml(state.activeAssistant.name)}</strong> <button type="button" id="clearActiveAssistantBtn" class="ml-2 text-indigo-600 hover:underline">Сбросить</button>`;
+  chip.querySelector('#clearActiveAssistantBtn')?.addEventListener('click', clearActiveAssistant);
+}
+
+function activateToolTab(tabId) {
+  const tab = document.querySelector(`[data-tool-tab="${tabId}"]`);
+  tab?.click();
+  if (window.innerWidth < 1280) {
+    const app = document.getElementById('app');
+    app?.classList.remove('aa-mobile-pane-sidebar', 'aa-mobile-pane-lesson');
+    app?.classList.add('aa-mobile-pane-chat');
+    document.querySelectorAll('#mobileWorkspaceTabs [data-pane]').forEach((el) => {
+      el.classList.toggle('is-active', el.dataset.pane === 'chat');
+    });
+  }
+}
+
+async function useKnowledgeBaseInChat(kbId) {
+  const id = kbId || state.selectedKnowledgeBaseId || document.getElementById('kbActionSelect')?.value;
+  if (!id) {
+    showToast('Выберите базу знаний');
+    return;
+  }
+  state.selectedKnowledgeBaseId = id;
+  state.activeKnowledgeBaseId = id;
+  const kbSel = document.getElementById('knowledgeBaseSelect');
+  const actionSel = document.getElementById('kbActionSelect');
+  if (kbSel) kbSel.value = id;
+  if (actionSel) actionSel.value = id;
+  const modeSel = document.getElementById('chatModeSelect');
+  if (modeSel && modeSel.value === 'general') modeSel.value = 'knowledge';
+  persistChatContext();
+  updateModelHint();
+  showToast('База знаний подключена к чату');
+}
 
 function currentLang() {
   return window.translationManager?.currentLanguage || localStorage.getItem('language') || 'ru';
@@ -654,8 +987,11 @@ async function loadWorkspace() {
     renderCourseTree();
     await loadProgressSummary();
     await loadPromptLibrary();
+    await loadAssistants();
+    applyChatContext(readChatContextFromStorage());
     await loadHallucinationScenarios();
     showApp();
+    syncChatToolbarVisibility();
     initMobileWorkspaceTabs();
   } catch (e) {
     if (e.status === 401 || e.status === 403) {
@@ -837,7 +1173,8 @@ async function startNewLessonChat() {
       lessonId: lesson.id,
       courseId: lesson.course_id,
       title: `${lesson.title} (новый)`,
-      model: document.getElementById('modelSelect').value
+      model: document.getElementById('modelSelect').value,
+      chatContext: buildChatContextPayload()
     })
   });
   state.conversations.unshift(conv);
@@ -1701,7 +2038,7 @@ function setPracticeFocusMode(on, lesson = null) {
     app.classList.add('practice-focus');
     document.getElementById('sidebarFreeChatBlock')?.classList.add('hidden');
     document.getElementById('practiceActionsRow')?.classList.remove('hidden');
-    document.getElementById('toggleChatAdvancedBtn')?.classList.remove('hidden');
+    syncChatToolbarVisibility();
     document.getElementById('lessonPanelSubtitle').textContent = lesson.title || 'Практика';
     updateOpenPracticeChatLabel(lesson.scenario_key);
     setPracticeChatOpen(false);
@@ -1714,8 +2051,7 @@ function setPracticeFocusMode(on, lesson = null) {
     document.getElementById('practiceActionsRow')?.classList.add('hidden');
     document.getElementById('practiceWorkflowBlock')?.classList.add('hidden');
     document.getElementById('taskOptionsBlock')?.classList.add('hidden');
-    document.getElementById('toggleChatAdvancedBtn')?.classList.add('hidden');
-    document.getElementById('chatAdvancedBlock')?.classList.add('hidden');
+    syncChatToolbarVisibility();
     document.getElementById('chatSection')?.classList.remove('chat-collapsed');
     document.getElementById('backToAssignmentBtn')?.classList.add('hidden');
     document.getElementById('openPracticeChatBtn')?.classList.remove('hidden');
@@ -1917,15 +2253,140 @@ function initAssignmentAutoSave() {
   }
 }
 async function loadPromptLibrary() {
-  try { const d = await api('/api/academy/prompts'); state.promptLibrary = d.prompts || []; renderPromptLibrary(); } catch (_) {}
+  try {
+    const d = await api('/api/academy/prompts');
+    state.promptLibrary = d.prompts || [];
+    renderPromptLibrary();
+  } catch (_) {}
 }
+
+async function loadAssistants() {
+  try {
+    const d = await api('/api/academy/assistants');
+    state.assistants = d.assistants || [];
+    const ctx = readChatContextFromStorage();
+    if (ctx.assistantId && !state.activeAssistant) {
+      const found = state.assistants.find((a) => a.id === ctx.assistantId);
+      if (found) applyAssistantToChat(found, { silent: true });
+    }
+    renderAssistantLibrary();
+    updateActiveAssistantChip();
+  } catch (_) {}
+}
+
 function renderPromptLibrary() {
   const ul = document.getElementById('promptLibraryList');
   if (!ul) return;
   ul.innerHTML = '';
-  for (const pr of state.promptLibrary) {
+  const userPrompts = state.promptLibrary.filter((p) => !p.is_builtin);
+  const items = userPrompts.length ? userPrompts : state.promptLibrary;
+  if (!items.length) {
     const li = document.createElement('li');
-    li.textContent = pr.title + ' (' + (pr.category || '') + ')';
+    li.className = 'text-slate-500 px-1';
+    li.textContent = 'Пока нет сохранённых промптов';
+    ul.appendChild(li);
+    return;
+  }
+  for (const pr of items) {
+    const li = document.createElement('li');
+    li.className = 'aa-library-item';
+    const title = document.createElement('div');
+    title.className = 'aa-library-item-title';
+    title.textContent = pr.title;
+    const meta = document.createElement('div');
+    meta.className = 'aa-library-item-meta';
+    const lessonTitle = pr.source_lesson_id ? lessonLabelForId(pr.source_lesson_id) : null;
+    meta.textContent = [pr.category, lessonTitle ? `из: ${lessonTitle}` : null, pr.is_builtin ? 'встроенный' : 'мой']
+      .filter(Boolean)
+      .join(' · ');
+    const actions = document.createElement('div');
+    actions.className = 'aa-library-item-actions';
+    const useBtn = document.createElement('button');
+    useBtn.type = 'button';
+    useBtn.className = 'aa-btn aa-btn-ghost text-xs min-h-0 h-7 px-2';
+    useBtn.textContent = 'В чат';
+    useBtn.addEventListener('click', () => {
+      const composer = document.getElementById('composer');
+      if (composer) composer.value = pr.prompt_text || '';
+      document.getElementById('composer')?.focus();
+      showToast('Промпт вставлен в сообщение');
+    });
+    const trainerBtn = document.createElement('button');
+    trainerBtn.type = 'button';
+    trainerBtn.className = 'aa-btn aa-btn-ghost text-xs min-h-0 h-7 px-2';
+    trainerBtn.textContent = 'Оценить';
+    trainerBtn.addEventListener('click', () => {
+      const inp = document.getElementById('promptTrainerInput');
+      if (inp) inp.value = pr.prompt_text || '';
+    });
+    actions.appendChild(useBtn);
+    actions.appendChild(trainerBtn);
+    appendLibraryLessonLink(actions, pr.source_lesson_id);
+    if (!pr.is_builtin) {
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'aa-btn aa-btn-ghost text-xs min-h-0 h-7 px-2 text-red-600';
+      delBtn.textContent = 'Удалить';
+      delBtn.addEventListener('click', () => {
+        deletePromptFromLibrary(pr.id, pr.title).catch((err) => showToast(err.message || 'Не удалось удалить'));
+      });
+      actions.appendChild(delBtn);
+    }
+    li.appendChild(title);
+    li.appendChild(meta);
+    li.appendChild(actions);
+    ul.appendChild(li);
+  }
+}
+
+function renderAssistantLibrary() {
+  const ul = document.getElementById('assistantLibraryList');
+  if (!ul) return;
+  ul.innerHTML = '';
+  if (!state.assistants.length) {
+    const li = document.createElement('li');
+    li.className = 'text-slate-500 px-1';
+    li.textContent = 'Нет ассистентов — создайте из практики или кнопкой ниже';
+    ul.appendChild(li);
+    return;
+  }
+  for (const a of state.assistants) {
+    const li = document.createElement('li');
+    li.className = 'aa-library-item';
+    const isActive = state.activeAssistant?.id === a.id;
+    const title = document.createElement('div');
+    title.className = 'aa-library-item-title';
+    title.textContent = (isActive ? '● ' : '') + a.name;
+    const meta = document.createElement('div');
+    meta.className = 'aa-library-item-meta';
+    const lessonTitle = a.source_lesson_id ? lessonLabelForId(a.source_lesson_id) : null;
+    meta.textContent = [a.role, lessonTitle ? `из: ${lessonTitle}` : null, a.default_model?.split('/').pop()]
+      .filter(Boolean)
+      .join(' · ');
+    const actions = document.createElement('div');
+    actions.className = 'aa-library-item-actions';
+    const applyBtn = document.createElement('button');
+    applyBtn.type = 'button';
+    applyBtn.className = 'aa-btn aa-btn-ghost text-xs min-h-0 h-7 px-2';
+    applyBtn.textContent = isActive ? 'Активен' : 'В чат';
+    applyBtn.addEventListener('click', () => applyAssistantToChat(a));
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'aa-btn aa-btn-ghost text-xs min-h-0 h-7 px-2 text-red-600';
+    delBtn.textContent = 'Удалить';
+    delBtn.addEventListener('click', async () => {
+      if (!confirm(`Удалить ассистента «${a.name}»?`)) return;
+      await api(`/api/academy/assistants/${a.id}`, { method: 'DELETE' });
+      if (state.activeAssistant?.id === a.id) clearActiveAssistant();
+      await loadAssistants();
+      showToast('Ассистент удалён');
+    });
+    actions.appendChild(applyBtn);
+    appendLibraryLessonLink(actions, a.source_lesson_id);
+    actions.appendChild(delBtn);
+    li.appendChild(title);
+    li.appendChild(meta);
+    li.appendChild(actions);
     ul.appendChild(li);
   }
 }
@@ -2379,6 +2840,16 @@ async function loadConversation(id, opts = {}) {
   document.getElementById('conversationTitle').value = data.conversation.title || '';
   document.getElementById('modelSelect').value = data.conversation.model || state.selectedModel;
   state.selectedModel = document.getElementById('modelSelect').value;
+  const stored = readChatContextFromStorage();
+  const convMeta = parseConversationMeta(data.conversation);
+  const fromDb = convMeta.chat_context;
+  if (fromDb && typeof fromDb === 'object') {
+    const merged = { ...stored, ...fromDb, model: data.conversation.model || fromDb.model };
+    applyChatContext(merged);
+    localStorage.setItem(CHAT_CONTEXT_KEY, JSON.stringify(merged));
+  } else {
+    applyChatContext({ ...stored, model: data.conversation.model || stored.model });
+  }
   updateModelHint();
   if (!opts.skipLessonRestore) {
     const lesson = data.conversation.lesson_id
@@ -2509,6 +2980,7 @@ async function streamChat(payload) {
     if (payload.knowledgeBaseId) fd.append('knowledgeBaseId', payload.knowledgeBaseId);
     if (payload.strictMode) fd.append('strictMode', 'true');
     if (payload.personaId) fd.append('personaId', payload.personaId);
+    if (payload.assistantInstructions) fd.append('assistantInstructions', payload.assistantInstructions);
     for (let i = 0; i < fileInput.files.length; i++) {
       fd.append('files', fileInput.files[i]);
     }
@@ -2557,6 +3029,7 @@ async function streamChat(payload) {
       if (json.type === 'start') {
         if (json.conversationId) {
           state.currentConversationId = json.conversationId;
+          flushChatContextToServer();
         }
         bubble = appendStreamingBubble();
       }
@@ -2932,7 +3405,8 @@ function wireUi() {
       method: 'POST',
       body: JSON.stringify({
         title: 'New chat',
-        model: document.getElementById('modelSelect').value
+        model: document.getElementById('modelSelect').value,
+        chatContext: buildChatContextPayload()
       })
     });
     state.conversations.unshift(conv);
@@ -2955,7 +3429,10 @@ function wireUi() {
   document.getElementById('modelSelect').addEventListener('change', () => {
     state.selectedModel = document.getElementById('modelSelect').value;
     updateModelHint();
+    persistChatContext();
   });
+  document.getElementById('chatModeSelect')?.addEventListener('change', () => persistChatContext());
+  document.getElementById('personaSelect')?.addEventListener('change', () => persistChatContext());
   document.getElementById('knowledgeBaseSelect')?.addEventListener('change', async () => {
     state.selectedKnowledgeBaseId = document.getElementById('knowledgeBaseSelect').value || null;
     state.activeKnowledgeBaseId = state.selectedKnowledgeBaseId;
@@ -2966,6 +3443,7 @@ function wireUi() {
       renderKnowledgeBases();
     }
     await refreshKbStatus();
+    persistChatContext();
   });
   document.getElementById('kbActionSelect')?.addEventListener('change', async () => {
     const selected = document.getElementById('kbActionSelect').value || null;
@@ -2980,7 +3458,9 @@ function wireUi() {
       renderKnowledgeBases();
     }
     await refreshKbStatus();
+    persistChatContext();
   });
+  document.getElementById('useKbInChatBtn')?.addEventListener('click', () => useKnowledgeBaseInChat());
   document.getElementById('openSelectedKbBtn')?.addEventListener('click', async () => {
     const selected = document.getElementById('kbActionSelect')?.value || state.selectedKnowledgeBaseId;
     if (!selected) {
@@ -2993,6 +3473,7 @@ function wireUi() {
     if (kbControl) kbControl.value = selected;
     await openKnowledgeBase(selected);
     await refreshKbStatus();
+    persistChatContext();
   });
 
   document.getElementById('createKbBtn')?.addEventListener('click', async () => {
@@ -3029,17 +3510,33 @@ function wireUi() {
   });
 
   document.getElementById('savePromptBtn')?.addEventListener('click', async () => {
-    const text = document.getElementById('composer').value.trim();
-    if (!text) return;
-    await api('/api/academy/prompts', {
-      method: 'POST',
-      body: JSON.stringify({
-        title: `Prompt ${new Date().toISOString()}`,
-        category: 'Personal Productivity',
-        prompt_text: text
-      })
-    });
-    alert('Prompt сохранен');
+    const text =
+      document.getElementById('promptTrainerInput')?.value.trim() ||
+      document.getElementById('composer')?.value.trim() ||
+      '';
+    await savePromptToLibrary({ text, category: 'Personal Productivity' });
+  });
+
+  document.getElementById('app')?.addEventListener('click', (e) => {
+    const promptBtn = e.target.closest('.js-save-prompt-library');
+    if (promptBtn) {
+      e.preventDefault();
+      savePromptFromElement(promptBtn).catch((err) => showToast(err.message || 'Не удалось сохранить'));
+      return;
+    }
+    const assistantBtn = e.target.closest('.js-save-to-assistant');
+    if (assistantBtn) {
+      e.preventDefault();
+      saveAssistantFromElement(assistantBtn).catch((err) => showToast(err.message || 'Не удалось сохранить'));
+      return;
+    }
+    const libCardBtn = e.target.closest('.js-save-library-card');
+    if (libCardBtn) {
+      e.preventDefault();
+      saveLibraryCardToLibrary(libCardBtn.closest('.aa-library-prompt-card')).catch((err) =>
+        showToast(err.message || 'Не удалось сохранить')
+      );
+    }
   });
 
   document.getElementById('evaluatePromptBtn')?.addEventListener('click', async () => {
@@ -3095,18 +3592,25 @@ function wireUi() {
   });
 
   document.getElementById('createAssistantBtn')?.addEventListener('click', async () => {
+    const name = window.prompt('Название ассистента:', `Ассистент ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`);
+    if (name === null) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
     const out = await api('/api/academy/assistants', {
       method: 'POST',
       body: JSON.stringify({
-        name: `Assistant ${new Date().toISOString().slice(11, 19)}`,
-        description: 'Auto-created from workspace UI',
+        name: trimmed,
+        description: 'Создан в workspace',
         role: 'General helper',
-        instructions: 'Give practical, structured guidance.',
+        instructions: document.getElementById('promptTrainerInput')?.value?.trim() || 'Give practical, structured guidance.',
         connected_kb_id: state.selectedKnowledgeBaseId || null,
-        default_model: document.getElementById('modelSelect').value
+        default_model: document.getElementById('modelSelect').value,
+        source_lesson_id: state.currentLessonId || null
       })
     });
-    document.getElementById('builderOutput').textContent = JSON.stringify(out, null, 2);
+    await loadAssistants();
+    applyAssistantToChat(out);
+    activateToolTab('assistant');
   });
 
   document.getElementById('runWorkflowBtn')?.addEventListener('click', async () => {
@@ -3360,8 +3864,10 @@ function wireUi() {
     document.getElementById('newChatBtn')?.click();
   });
   document.getElementById('toggleChatAdvancedBtn')?.addEventListener('click', () => {
-    document.getElementById('chatAdvancedBlock')?.classList.toggle('hidden');
-    document.getElementById('modelHint')?.classList.toggle('hidden');
+    const toolbar = document.getElementById('chatAdvancedBlock');
+    const hidden = toolbar?.classList.contains('hidden');
+    localStorage.setItem(CHAT_TOOLBAR_EXPANDED_KEY, hidden ? '1' : '0');
+    syncChatToolbarVisibility();
   });
   window.addEventListener('resize', () => {
     const app = document.getElementById('app');
@@ -3452,6 +3958,7 @@ function renderKnowledgeBases() {
           <input type="text" data-rename-kb="${kb.id}" value="${escapeHtml(kb.name)}" class="flex-1 border rounded px-1 py-1 text-[10px]" />
           <button type="button" data-save-kb="${kb.id}" class="icon-btn" title="Сохранить новое имя">Сохранить</button>
         </div>
+        <button type="button" data-use-kb-in-chat="${kb.id}" class="aa-btn aa-btn-ghost text-[10px] w-full min-h-0 h-7">Использовать в чате</button>
         <input type="text" data-search-kb="${kb.id}" placeholder="Поиск документов..." class="w-full border rounded px-2 py-1 text-[10px]" />
         <input type="file" data-upload-kb="${kb.id}" class="text-[10px] w-full" multiple />
       </div>
@@ -3460,6 +3967,9 @@ function renderKnowledgeBases() {
   }
   ul.querySelectorAll('[data-open-kb]').forEach((btn) => {
     btn.addEventListener('click', () => openKnowledgeBase(btn.getAttribute('data-open-kb')));
+  });
+  ul.querySelectorAll('[data-use-kb-in-chat]').forEach((btn) => {
+    btn.addEventListener('click', () => useKnowledgeBaseInChat(btn.getAttribute('data-use-kb-in-chat')));
   });
   ul.querySelectorAll('[data-del-kb]').forEach((btn) => {
     btn.addEventListener('click', () => deleteKnowledgeBaseHandler(btn.getAttribute('data-del-kb')));
@@ -3666,6 +4176,7 @@ async function sendHandler() {
   if (typingLabel) typingLabel.textContent = 'Нейросеть обрабатывает запрос...';
   document.getElementById('typingRow').classList.remove('hidden');
 
+  persistChatContext();
   const payload = {
     conversationId: state.currentConversationId || undefined,
     lessonId: state.currentLessonId || undefined,
@@ -3674,7 +4185,8 @@ async function sendHandler() {
     chatMode: document.getElementById('chatModeSelect')?.value || 'general',
     knowledgeBaseId: document.getElementById('knowledgeBaseSelect')?.value || undefined,
     personaId: document.getElementById('personaSelect')?.value || undefined,
-    strictMode: (document.getElementById('chatModeSelect')?.value || '') === 'strict_knowledge'
+    strictMode: (document.getElementById('chatModeSelect')?.value || '') === 'strict_knowledge',
+    assistantInstructions: state.activeAssistant?.instructions || undefined
   };
 
   document.getElementById('composer').value = '';

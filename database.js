@@ -126,7 +126,8 @@ async function migrateAcademyProgressColumns(client) {
     "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS feedback_json JSONB DEFAULT '{}'::jsonb",
     "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS feedback_at TIMESTAMPTZ",
     "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS practice_mode VARCHAR(20)",
-    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS group_meta JSONB DEFAULT '{}'::jsonb"
+    "ALTER TABLE academy_user_lesson_progress ADD COLUMN IF NOT EXISTS group_meta JSONB DEFAULT '{}'::jsonb",
+    "ALTER TABLE ai_conversations ADD COLUMN IF NOT EXISTS meta JSONB DEFAULT '{}'::jsonb"
   ];
   for (const sql of sqls) await client.query(sql);
 }
@@ -889,13 +890,14 @@ async function getLessonById(lessonId) {
   }
 }
 
-async function createAiConversation(userId, { lessonId = null, courseId = null, title = 'New chat', model = null }) {
+async function createAiConversation(userId, { lessonId = null, courseId = null, title = 'New chat', model = null, meta = null }) {
   const client = await pool.connect();
   try {
+    const metaJson = meta && typeof meta === 'object' ? JSON.stringify(meta) : '{}';
     const r = await client.query(
-      `INSERT INTO ai_conversations (user_id, lesson_id, course_id, title, model)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [userId, lessonId, courseId, title, model]
+      `INSERT INTO ai_conversations (user_id, lesson_id, course_id, title, model, meta)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb) RETURNING *`,
+      [userId, lessonId, courseId, title, model, metaJson]
     );
     return r.rows[0];
   } finally {
@@ -929,16 +931,22 @@ async function getAiConversationForUser(conversationId, userId) {
   }
 }
 
-async function updateAiConversation(userId, conversationId, { title, model }) {
+async function updateAiConversation(userId, conversationId, { title, model, chatContext }) {
   const client = await pool.connect();
   try {
+    const chatCtxJson =
+      chatContext !== undefined && chatContext !== null ? JSON.stringify(chatContext) : null;
     const r = await client.query(
       `UPDATE ai_conversations SET
         title = COALESCE($3, title),
         model = COALESCE($4, model),
+        meta = CASE
+          WHEN $5::jsonb IS NOT NULL THEN COALESCE(meta, '{}'::jsonb) || jsonb_build_object('chat_context', $5::jsonb)
+          ELSE meta
+        END,
         updated_at = CURRENT_TIMESTAMP
        WHERE id = $1 AND user_id = $2 RETURNING *`,
-      [conversationId, userId, title ?? null, model ?? null]
+      [conversationId, userId, title ?? null, model ?? null, chatCtxJson]
     );
     return r.rows[0] || null;
   } finally {

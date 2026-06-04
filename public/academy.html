@@ -120,7 +120,7 @@
             </div>
           </header>
 
-          <div id="chatAdvancedBlock" class="aa-chat-toolbar hidden">
+          <div id="chatAdvancedBlock" class="aa-chat-toolbar">
             <select id="modelSelect" title="Модель" class="aa-select"></select>
             <select id="chatModeSelect" title="Режим" class="aa-select">
               <option value="general">Общий</option>
@@ -132,9 +132,10 @@
             <select id="personaSelect" title="Персона" class="aa-select"></select>
             <button type="button" id="regenerateBtn" class="aa-btn">Перегенерировать</button>
           </div>
-          <button type="button" id="toggleChatAdvancedBtn" class="hidden mx-4 mt-1 text-xs text-blue-600 hover:underline text-left">Дополнительные настройки чата</button>
+          <button type="button" id="toggleChatAdvancedBtn" class="hidden mx-4 mt-1 text-xs text-blue-600 hover:underline text-left">Скрыть настройки чата</button>
+          <p id="chatActiveAssistantChip" class="hidden mx-4 mt-1 text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-1"></p>
 
-          <p id="modelHint" class="aa-model-hint hidden"></p>
+          <p id="modelHint" class="aa-model-hint"></p>
 
           <div id="messagesContainer" class="flex-1 overflow-y-auto chat-scroll px-4 py-4 space-y-4 bg-white min-h-0"></div>
 
@@ -238,6 +239,7 @@
                       </div>
                     </details>
                     <label class="block"><span class="aa-label">Промпт v1</span><textarea id="practicePromptV1" rows="6" class="aa-textarea mt-1"></textarea></label>
+                    <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-prompt-library" data-prompt-source="practicePromptV1" data-prompt-title="Промпт v1 (практика)">Сохранить в библиотеку</button>
                     <button type="button" id="runPromptV1Btn" class="aa-btn aa-btn-primary w-full">Запустить промпт v1 в нейросети</button>
                     <div id="aiResultBlockV1" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ нейросети v1</p><div id="aiResultV1Preview" class="aa-task-detail max-h-48 overflow-y-auto whitespace-pre-wrap"></div></div>
                     <div class="aa-eval-box">
@@ -255,6 +257,7 @@
                   <!-- Шаг 2: Улучшить до v2 -->
                   <div class="aa-step-pane hidden aa-practice-workflow-box space-y-3" data-practice-step="2">
                     <label class="block"><span class="aa-label">Промпт v2 <span class="text-slate-400 font-normal">(улучшенная версия)</span></span><textarea id="practicePromptV2" rows="6" class="aa-textarea mt-1"></textarea></label>
+                    <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-prompt-library" data-prompt-source="practicePromptV2" data-prompt-title="Промпт v2 (практика)">Сохранить в библиотеку</button>
                     <button type="button" id="runPromptV2Btn" class="aa-btn aa-btn-primary w-full">Запустить промпт v2 в нейросети</button>
                     <div id="aiResultBlockV2" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ нейросети v2</p><div id="aiResultV2Preview" class="aa-task-detail max-h-48 overflow-y-auto whitespace-pre-wrap"></div></div>
                     <label class="block"><span class="aa-label">Главный вывод</span><textarea id="practiceMainInsight" rows="2" class="aa-textarea mt-1" placeholder="Что сильнее всего улучшило результат?"></textarea></label>
@@ -368,6 +371,7 @@
                     <label class="block"><span class="aa-label">Почему плохой промпт слабый</span><textarea id="aimWhyBad" rows="2" class="aa-textarea mt-1"></textarea></label>
                     <button type="button" id="assembleAimPromptBtn" class="aa-btn aa-btn-ghost text-sm">Собрать промпт v1 из AIM</button>
                     <label class="block"><span class="aa-label">Промпт v1</span><textarea id="m2PracticePromptV1" rows="6" class="aa-textarea mt-1"></textarea></label>
+                    <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-prompt-library" data-prompt-source="m2PracticePromptV1" data-prompt-title="AIM промпт v1">Сохранить в библиотеку</button>
                     <button type="button" id="runM2PromptV1Btn" class="aa-btn aa-btn-primary w-full">Получить результат от нейросети (v1)</button>
                     <div id="m2AiResultBlockV1" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ нейросети v1</p><div id="m2AiResultV1Preview" class="aa-task-detail max-h-48 overflow-y-auto whitespace-pre-wrap"></div></div>
                     <div class="aa-eval-box">
@@ -381,6 +385,7 @@
                   </div>
                   <div class="aa-step-pane hidden aa-practice-workflow-box space-y-3" data-practice-step="2">
                     <label class="block"><span class="aa-label">Улучшенный промпт v2</span><textarea id="m2PracticePromptV2" rows="6" class="aa-textarea mt-1"></textarea></label>
+                    <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-prompt-library" data-prompt-source="m2PracticePromptV2" data-prompt-title="AIM промпт v2">Сохранить в библиотеку</button>
                     <button type="button" id="runM2PromptV2Btn" class="aa-btn aa-btn-primary w-full">Получить улучшенный результат (v2)</button>
                     <div id="m2AiResultBlockV2" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ нейросети v2</p><div id="m2AiResultV2Preview" class="aa-task-detail max-h-48 overflow-y-auto whitespace-pre-wrap"></div></div>
                     <label class="block"><span class="aa-label">Главный вывод: что изменилось после AIM</span><textarea id="m2PracticeMainInsight" rows="2" class="aa-textarea mt-1"></textarea></label>
@@ -406,6 +411,7 @@
                     <div id="libraryAiResultBlock" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ ИИ</p><div id="libraryAiResultPreview" class="aa-task-detail max-h-48 overflow-y-auto whitespace-pre-wrap"></div></div>
                     <label class="block"><span class="aa-label">Что нужно улучшить?</span><textarea id="libraryImproveNotes" rows="2" class="aa-textarea mt-1"></textarea></label>
                     <label class="block"><span class="aa-label">Версия v2 (улучшенный шаблон)</span><textarea id="libraryPromptV2" rows="5" class="aa-textarea mt-1"></textarea></label>
+                    <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-prompt-library" data-prompt-source="libraryPromptV2" data-prompt-title="Шаблон библиотеки v2">Сохранить в библиотеку</button>
                     <label class="block"><span class="aa-label">Где буду использовать эту библиотеку</span><textarea id="libraryUseNote" rows="2" class="aa-textarea mt-1"></textarea></label>
                     <button type="button" id="buildReportM2P2Btn" class="aa-btn aa-btn-primary w-full">Вставить в отчёт и перейти к отправке →</button>
                   </div>
@@ -430,6 +436,8 @@
                     <label class="block text-sm"><span class="font-medium">Пример плохого ответа</span><textarea id="passportBadExampleV1" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
                     <button type="button" id="assemblePassportV1Btn" class="aa-btn aa-btn-ghost text-sm">Собрать инструкцию (паспорт v1)</button>
                     <label class="block"><span class="aa-label">Паспорт ассистента v1</span><textarea id="passportPreviewV1" rows="8" class="aa-textarea mt-1 text-xs font-mono"></textarea></label>
+                    <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-to-assistant" data-assistant-source="passportPreviewV1" data-assistant-version="v1">Сохранить как ассистента</button>
+                    <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-prompt-library" data-prompt-source="passportPreviewV1" data-prompt-title="Паспорт ассистента v1">Сохранить паспорт в промпты</button>
                     <button type="button" id="practiceNextM2P3S1Btn" class="aa-btn aa-btn-primary w-full">Паспорт готов, перехожу к тесту →</button>
                   </div>
                   <div class="aa-step-pane hidden aa-practice-workflow-box space-y-3" data-practice-step="2">
@@ -457,6 +465,8 @@
                     <button type="button" id="copyPassportToV2Btn" class="aa-btn aa-btn-ghost text-sm">Скопировать v1 → поля v2 для правок</button>
                     <button type="button" id="assemblePassportV2Btn" class="aa-btn aa-btn-ghost text-sm">Пересобрать паспорт v2</button>
                     <label class="block"><span class="aa-label">Паспорт ассистента v2</span><textarea id="passportPreviewV2" rows="8" class="aa-textarea mt-1 text-xs font-mono"></textarea></label>
+                    <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-to-assistant" data-assistant-source="passportPreviewV2" data-assistant-version="v2">Сохранить как ассистента</button>
+                    <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-prompt-library" data-prompt-source="passportPreviewV2" data-prompt-title="Паспорт ассистента v2">Сохранить паспорт в промпты</button>
                     <label class="block"><span class="aa-label">Где буду использовать такого ассистента</span><textarea id="contextUsageNote" rows="2" class="aa-textarea mt-1"></textarea></label>
                     <button type="button" id="buildReportM2P3Btn" class="aa-btn aa-btn-primary w-full">Вставить в отчёт и перейти к отправке →</button>
                   </div>
@@ -556,6 +566,7 @@
                     <option value="">Выберите базу знаний</option>
                   </select>
                   <button type="button" id="openSelectedKbBtn" class="aa-btn w-full">Открыть базу</button>
+                  <button type="button" id="useKbInChatBtn" class="aa-btn aa-btn-ghost w-full text-sm">Использовать в чате</button>
                 </div>
                 <input id="kbNameInput" type="text" placeholder="Название базы знаний" class="aa-input" />
                 <div class="aa-btn-row">
@@ -571,7 +582,7 @@
 
             <div class="tool-panel" data-tool-panel="prompts">
               <h3 id="promptsHeading" class="font-medium text-slate-800 mb-2">Библиотека промптов</h3>
-              <ul id="promptLibraryList" class="text-xs text-slate-600 space-y-1 mb-3 max-h-32 overflow-y-auto"></ul>
+              <ul id="promptLibraryList" class="aa-library-list text-xs mb-3 max-h-48 overflow-y-auto"></ul>
               <textarea id="promptTrainerInput" rows="3" class="aa-textarea mb-2" placeholder="Промпт для оценки…"></textarea>
               <div class="aa-btn-row">
                 <button type="button" id="savePromptBtn" class="aa-btn">Сохранить</button>
@@ -597,11 +608,12 @@
 
             <div class="tool-panel" data-tool-panel="assistant">
               <h3 id="assistantHeading" class="font-medium text-slate-800 mb-2">Ассистенты</h3>
+              <ul id="assistantLibraryList" class="aa-library-list text-xs mb-3 max-h-48 overflow-y-auto"></ul>
               <div class="aa-btn-row">
                 <button type="button" id="createAssistantBtn" class="aa-btn">Создать</button>
                 <button type="button" id="runWorkflowBtn" class="aa-btn">Workflow</button>
               </div>
-              <pre id="builderOutput" class="mt-2 text-xs whitespace-pre-wrap max-h-48 overflow-auto bg-slate-50 border rounded-lg p-2"></pre>
+              <pre id="builderOutput" class="hidden mt-2 text-xs whitespace-pre-wrap max-h-48 overflow-auto bg-slate-50 border rounded-lg p-2" aria-hidden="true"></pre>
             </div>
 
             <div class="tool-panel" data-tool-panel="training">

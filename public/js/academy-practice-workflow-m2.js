@@ -196,7 +196,8 @@ ${badEx || '—'}`;
       <label class="block text-xs"><span class="font-medium">Шаблон промпта</span><textarea class="aa-textarea mt-0.5 text-sm lib-template" rows="4">${escapeHtml(data?.template || '')}</textarea></label>
       <label class="block text-xs"><span class="font-medium">Переменные (что можно менять)</span><textarea class="aa-textarea mt-0.5 text-sm lib-variables" rows="2" placeholder="{цель}, {аудитория}, {контекст}…">${escapeHtml(data?.variables || '')}</textarea></label>
       <label class="block text-xs"><span class="font-medium">Пример входных данных</span><textarea class="aa-textarea mt-0.5 text-sm lib-example" rows="2">${escapeHtml(data?.example || '')}</textarea></label>
-      <label class="block text-xs"><span class="font-medium">Критерии хорошего результата</span><textarea class="aa-textarea mt-0.5 text-sm lib-criteria" rows="2">${escapeHtml(data?.criteria || '')}</textarea></label>`;
+      <label class="block text-xs"><span class="font-medium">Критерии хорошего результата</span><textarea class="aa-textarea mt-0.5 text-sm lib-criteria" rows="2">${escapeHtml(data?.criteria || '')}</textarea></label>
+      <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-library-card">Сохранить в библиотеку</button>`;
     card.querySelector('.library-insert-template')?.addEventListener('click', () => {
       const tpl = el('libraryTemplateDefault')?.value || DEFAULT_PROMPT_TEMPLATE;
       const role = roleTitle || '{роль}';
