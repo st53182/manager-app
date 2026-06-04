@@ -32,6 +32,16 @@
   background: var(--aa-bg);
 }
 
+@keyframes aa-shimmer {
+  0% { opacity: 0.45; }
+  50% { opacity: 0.95; }
+  100% { opacity: 0.45; }
+}
+
+.aa-skeleton-pulse > * {
+  animation: aa-shimmer 1.4s ease-in-out infinite;
+}
+
 .academy-light #app {
   --left-pane-width: 17rem;
   --lesson-pane-width: 22rem;

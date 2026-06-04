@@ -9,6 +9,24 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github.min.css">
 </head>
 <body class="min-h-screen academy-light">
+  <div id="initLoading" class="hidden max-w-lg mx-auto px-4 py-24" aria-live="polite" aria-busy="true">
+    <p class="text-center text-slate-600 mb-6">Загрузка AI Academy…</p>
+    <div class="space-y-3 aa-skeleton-pulse">
+      <div class="h-10 bg-slate-200 rounded-lg"></div>
+      <div class="h-24 bg-slate-200/80 rounded-lg"></div>
+      <div class="h-16 bg-slate-200/60 rounded-lg"></div>
+    </div>
+  </div>
+
+  <div id="initError" class="hidden max-w-md mx-auto px-4 py-24 text-center" role="alert">
+    <div class="aa-panel rounded-2xl p-8 shadow-lg border">
+      <h2 class="text-lg font-semibold text-slate-900 mb-2">Не удалось загрузить рабочее пространство</h2>
+      <p id="initErrorText" class="text-slate-600 mb-6 text-sm"></p>
+      <button type="button" id="initRetryBtn" class="aa-btn aa-btn-primary">Повторить</button>
+      <button type="button" id="initLogoutBtn" class="aa-btn aa-btn-ghost block mx-auto mt-4 text-sm">Выйти</button>
+    </div>
+  </div>
+
   <div id="authGate" class="hidden max-w-md mx-auto px-4 py-24 text-center">
     <div class="aa-panel rounded-2xl p-8 shadow-lg border">
       <h1 class="text-2xl font-semibold text-slate-900 mb-2">Вход в AI Academy</h1>
@@ -59,6 +77,7 @@
           <button id="newChatBtn" type="button" class="aa-btn aa-btn-ghost w-full text-sm">+ Свободный чат</button>
           <div>
             <h3 id="dialogsHeading" class="aa-label mb-2">Диалоги</h3>
+            <p id="conversationListEmpty" class="hidden text-xs text-slate-500 px-1 mb-2">Нет диалогов. Выберите практику выше или «+ Свободный чат».</p>
             <ul id="conversationList" class="space-y-0.5"></ul>
           </div>
         </div>

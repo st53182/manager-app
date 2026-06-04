@@ -561,6 +561,7 @@ const state = {
 };
 let kbStatusPollTimer = null;
 let kbStatusPollBusy = false;
+let uiWired = false;
 
 function currentLang() {
   return window.translationManager?.currentLanguage || localStorage.getItem('language') || 'ru';
@@ -596,11 +597,33 @@ function initLanguageEvents() {
 function showGate() {
   document.getElementById('authGate').classList.remove('hidden');
   document.getElementById('app').classList.add('hidden');
+  document.getElementById('initLoading')?.classList.add('hidden');
+  document.getElementById('initError')?.classList.add('hidden');
+}
+
+function showInitLoading() {
+  document.getElementById('authGate')?.classList.add('hidden');
+  document.getElementById('initError')?.classList.add('hidden');
+  document.getElementById('app')?.classList.add('hidden');
+  document.getElementById('initLoading')?.classList.remove('hidden');
+}
+
+function showInitError(message) {
+  document.getElementById('initLoading')?.classList.add('hidden');
+  document.getElementById('app')?.classList.add('hidden');
+  document.getElementById('authGate')?.classList.add('hidden');
+  document.getElementById('initError')?.classList.remove('hidden');
+  const el = document.getElementById('initErrorText');
+  if (el) {
+    el.textContent = message || 'Проверьте подключение к интернету и попробуйте снова.';
+  }
 }
 
 function showApp() {
-  document.getElementById('authGate').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('authGate')?.classList.add('hidden');
+  document.getElementById('initLoading')?.classList.add('hidden');
+  document.getElementById('initError')?.classList.add('hidden');
+  document.getElementById('app')?.classList.remove('hidden');
 }
 
 function parseUser() {
@@ -611,21 +634,8 @@ function parseUser() {
   }
 }
 
-async function init() {
-  configureMarked();
-  initMermaid();
-  if (!getToken()) {
-    window.location.replace('/');
-    return;
-  }
-
-  const user = parseUser();
-  document.getElementById('userEmail').textContent = user.email || '';
-
-  if (user.role === 'admin') {
-    document.getElementById('adminLink').classList.remove('hidden');
-  }
-
+async function loadWorkspace() {
+  showInitLoading();
   try {
     state.catalog = await api('/api/academy/catalog');
     state.usage = await api('/api/academy/usage');
@@ -653,10 +663,31 @@ async function init() {
       showGate();
       return;
     }
-    alert(e.message || 'Ошибка загрузки');
+    showInitError(e.message || 'Ошибка загрузки');
+  }
+}
+
+async function init() {
+  configureMarked();
+  initMermaid();
+  if (!getToken()) {
+    window.location.replace('/');
+    return;
   }
 
-  wireUi();
+  const user = parseUser();
+  document.getElementById('userEmail').textContent = user.email || '';
+
+  if (user.role === 'admin') {
+    document.getElementById('adminLink').classList.remove('hidden');
+  }
+
+  if (!uiWired) {
+    wireUi();
+    uiWired = true;
+  }
+
+  await loadWorkspace();
 }
 
 function renderUsage() {
@@ -1863,7 +1894,13 @@ function insertPracticeHintIntoComposer() {
 
 function renderConversationList() {
   const ul = document.getElementById('conversationList');
+  const emptyHint = document.getElementById('conversationListEmpty');
   ul.innerHTML = '';
+  if (!state.conversations.length) {
+    emptyHint?.classList.remove('hidden');
+    return;
+  }
+  emptyHint?.classList.add('hidden');
   for (const c of state.conversations) {
     const li = document.createElement('li');
     li.className = 'flex items-center gap-0.5 rounded hover:bg-slate-100';
@@ -1901,7 +1938,7 @@ async function deleteConversationById(id) {
       state.currentConversationId = null;
       document.getElementById('messagesContainer').innerHTML = '';
       document.getElementById('conversationTitle').value = '';
-      document.getElementById('lessonHint').textContent = '';
+      clearLessonPanel();
       const next = state.conversations[0];
       if (next) {
         await loadConversation(next.id);
@@ -2099,8 +2136,25 @@ function parseMsgMeta(raw) {
   }
 }
 
-async function selectLesson(lesson) {
-  if (!lesson) return;
+function clearLessonPanel() {
+  state.currentLessonId = null;
+  state.currentLesson = null;
+  state.selectedTaskId = null;
+  state.taskOptions = [];
+  setPracticeFocusMode(false);
+  bindPracticeHints(null);
+  document.getElementById('lessonHint').textContent = '';
+  document.getElementById('lessonEmpty')?.classList.remove('hidden');
+  document.getElementById('lessonContent')?.classList.add('hidden');
+  document.getElementById('assignmentBlock')?.classList.add('hidden');
+  document.getElementById('askMentorAssignmentBtn')?.classList.add('hidden');
+}
+
+async function openLessonPanel(lesson) {
+  if (!lesson) {
+    clearLessonPanel();
+    return;
+  }
   state.currentLessonId = lesson.id;
   state.currentLesson = lesson;
   state.selectedTaskId = null;
@@ -2129,7 +2183,16 @@ async function selectLesson(lesson) {
     bindPracticeHints(null);
     setPracticeFocusMode(false);
   }
-  try { await loadSubmissionForLesson(lesson.id); } catch (e) { console.warn(e); }
+  try {
+    await loadSubmissionForLesson(lesson.id);
+  } catch (e) {
+    console.warn(e);
+  }
+}
+
+async function selectLesson(lesson) {
+  if (!lesson) return;
+  await openLessonPanel(lesson);
   let conv = state.conversations.find((c) => c.lesson_id === lesson.id);
   if (!conv) {
     conv = await api('/api/academy/conversations', { method: 'POST', body: JSON.stringify({ lessonId: lesson.id, courseId: lesson.course_id, title: lesson.title, model: document.getElementById('modelSelect').value }) });
@@ -2137,7 +2200,7 @@ async function selectLesson(lesson) {
   }
   state.currentConversationId = conv.id;
   renderConversationList();
-  await loadConversation(conv.id, { skipFetchList: true });
+  await loadConversation(conv.id, { skipFetchList: true, skipLessonRestore: true });
 }
 
 async function loadConversation(id, opts = {}) {
@@ -2147,13 +2210,16 @@ async function loadConversation(id, opts = {}) {
   document.getElementById('modelSelect').value = data.conversation.model || state.selectedModel;
   state.selectedModel = document.getElementById('modelSelect').value;
   updateModelHint();
-  if (data.conversation.lesson_id) {
-    const lesson = state.catalog.lessons.find((l) => l.id === data.conversation.lesson_id);
+  if (!opts.skipLessonRestore) {
+    const lesson = data.conversation.lesson_id
+      ? state.catalog.lessons.find((l) => l.id === data.conversation.lesson_id)
+      : null;
     if (lesson) {
-      document.getElementById('lessonHint').textContent = `${lesson.course_title} · ${lesson.title}`;
+      await openLessonPanel(lesson);
+    } else {
+      clearLessonPanel();
+      document.getElementById('lessonHint').textContent = data.conversation.title || '';
     }
-  } else {
-    document.getElementById('lessonHint').textContent = '';
   }
   renderMessages(data.messages || []);
   if (!opts.skipFetchList) {
@@ -2680,12 +2746,15 @@ function wireUi() {
     window.location.href = '/login';
   });
 
+  document.getElementById('initRetryBtn')?.addEventListener('click', () => loadWorkspace());
+  document.getElementById('initLogoutBtn')?.addEventListener('click', () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_info');
+    window.location.href = '/login';
+  });
+
   document.getElementById('newChatBtn').addEventListener('click', async () => {
-    state.currentLessonId = null;
-    state.currentLesson = null;
-    state.selectedTaskId = null;
-    state.taskOptions = [];
-    setPracticeFocusMode(false);
+    clearLessonPanel();
     const conv = await api('/api/academy/conversations', {
       method: 'POST',
       body: JSON.stringify({
@@ -2698,10 +2767,6 @@ function wireUi() {
     renderConversationList();
     document.getElementById('messagesContainer').innerHTML = '';
     document.getElementById('conversationTitle').value = '';
-    document.getElementById('lessonHint').textContent = '';
-    document.getElementById('lessonEmpty')?.classList.remove('hidden');
-    document.getElementById('lessonContent')?.classList.add('hidden');
-    document.getElementById('assignmentBlock')?.classList.add('hidden');
   });
 
   document.getElementById('sendBtn').addEventListener('click', sendHandler);
