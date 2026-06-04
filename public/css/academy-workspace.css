@@ -667,11 +667,6 @@
 }
 
 @media (min-width: 1280px) {
-  .academy-light #app.practice-focus:not(.practice-chat-open) #lessonSplitter,
-  .academy-light #app.practice-focus:not(.practice-chat-open) #leftSplitter {
-    display: none !important;
-  }
-
   .academy-light #app.practice-focus.practice-chat-open #chatSection {
     display: flex !important;
     flex: 1 1 45%;
@@ -679,19 +674,28 @@
   }
 
   .academy-light #app.practice-focus.practice-chat-open #lessonPanel {
-    flex: 1 1 55%;
-    max-width: none !important;
-    width: auto !important;
+    flex: 0 0 var(--lesson-pane-width, 22rem) !important;
+    width: var(--lesson-pane-width, 22rem) !important;
+    min-width: 280px;
+    max-width: min(72vw, 56rem) !important;
   }
 }
 
 .academy-light #app.practice-focus #lessonPanel,
 .academy-light #app.practice-focus.tools-panel-collapsed #lessonPanel {
   flex: 1 1 auto !important;
-  width: auto !important;
-  max-width: none !important;
+  min-width: 280px;
+  max-width: min(96vw, 56rem) !important;
   max-height: none !important;
   min-height: 0;
+}
+
+@media (min-width: 1280px) {
+  .academy-light #app.practice-focus:not(.practice-chat-open) #lessonPanel {
+    flex: 1 1 auto !important;
+    width: var(--lesson-pane-width, 28rem) !important;
+    max-width: min(96vw, 56rem) !important;
+  }
 }
 
 .academy-light #app.practice-focus.practice-chat-open #lessonPanel {
@@ -809,6 +813,21 @@
   border: 1px solid var(--aa-border);
   border-radius: var(--aa-radius-sm);
   font-size: 0.9375rem;
+  resize: vertical;
+  overflow: auto;
+  min-height: 5rem;
+  max-height: min(50vh, 28rem);
+}
+
+.academy-light .aa-assignment-box .aa-assignment-prose {
+  resize: vertical;
+  overflow: auto;
+  min-height: 4rem;
+  max-height: min(45vh, 24rem);
+}
+
+.academy-light .aa-practice-substep.hidden {
+  display: none !important;
 }
 
 .academy-light .aa-case-raw {

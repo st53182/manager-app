@@ -1315,6 +1315,7 @@ function buildGroupMetaForSave() {
       ? wfApi.collectWorkflowFromUiM2(scenarioKey)
       : wfApi.collectWorkflowFromUi(scenarioKey);
     wf.currentStep = state.practiceStep || 1;
+    wf.currentSubstep = state.practiceSubstep || 1;
     meta.workflow = wf;
   }
   return meta;
@@ -1409,11 +1410,74 @@ function buildPracticeRunContext(runKind, pass) {
   };
 }
 
-function showPracticeStep(n) {
+function getPracticeSectionElement() {
+  const sk = state.currentLesson?.scenario_key;
+  const sectionId = PRACTICE_SECTION_IDS[sk] || 'practiceAnalysisSection';
+  return document.getElementById(sectionId);
+}
+
+function getPracticeStepPane(stepNum = state.practiceStep) {
+  const section = getPracticeSectionElement();
+  if (!section) return null;
+  return section.querySelector(`[data-practice-step="${stepNum}"]`);
+}
+
+function getPracticeSubstepCount(pane) {
+  if (!pane) return 0;
+  const nums = [...pane.querySelectorAll('[data-practice-substep]')]
+    .map((el) => parseInt(el.dataset.practiceSubstep, 10))
+    .filter((n) => !Number.isNaN(n));
+  return nums.length ? Math.max(...nums) : 0;
+}
+
+function applyPracticeSubsteps(stepNum = state.practiceStep) {
+  const pane = getPracticeStepPane(stepNum);
+  const total = getPracticeSubstepCount(pane);
+  if (!total) return 0;
+  const sub = Math.min(Math.max(state.practiceSubstep || 1, 1), total);
+  state.practiceSubstep = sub;
+  pane.querySelectorAll('[data-practice-substep]').forEach((el) => {
+    const n = parseInt(el.dataset.practiceSubstep, 10);
+    el.classList.toggle('hidden', n !== sub);
+  });
+  return total;
+}
+
+function updatePracticeStepBarSubstep(totalSubsteps) {
+  const numEl = document.getElementById('practiceStepNum');
+  if (!numEl || !totalSubsteps || totalSubsteps < 2) return;
+  const sk = state.currentLesson?.scenario_key;
+  const total = PRACTICE_STEP_LABELS[sk]?.length || 3;
+  const sub = state.practiceSubstep || 1;
+  numEl.textContent = `Шаг ${state.practiceStep} из ${total} · часть ${sub} из ${totalSubsteps}`;
+}
+
+function tryAdvancePracticeSubstep() {
+  const pane = getPracticeStepPane();
+  const max = getPracticeSubstepCount(pane);
+  if (!max || (state.practiceSubstep || 1) >= max) return false;
+  state.practiceSubstep = (state.practiceSubstep || 1) + 1;
+  applyPracticeSubsteps();
+  updatePracticeStepBarSubstep(max);
+  pane.querySelector(`[data-practice-substep="${state.practiceSubstep}"]`)?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'nearest'
+  });
+  scheduleAutoSave();
+  return true;
+}
+
+function advancePracticeStepOrSubstep() {
+  if (tryAdvancePracticeSubstep()) return;
+  advancePracticeStep();
+}
+
+function showPracticeStep(n, { restoreSubstep } = {}) {
   const sk = state.currentLesson?.scenario_key;
   const labels = PRACTICE_STEP_LABELS[sk];
   const total = labels?.length || 3;
   state.practiceStep = n;
+  if (!restoreSubstep) state.practiceSubstep = 1;
 
   const bar = document.getElementById('practiceStepBar');
   if (bar && labels) {
@@ -1437,6 +1501,12 @@ function showPracticeStep(n) {
     section.querySelectorAll('[data-practice-step]').forEach((pane) => {
       pane.classList.toggle('hidden', String(pane.dataset.practiceStep) !== String(n));
     });
+  }
+
+  const substepTotal = applyPracticeSubsteps(n);
+  if (substepTotal >= 2) updatePracticeStepBarSubstep(substepTotal);
+  else if (bar && labels) {
+    document.getElementById('practiceStepNum').textContent = `Шаг ${n} из ${total}`;
   }
 
   const isLastStep = n >= total;
@@ -1612,6 +1682,7 @@ function clearPracticeFormUi() {
     btn.setAttribute('aria-checked', 'false');
   });
   state.practiceStep = 1;
+  state.practiceSubstep = 1;
   state.practiceWorkflow = null;
   document.getElementById('caseBriefBlock')?.classList.add('hidden');
   document.getElementById('startPracticeBtn')?.classList.add('hidden');
@@ -1687,6 +1758,9 @@ function showPracticeAiResult(text, pass = 'v1') {
   if (block) block.classList.remove('hidden');
   if (preview) preview.textContent = state.lastPracticeAiResult;
   block?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (['v1', 'm2v1', 'dialogue', 'analysis', 'library', 'context'].includes(pass)) {
+    tryAdvancePracticeSubstep();
+  }
   scheduleAutoSave();
 }
 
@@ -1922,7 +1996,11 @@ function startPractice() {
     getPracticeWorkflowApi()?.initLibraryCards([], task?.title);
   }
   const savedStep = state.practiceWorkflow?.currentStep;
-  showPracticeStep(savedStep && savedStep > 1 ? savedStep : 1);
+  const savedSub = state.practiceWorkflow?.currentSubstep;
+  if (savedSub && savedSub > 1) state.practiceSubstep = savedSub;
+  showPracticeStep(savedStep && savedStep > 1 ? savedStep : 1, {
+    restoreSubstep: Boolean(savedSub && savedSub > 1)
+  });
 }
 
 function buildPracticeReport() {
@@ -2044,7 +2122,14 @@ function setPracticeFocusMode(on, lesson = null) {
     setPracticeChatOpen(false);
     if (!isToolsPanelCollapsed()) applyToolsPanelCollapsed(true);
     const lp = document.getElementById('lessonPanel');
-    if (lp) { lp.style.width = ''; lp.style.flexBasis = ''; lp.style.maxWidth = ''; }
+    if (lp && academyLayoutSetWidths) {
+      const lessonW = parseInt(getComputedStyle(app).getPropertyValue('--lesson-pane-width'), 10) || 448;
+      academyLayoutSetWidths(
+        parseInt(getComputedStyle(app).getPropertyValue('--left-pane-width'), 10) || 272,
+        Math.max(lessonW, 400),
+        parseInt(getComputedStyle(app).getPropertyValue('--right-pane-width'), 10) || 320
+      );
+    }
   } else {
     app.classList.remove('practice-focus', 'practice-chat-open', 'practice-chat-mobile');
     document.getElementById('sidebarFreeChatBlock')?.classList.remove('hidden');
@@ -2100,10 +2185,12 @@ async function loadSubmissionForLesson(lessonId) {
     if (isBlock2Scenario(sk)) wfApi.restoreWorkflowToUiM2(gm.workflow, sk);
     else wfApi.restoreWorkflowToUi(gm.workflow, sk);
     const savedStep = gm.workflow.currentStep;
+    const savedSub = gm.workflow.currentSubstep;
     if (savedStep && savedStep >= 1 && state.selectedTaskId) {
       document.getElementById('practiceWorkflowBlock')?.classList.remove('hidden');
       document.getElementById('startPracticeBtn')?.classList.add('hidden');
-      showPracticeStep(savedStep);
+      if (savedSub && savedSub > 1) state.practiceSubstep = savedSub;
+      showPracticeStep(savedStep, { restoreSubstep: Boolean(savedSub && savedSub > 1) });
     }
   }
   let fj = data.submission?.feedback_json;
@@ -3196,7 +3283,6 @@ function initResizableLayout() {
     }
     if (lessonPanel && window.innerWidth >= 1280) {
       if (practiceFocus) {
-        // В режиме практики lessonPanel управляется CSS (flex:1 1 auto)
         lessonPanel.style.width = '';
         lessonPanel.style.flexBasis = '';
         lessonPanel.style.maxWidth = '';
@@ -3810,7 +3896,10 @@ function wireUi() {
     );
   });
   document.getElementById('startPracticeBtn')?.addEventListener('click', () => startPractice());
-  document.getElementById('practiceNextS1Btn')?.addEventListener('click', () => advancePracticeStep());
+  document.getElementById('practiceWorkflowBlock')?.addEventListener('click', (e) => {
+    if (e.target.closest('.js-practice-substep-next')) advancePracticeStepOrSubstep();
+  });
+  document.getElementById('practiceNextS1Btn')?.addEventListener('click', () => advancePracticeStepOrSubstep());
   document.getElementById('practiceNextM2P1S1Btn')?.addEventListener('click', () => {
     const notes = document.getElementById('m2PracticeImproveNotes')?.value?.trim() || '';
     if (notes.length < 15) {
@@ -3822,10 +3911,10 @@ function wireUi() {
         return;
       }
     }
-    advancePracticeStep();
+    advancePracticeStepOrSubstep();
   });
-  document.getElementById('practiceNextP2S1Btn')?.addEventListener('click', () => advancePracticeStep());
-  document.getElementById('practiceNextP3S1Btn')?.addEventListener('click', () => advancePracticeStep());
+  document.getElementById('practiceNextP2S1Btn')?.addEventListener('click', () => advancePracticeStepOrSubstep());
+  document.getElementById('practiceNextP3S1Btn')?.addEventListener('click', () => advancePracticeStepOrSubstep());
   document.getElementById('practiceNextM2P2S1Btn')?.addEventListener('click', () => {
     const wfApi = getPracticeWorkflowApi();
     const prompts = wfApi?.collectLibraryPrompts?.() || [];
@@ -3835,7 +3924,7 @@ function wireUi() {
       return;
     }
     wfApi?.updateLibraryTestSelect();
-    advancePracticeStep();
+    advancePracticeStepOrSubstep();
   });
   document.getElementById('practiceNextM2P3S1Btn')?.addEventListener('click', () => {
     const passport = document.getElementById('passportPreviewV1')?.value?.trim();
@@ -3843,7 +3932,7 @@ function wireUi() {
       alert('Сначала соберите паспорт ассистента v1.');
       return;
     }
-    advancePracticeStep();
+    advancePracticeStepOrSubstep();
   });
   document.getElementById('restartPracticeBtn')?.addEventListener('click', () => {
     restartPractice().catch((e) => alert(e.message || 'Не удалось сбросить задание'));
