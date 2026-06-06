@@ -3272,7 +3272,58 @@ pie title Распределение новых вакансий России п
 | 🔴 Пессимистичный | ... | ... | ... |
 
 ### Executive Summary
-(3–4 предложения: главный вывод, рекомендация для руководителя, ключевой риск)`
+(3–4 предложения: главный вывод, рекомендация для руководителя, ключевой риск)`,
+
+  dashboard: `Создай интерактивный аналитический дашборд «Рынок вакансий 2025: Европа vs Россия» на Vue.js + Chart.js через CDN.
+
+КРИТИЧЕСКИ ВАЖНО: твой ответ — ТОЛЬКО один блок кода, никакого текста до или после. HTML должен быть ПОЛНЫМ с закрытым </html>.
+
+\`\`\`academy-html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Рынок вакансий 2025</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+body { font-family:'Inter',sans-serif; background:#0f172a; color:#f1f5f9; }
+canvas { max-height:280px; }
+.tab-active { background:linear-gradient(135deg,#7c3aed,#06b6d4); color:#fff; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
+createApp({
+  // ... полное приложение здесь
+}).mount('#app');
+</script>
+</body>
+</html>
+\`\`\`
+
+Реализуй полноценное Vue 3 приложение со следующими данными и функциями:
+
+**Шапка:**
+- Заголовок «📊 Рынок вакансий 2025» + подзаголовок «Европа vs Россия · Интерактивная аналитика»
+- 4 KPI-карточки: Вакансий EU (2.3М ↑8%), Вакансий RU (1.1М ↑12%), Средняя зарплата EU (€3 840), Средняя зарплата RU (₽142 000)
+
+**Фильтр регионов** — кнопки «Все / EU / RU», влияет на графики.
+
+**4 вкладки:**
+1. «Секторы» — два Doughnut-графика рядом (EU и RU по 6 секторам: IT/AI 28%, Здравоохранение 19%, Производство 14%, Финансы 13%, Маркетинг 11%, Логистика 9% для EU; IT 31%, ВПК 22%, Здоровье 16%, Финансы 12%, Ритейл 11%, Маркетинг 8% для RU)
+2. «Зарплаты» — горизонтальный bar-график топ-8 профессий, две серии EU€ и RU€ (зарплата RU в рублях делённая на 90 для перевода в €)
+3. «Тренды» — line-график помесячной динамики вакансий Jan–Jun 2025 для EU и RU, с заливкой
+4. «Прогноз» — три сценарные карточки H2 2025 (🟢🟡🔴) с текстовым описанием
+
+**Таблица топ-10 профессий** — кликабельные заголовки для сортировки, строки с hover. Колонки: Специальность, EU €/мес, RU ₽/мес, Дефицит кадров (прогресс-бар), Тренд (↑↓→).
+
+Chart.js тёмная тема: фон transparent, grid #334155, labels #94a3b8. Цвета: #7c3aed, #06b6d4, #34d399, #f59e0b, #f87171, #a78bfa.`
 };
 
 function openDemoPanel() {
