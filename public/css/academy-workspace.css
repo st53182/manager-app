@@ -151,6 +151,7 @@
   --left-pane-width: 17rem;
   --lesson-pane-width: 22rem;
   --right-pane-width: 20rem;
+  --chat-pane-width: 26rem;
 }
 
 @media (min-width: 768px) {
@@ -162,14 +163,22 @@
 }
 
 
-/* Скрытая панель инструментов — урок занимает её ширину */
-.academy-light #app.tools-panel-collapsed #toolsPanel,
+/* Скрытая панель инструментов */
+.academy-light #app.tools-panel-collapsed #toolsPanel {
+  display: none !important;
+}
+
 .academy-light #app.tools-panel-collapsed #rightSplitter {
   display: none !important;
 }
 
+/* В практике: разделитель справа от задания остаётся — можно менять ширину задания */
+.academy-light #app.practice-focus.tools-panel-collapsed #rightSplitter {
+  display: flex !important;
+}
+
 @media (min-width: 1280px) {
-  .academy-light #app.tools-panel-collapsed #lessonPanel {
+  .academy-light #app.tools-panel-collapsed:not(.practice-focus) #lessonPanel {
     width: var(--lesson-pane-expanded-width, 36rem) !important;
     flex: 0 0 var(--lesson-pane-expanded-width, 36rem) !important;
     max-width: min(48vw, 42rem) !important;
@@ -667,35 +676,46 @@
 }
 
 @media (min-width: 1280px) {
+  .academy-light #app.practice-focus #leftSplitter {
+    display: flex !important;
+  }
+
+  .academy-light #app.practice-focus:not(.practice-chat-open) #lessonSplitter {
+    display: none !important;
+  }
+
+  .academy-light #app.practice-focus.practice-chat-open #lessonSplitter {
+    display: flex !important;
+  }
+
   .academy-light #app.practice-focus.practice-chat-open #chatSection {
     display: flex !important;
-    flex: 1 1 45%;
-    min-width: 280px;
+    min-width: 240px;
   }
 
-  .academy-light #app.practice-focus.practice-chat-open #lessonPanel {
-    flex: 0 0 var(--lesson-pane-width, 22rem) !important;
-    width: var(--lesson-pane-width, 22rem) !important;
+  .academy-light #app.practice-focus #lessonPanel {
     min-width: 280px;
-    max-width: min(72vw, 56rem) !important;
+    min-height: 0;
   }
-}
 
-.academy-light #app.practice-focus #lessonPanel,
-.academy-light #app.practice-focus.tools-panel-collapsed #lessonPanel {
-  flex: 1 1 auto !important;
-  min-width: 280px;
-  max-width: min(96vw, 56rem) !important;
-  max-height: none !important;
-  min-height: 0;
-}
-
-@media (min-width: 1280px) {
   .academy-light #app.practice-focus:not(.practice-chat-open) #lessonPanel {
     flex: 1 1 auto !important;
     width: var(--lesson-pane-width, 28rem) !important;
     max-width: min(96vw, 56rem) !important;
   }
+
+  .academy-light #app.practice-focus.practice-chat-open #lessonPanel {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 280px;
+    max-width: none !important;
+  }
+}
+
+.academy-light #app.practice-focus #lessonPanel,
+.academy-light #app.practice-focus.tools-panel-collapsed #lessonPanel {
+  max-height: none !important;
+  min-height: 0;
 }
 
 .academy-light #app.practice-focus.practice-chat-open #lessonPanel {
