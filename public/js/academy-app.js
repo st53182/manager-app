@@ -3197,7 +3197,7 @@ function openDemoPanel() {
 
   // Переключаем модель на Sonnet для демо (лучшее качество)
   const modelSel = document.getElementById('modelSelect');
-  const preferredModels = ['anthropic/claude-3.7-sonnet', 'anthropic/claude-3-sonnet', 'openai/gpt-4o'];
+  const preferredModels = ['anthropic/claude-3.5-sonnet', 'anthropic/claude-3.7-sonnet', 'anthropic/claude-3-sonnet', 'openai/gpt-4o'];
   if (modelSel) {
     for (const m of preferredModels) {
       if ([...modelSel.options].some(o => o.value === m)) {
