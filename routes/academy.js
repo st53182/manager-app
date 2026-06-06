@@ -813,7 +813,7 @@ function createRouter({ JWT_SECRET }) {
     const model = pickModel(req.body?.model, req.dbUser);
     const temperature = Number.isFinite(Number(req.body?.temperature)) ? Number(req.body.temperature) : 0.7;
     const topP = Number.isFinite(Number(req.body?.top_p)) ? Number(req.body.top_p) : 1;
-    const maxTokens = Number.isFinite(Number(req.body?.max_tokens)) ? Number(req.body.max_tokens) : 1200;
+    const maxTokens = Number.isFinite(Number(req.body?.max_tokens)) ? Math.min(Number(req.body.max_tokens), 8000) : 1200;
     const systemPrompt = String(req.body?.system_prompt || 'You are a helpful assistant.');
     await assertQuota(req, estimateTokensFromText(input + systemPrompt));
     const gen = streamChatCompletion(openai, {

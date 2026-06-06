@@ -3327,7 +3327,8 @@ async function runDemo(type) {
       conversationId: state.currentConversationId,
       message: promptText,
       model,
-      chatMode: 'general'
+      chatMode: 'general',
+      max_tokens: 6000
     });
     document.getElementById('typingRow')?.classList.add('hidden');
 
