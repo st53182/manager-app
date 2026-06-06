@@ -3245,15 +3245,39 @@ function openDemoPanel() {
   setPracticeFocusMode(false);
   setMobilePane('lesson');
 
-  // Переключаем модель на Sonnet для демо (лучшее качество)
-  const modelSel = document.getElementById('modelSelect');
-  const preferredModels = ['anthropic/claude-opus-4.8', 'anthropic/claude-3.5-sonnet', 'openai/gpt-4o'];
-  if (modelSel) {
-    for (const m of preferredModels) {
-      if ([...modelSel.options].some(o => o.value === m)) {
-        modelSel.value = m;
-        break;
+  // Заполняем селектор моделей для демо
+  const demoSel = document.getElementById('demoModelSelect');
+  const mainSel = document.getElementById('modelSelect');
+  if (demoSel && mainSel && !demoSel.dataset.inited) {
+    demoSel.dataset.inited = '1';
+    // Берём все опции из главного селектора + добавляем популярные OpenAI
+    const extraModels = [
+      { id: 'openai/gpt-4o', label: 'GPT-4o · OpenAI' },
+      { id: 'openai/gpt-4o-mini', label: 'GPT-4o mini · быстро' },
+      { id: 'anthropic/claude-opus-4.8', label: 'Claude Opus 4.8 · лучшее' },
+      { id: 'anthropic/claude-3.5-sonnet', label: 'Claude Sonnet 3.5' },
+    ];
+    const existing = new Set([...mainSel.options].map(o => o.value));
+    // Сначала опции из главного селектора
+    [...mainSel.options].forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o.value;
+      opt.textContent = o.textContent;
+      demoSel.appendChild(opt);
+    });
+    // Потом дополнительные которых нет
+    extraModels.forEach(m => {
+      if (!existing.has(m.id)) {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = m.label;
+        demoSel.appendChild(opt);
       }
+    });
+    // Выбираем gpt-4o по умолчанию если есть
+    const preferred = ['openai/gpt-4o', 'anthropic/claude-opus-4.8', 'anthropic/claude-3.5-sonnet'];
+    for (const m of preferred) {
+      if ([...demoSel.options].some(o => o.value === m)) { demoSel.value = m; break; }
     }
   }
 
@@ -3297,7 +3321,7 @@ async function runDemo(type) {
     appendUserBubble(promptText);
 
     document.getElementById('typingRow')?.classList.remove('hidden');
-    const model = document.getElementById('modelSelect')?.value || 'anthropic/claude-3.7-sonnet';
+    const model = document.getElementById('demoModelSelect')?.value || document.getElementById('modelSelect')?.value || 'openai/gpt-4o';
     await streamChat({
       conversationId: state.currentConversationId,
       message: promptText,
