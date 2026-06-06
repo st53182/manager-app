@@ -485,6 +485,82 @@ const PRACTICE_STEP_CELEBRATIONS = {
   ]
 };
 
+const RTCFSC_TIP = `<p class="font-medium text-slate-700 mb-1.5">Подсказка: блоки RTCFSC</p><ul class="space-y-0.5 text-slate-600 text-xs"><li><strong>R</strong> — роль: кем выступает ИИ</li><li><strong>T</strong> — задача: что конкретно сделать</li><li><strong>C</strong> — контекст: важные детали ситуации</li><li><strong>F</strong> — формат: письмо, список, таблица, до N слов</li><li><strong>S</strong> — стиль: деловой, нейтральный, дружеский</li><li><strong>C</strong> — критерии: что делает ответ хорошим</li></ul>`;
+
+const STEP_HINTS = {
+  'block1-practice-prompt': {
+    initial: '<p>Выберите один из 5 кейсов ниже — реальные рабочие ситуации.</p>',
+    taskSelected: '<p>Прочитайте плохой промпт в карточке кейса — запомните ощущение. Затем нажмите <strong>«Начать задание»</strong>.</p>',
+    steps: {
+      '1.1': `<p class="mb-2">Составьте промпт v1 — можно использовать блоки RTCFSC или написать свой.</p>${RTCFSC_TIP}`,
+      '1.2': '<p>Оцените ответ по 3 критериям: <strong>конкретность</strong>, <strong>тон</strong>, <strong>нет «воды» и непроверенных фактов</strong>.</p>',
+      '1.3': '<p>Запишите <strong>минимум 2 конкретных изменения</strong> — не просто «добавил подробностей», а что именно и зачем.</p>',
+      '2.1': '<p>Примените улучшения: напишите <strong>промпт v2</strong> и запустите нейросеть.</p>',
+      '2.2': '<p>Запишите главный вывод: <strong>что именно</strong> сильнее всего улучшило результат?</p>',
+      '3': '<p class="mb-2">Проверьте отчёт и нажмите <strong>«Отправить»</strong>. Убедитесь что заполнены все пункты:</p><ul class="text-xs space-y-0.5 text-slate-600"><li>Выбранный кейс</li><li>Промпт v1 и ответ ИИ v1</li><li>Оценка v1 и минимум 2 улучшения</li><li>Промпт v2 и ответ ИИ v2</li><li>Главный вывод</li></ul>'
+    }
+  },
+  'block1-practice-scenario': {
+    initial: '<p>Выберите один из 5 сценариев — сложные рабочие ситуации для тренировки диалога.</p>',
+    taskSelected: '<p>Прочитайте сценарий и определите роли. Нажмите <strong>«Начать задание»</strong>.</p>',
+    steps: {
+      '1.1': '<p>Опишите роли участников и вашу <strong>цель в разговоре</strong> — чего вы хотите добиться?</p>',
+      '1.2': '<p>Напишите первую реплику и отправьте её в нейросеть. Текст можно изменить перед отправкой.</p>',
+      '1.3': '<p>Продолжайте диалог в чате — минимум <strong>4 пары реплик</strong>. ИИ будет намеренно возражать — это тренировка.</p>',
+      '2.1': '<p>Скопируйте из чата <strong>2 реплики, которые сработали</strong>, и 1 слабую — запишите почему.</p>',
+      '2.2': '<p>Отметьте где ИИ был нереалистичен и как усложнить инструкцию в следующий раз.</p>',
+      '3': '<p>Проверьте отчёт и нажмите <strong>«Отправить»</strong>.</p>'
+    }
+  },
+  'block1-practice-hallucination': {
+    initial: '<p>Выберите один из 5 фрагментов — тексты с ошибками и рисками ИИ.</p>',
+    taskSelected: '<p>Прочитайте выбранный фрагмент. Нажмите <strong>«Начать задание»</strong> — найдите минимум 4 проблемных места.</p>',
+    steps: {
+      '1': '<p>Найдите минимум <strong>4 опасных места</strong> в тексте. Заполните таблицу: цитата → тип проблемы → уровень → почему опасно → что проверить.</p>',
+      '2.1': '<p>Перепишите фрагмент так, чтобы <strong>убрать или исправить</strong> найденные риски.</p>',
+      '2.2': '<p>Примите решение: можно использовать / после проверки / нельзя. Составьте <strong>личный чек-лист</strong> из 5 пунктов.</p>',
+      '3': '<p>Проверьте отчёт и нажмите <strong>«Отправить»</strong>.</p>'
+    }
+  },
+  'block2-practice-aim': {
+    initial: '<p>Выберите один из 5 кейсов для практики с методом AIM.</p>',
+    taskSelected: '<p>Прочитайте кейс. Нажмите <strong>«Начать задание»</strong> — заполните структуру AIM.</p>',
+    steps: {
+      '1.1': '<p class="mb-2">Заполните блоки AIM:</p><ul class="text-xs space-y-0.5 text-slate-600"><li><strong>A — Aim:</strong> какой результат нужен, для кого, зачем</li><li><strong>I — Inputs:</strong> факты, данные, ограничения</li><li><strong>M — Method:</strong> как ИИ должен работать</li></ul>',
+      '1.2': '<p>Добавьте формат, ограничения и критерии качества. Объясните почему плохой промпт слабый.</p>',
+      '1.3': '<p>Отправьте промпт v1 в нейросеть и дождитесь ответа.</p>',
+      '1.4': '<p>Оцените ответ: решает ли задачу, достаточно ли конкретики? Что ИИ понял неправильно?</p>',
+      '1.5': '<p>Запишите <strong>минимум 2 улучшения</strong> для промпта v2.</p>',
+      '2.1': '<p>Напишите <strong>улучшенный промпт v2</strong> и запустите нейросеть.</p>',
+      '2.2': '<p>Запишите главный вывод: что изменилось после применения метода AIM?</p>',
+      '3': '<p>Проверьте отчёт и нажмите <strong>«Отправить»</strong>.</p>'
+    }
+  },
+  'block2-practice-library': {
+    initial: '<p>Выберите роль или направление для создания библиотеки промптов.</p>',
+    taskSelected: '<p>Нажмите <strong>«Начать задание»</strong> — создайте минимум 3 переиспользуемых шаблона.</p>',
+    steps: {
+      '1': '<p>Создайте <strong>минимум 3 шаблона</strong> с переменными вроде <code>{цель}</code>, <code>{аудитория}</code>. Используйте кнопку «+ Добавить промпт».</p>',
+      '2.1': '<p>Выберите шаблон для теста, введите пример данных и нажмите <strong>«Протестировать»</strong>.</p>',
+      '2.2': '<p>Улучшите шаблон до v2 и запишите где будете его использовать.</p>',
+      '3': '<p>Проверьте отчёт и нажмите <strong>«Отправить»</strong>.</p>'
+    }
+  },
+  'block2-practice-context': {
+    initial: '<p>Выберите тип ассистента для создания персонального паспорта.</p>',
+    taskSelected: '<p>Нажмите <strong>«Начать задание»</strong> — заполните паспорт ассистента по блокам.</p>',
+    steps: {
+      '1.1': '<p>Заполните первые блоки паспорта: <strong>роль</strong>, задачи, рабочий контекст.</p>',
+      '1.2': '<p>Добавьте информацию о клиентах, продуктах и стиле общения.</p>',
+      '1.3': '<p>Укажите правила работы, форматы результата и критерии качества.</p>',
+      '1.4': '<p>Добавьте примеры <strong>хорошего и плохого</strong> ответа ассистента.</p>',
+      '2.1': '<p>Напишите тестовый запрос и отправьте паспорт в нейросеть.</p>',
+      '2.2': '<p>Оцените ответ и улучшите паспорт v2: что добавить или уточнить?</p>',
+      '3': '<p>Проверьте отчёт и нажмите <strong>«Отправить»</strong>.</p>'
+    }
+  }
+};
+
 const PRACTICE_HINTS = {
   'block1-practice-prompt': [
     { label: 'Как заполнить RTCFSC', text: 'Объясни, что писать в каждом блоке RTCFSC (R, T, C, F, S, C) для моей выбранной задачи. Дай по одному примеру фразы на блок, без полного готового промпта.' },
@@ -1471,6 +1547,7 @@ function tryAdvancePracticeSubstep() {
     block: 'nearest'
   });
   scheduleAutoSave();
+  updateAssignmentHint();
   return true;
 }
 
@@ -1531,6 +1608,7 @@ function showPracticeStep(n, { restoreSubstep } = {}) {
   }
 
   scheduleAutoSave();
+  updateAssignmentHint();
 }
 
 function advancePracticeStep() {
@@ -1988,6 +2066,7 @@ function selectTaskOption(taskId, { persist = true } = {}) {
   renderTaskOptionDetail();
   if (persist && state.currentLessonId) scheduleAutoSave();
   updateComposerPlaceholder();
+  updateAssignmentHint();
 }
 
 function updateComposerPlaceholder() {
@@ -1999,6 +2078,28 @@ function updateComposerPlaceholder() {
   } else {
     composer.placeholder = 'Сообщение наставнику…';
   }
+}
+
+function updateAssignmentHint() {
+  const el = document.getElementById('assignmentText');
+  if (!el) return;
+  const sk = state.currentLesson?.scenario_key;
+  const hints = STEP_HINTS[sk];
+  if (!hints) return;
+
+  const practiceStarted = !document.getElementById('practiceWorkflowBlock')?.classList.contains('hidden');
+  const step = state.practiceStep || 1;
+  const sub = state.practiceSubstep || 1;
+
+  let html;
+  if (!practiceStarted) {
+    html = state.selectedTaskId ? hints.taskSelected : hints.initial;
+  } else {
+    const key = hints.steps[`${step}.${sub}`] ? `${step}.${sub}` : String(step);
+    html = hints.steps[key] || hints.steps[String(step)] || hints.taskSelected;
+  }
+
+  el.innerHTML = html || '';
 }
 
 function startPractice() {
@@ -2914,13 +3015,16 @@ async function openLessonPanel(lesson) {
   if (asn && ab && at) {
     ab.classList.remove('hidden');
     document.getElementById('assignmentTitle').textContent = asn.title || 'Задание';
-    at.innerHTML = renderMarkdown(asn.instructions_md || '');
+    if (!STEP_HINTS[lesson.scenario_key]) {
+      at.innerHTML = renderMarkdown(asn.instructions_md || '');
+    }
     document.getElementById('askMentorAssignmentBtn')?.classList.add('hidden');
     renderTaskOptions(lesson);
     configurePracticeWorkflow(lesson.scenario_key);
     bindPracticeHints(lesson.scenario_key);
     setPracticeFocusMode(true, lesson);
     initAssignmentAutoSave();
+    updateAssignmentHint();
   } else {
     ab?.classList.add('hidden');
     document.getElementById('askMentorAssignmentBtn')?.classList.add('hidden');
