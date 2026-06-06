@@ -3195,6 +3195,18 @@ function openDemoPanel() {
   setPracticeFocusMode(false);
   setMobilePane('lesson');
 
+  // Переключаем модель на Sonnet для демо (лучшее качество)
+  const modelSel = document.getElementById('modelSelect');
+  const preferredModels = ['anthropic/claude-3.7-sonnet', 'anthropic/claude-3-sonnet', 'openai/gpt-4o'];
+  if (modelSel) {
+    for (const m of preferredModels) {
+      if ([...modelSel.options].some(o => o.value === m)) {
+        modelSel.value = m;
+        break;
+      }
+    }
+  }
+
   // Заполняем превью промптов
   const lp = document.getElementById('demoPromptLandingPreview');
   if (lp) lp.textContent = DEMO_PROMPTS.landing;
@@ -3235,10 +3247,11 @@ async function runDemo(type) {
     appendUserBubble(promptText);
 
     document.getElementById('typingRow')?.classList.remove('hidden');
+    const model = document.getElementById('modelSelect')?.value || 'anthropic/claude-3.7-sonnet';
     await streamChat({
       conversationId: state.currentConversationId,
       message: promptText,
-      model: 'anthropic/claude-3.7-sonnet',
+      model,
       chatMode: 'general'
     });
     document.getElementById('typingRow')?.classList.add('hidden');
