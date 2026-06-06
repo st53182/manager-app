@@ -1195,3 +1195,54 @@
   line-height: 1.5;
   space-y: 0.25rem;
 }
+
+/* ===== Demo panel ===== */
+.academy-light .aa-demo-tree-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  border: 1.5px solid #c7d2fe;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: left;
+}
+.academy-light .aa-demo-tree-btn:hover,
+.academy-light .aa-demo-tree-btn.is-active {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  border-color: #818cf8;
+}
+
+.academy-light .aa-demo-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1rem 1.125rem;
+  box-shadow: 0 1px 4px 0 rgba(0,0,0,0.06);
+}
+.academy-light .aa-demo-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+}
+.academy-light .aa-demo-card-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+.academy-light .aa-demo-prompt-preview {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #f8fafc;
+}
+.academy-light .aa-demo-prompt-preview pre {
+  margin: 0;
+  max-height: 12rem;
+  overflow-y: auto;
+  font-family: inherit;
+}

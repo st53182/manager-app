@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>AI Academy — Workspace</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/css/academy-workspace.css?v=20260606-10">
+  <link rel="stylesheet" href="/css/academy-workspace.css?v=20260606-11">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github.min.css">
 </head>
 <body class="min-h-screen academy-light">
@@ -192,6 +192,54 @@
           <div class="flex-1 overflow-y-auto chat-scroll p-4 min-h-0">
             <p id="lessonEmpty" class="text-sm text-slate-500">Выберите практику в списке слева — откроется полное задание.</p>
             <div id="lessonContent" class="hidden prose prose-sm max-w-none text-slate-700"></div>
+
+            <!-- ===== ДЕМО-ПАНЕЛЬ ===== -->
+            <div id="demoPanelSection" class="hidden space-y-5">
+              <div>
+                <h2 class="text-lg font-bold text-slate-900 mb-1">🚀 Демо: что умеет ИИ</h2>
+                <p class="text-sm text-slate-500">Нажмите кнопку — ИИ сделает всё сам. Результат появится в чате справа.</p>
+              </div>
+
+              <!-- Демо 1: Лендинг -->
+              <div class="aa-demo-card">
+                <div class="aa-demo-card-header">
+                  <span class="aa-demo-card-icon">🌐</span>
+                  <div>
+                    <p class="font-semibold text-slate-900 text-sm">Живой лендинг за 30 секунд</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Запуск нового препарата SlimPro на рынок</p>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-600 mt-2 mb-3">ИИ создаст полноценный HTML-сайт с hero-секцией, описанием механизма действия, цифрами исследований, отзывами и формой записи. Можно скроллить и кликать.</p>
+                <details class="aa-demo-prompt-preview mb-3">
+                  <summary class="text-xs text-slate-400 cursor-pointer hover:text-slate-600">Что именно отправляем →</summary>
+                  <pre id="demoPromptLandingPreview" class="mt-2 text-xs text-slate-500 whitespace-pre-wrap leading-relaxed"></pre>
+                </details>
+                <button type="button" id="runDemoLandingBtn" class="aa-btn aa-btn-primary w-full">
+                  Запустить демо — Лендинг →
+                </button>
+                <p id="demoLandingStatus" class="hidden text-xs text-slate-500 mt-2 text-center" aria-live="polite"></p>
+              </div>
+
+              <!-- Демо 2: Дашборд -->
+              <div class="aa-demo-card">
+                <div class="aa-demo-card-header">
+                  <span class="aa-demo-card-icon">📊</span>
+                  <div>
+                    <p class="font-semibold text-slate-900 text-sm">Аналитический дашборд</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Рынок вакансий: Европа и Россия 2025</p>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-600 mt-2 mb-3">ИИ соберёт аналитику по рынку труда: топ специальностей, сравнение зарплат, диаграммы трендов, ключевые события и прогноз на H2 2025.</p>
+                <details class="aa-demo-prompt-preview mb-3">
+                  <summary class="text-xs text-slate-400 cursor-pointer hover:text-slate-600">Что именно отправляем →</summary>
+                  <pre id="demoPromptDashboardPreview" class="mt-2 text-xs text-slate-500 whitespace-pre-wrap leading-relaxed"></pre>
+                </details>
+                <button type="button" id="runDemoDashboardBtn" class="aa-btn aa-btn-primary w-full">
+                  Запустить демо — Дашборд →
+                </button>
+                <p id="demoDashboardStatus" class="hidden text-xs text-slate-500 mt-2 text-center" aria-live="polite"></p>
+              </div>
+            </div>
 
             <div id="assignmentBlock" class="hidden mt-6">
               <p id="practiceFlowHint" class="hidden text-xs text-slate-600 bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 mb-3 leading-relaxed">
@@ -729,5 +777,6 @@
   <script type="module" src="/js/academy-app.js?v=20260606-6"></script>
 </body>
 </html>
+
 
 

@@ -3082,6 +3082,18 @@ function renderCourseTree() {
   const root = document.getElementById('courseTree');
   if (!root || !state.catalog) return;
   root.innerHTML = '';
+
+  // Демо-карточка (нулевой урок)
+  const demoWrap = document.createElement('div');
+  demoWrap.className = 'mb-4';
+  const demoBtn = document.createElement('button');
+  demoBtn.type = 'button';
+  demoBtn.id = 'demoCourseBtn';
+  demoBtn.className = 'aa-demo-tree-btn w-full text-left';
+  demoBtn.innerHTML = '<span class="text-base mr-1.5">🚀</span><span><span class="block text-sm font-semibold text-indigo-900">Демо: что умеет ИИ</span><span class="block text-xs text-indigo-600 mt-0.5">Лендинг + Аналитический дашборд</span></span>';
+  demoBtn.addEventListener('click', openDemoPanel);
+  demoWrap.appendChild(demoBtn);
+  root.appendChild(demoWrap);
   const byCourse = {};
   for (const l of getMvpLessons()) {
     if (!byCourse[l.course_id]) byCourse[l.course_id] = [];
@@ -3118,6 +3130,138 @@ function renderCourseTree() {
     wrap.appendChild(ul);
     root.appendChild(wrap);
   }
+}
+
+/* ===== ДЕМО-ПАНЕЛЬ ===== */
+const DEMO_PROMPTS = {
+  landing: `Создай полноценный landing page на русском языке для запуска нового препарата для похудения «SlimPro» на фармацевтический рынок.
+
+Верни ТОЛЬКО один полный HTML-документ (<!DOCTYPE html> … </html>) со встроенными стилями CSS. Никаких внешних зависимостей кроме Google Fonts (подключи Inter или Nunito через @import).
+
+Обязательные секции:
+1. Hero — сильный заголовок, подзаголовок, кнопка «Записаться на консультацию»
+2. «Как работает» — 3 механизма действия с SVG-иконками и кратким описанием
+3. Результаты — 3 ключевые цифры из клинических исследований (большие, акцентные)
+4. Отзывы — 3 карточки (имя, возраст, потеря веса, короткий текст, CSS-аватар)
+5. FAQ — 5 вопросов с ответами через <details>/<summary>
+6. Footer — контакты, юридический дисклеймер, copyright SlimPro 2025
+
+Дизайн: современный медицинский, белый фон, акцент #1a56db (синий) и #0e9f6e (зелёный), скруглённые карточки, тени, межстрочный интервал 1.6. Полностью мобильно адаптивный (CSS Grid + clamp).`,
+
+  dashboard: `Ты — старший аналитик рынка труда. Создай структурированный аналитический дашборд по рынку вакансий в Европе и России по состоянию на 2025 год.
+
+Используй markdown с таблицами и диаграммами Mermaid. Структура строго такая:
+
+## 📊 Рынок вакансий: Европа и Россия — 2025
+
+### Ключевые тренды
+Таблица: Тренд | Европа | Россия | Сила тренда (🔴🟡🟢)
+
+### ТОП-7 востребованных специальностей
+Таблица: Специальность | Медиана EU (€/мес) | Медиана RU (₽/мес) | Дефицит кадров
+
+### Динамика вакансий по секторам
+\`\`\`mermaid
+xychart-beta
+  title "Рост числа вакансий по секторам, % к 2024"
+  x-axis ["IT/AI", "Медицина", "Финансы", "Логистика", "Маркетинг", "Производство", "ESG"]
+  y-axis "Изменение %" -15 --> 45
+  bar [42, 31, 14, -8, 22, 9, 27]
+\`\`\`
+
+### Сравнение рынков
+Таблица: Показатель | Европа | Россия | Вывод
+
+### Ключевые события Q1–Q2 2025
+Таблица: Событие | Регион | Влияние на рынок
+
+### 🔮 Прогноз на H2 2025
+Три сценария (оптимистичный / базовый / пессимистичный) — одна таблица.
+
+### Executive Summary
+3–4 предложения для руководителя: главный вывод, рекомендация, риск.`
+};
+
+function openDemoPanel() {
+  state.currentLessonId = null;
+  state.currentLesson = null;
+  document.getElementById('lessonEmpty')?.classList.add('hidden');
+  document.getElementById('lessonContent')?.classList.add('hidden');
+  document.getElementById('assignmentBlock')?.classList.add('hidden');
+  document.getElementById('demoPanelSection')?.classList.remove('hidden');
+  document.getElementById('lessonHint').textContent = 'Демо · Модуль 1';
+  document.getElementById('practiceFlowHint')?.classList.add('hidden');
+  document.getElementById('practiceActionsRow')?.classList.add('hidden');
+  setPracticeFocusMode(false);
+  setMobilePane('lesson');
+
+  // Заполняем превью промптов
+  const lp = document.getElementById('demoPromptLandingPreview');
+  if (lp) lp.textContent = DEMO_PROMPTS.landing;
+  const dp = document.getElementById('demoPromptDashboardPreview');
+  if (dp) dp.textContent = DEMO_PROMPTS.dashboard;
+
+  // Обновляем подсветку в дереве курсов
+  document.querySelectorAll('.aa-lesson-btn').forEach(b => b.classList.remove('is-active'));
+  document.getElementById('demoCourseBtn')?.classList.add('is-active');
+}
+
+async function runDemo(type) {
+  const promptText = DEMO_PROMPTS[type];
+  if (!promptText || state.streaming) return;
+
+  const btn = document.getElementById(type === 'landing' ? 'runDemoLandingBtn' : 'runDemoDashboardBtn');
+  const status = document.getElementById(type === 'landing' ? 'demoLandingStatus' : 'demoDashboardStatus');
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Генерирую…'; }
+  if (status) { status.textContent = 'ИИ работает — результат появится в чате справа…'; status.classList.remove('hidden'); }
+
+  try {
+    // Создаём новый разговор если нет активного
+    if (!state.currentConversationId) {
+      const title = type === 'landing' ? 'Демо: Лендинг SlimPro' : 'Демо: Дашборд рынка вакансий';
+      const conv = await api('/api/academy/conversations', {
+        method: 'POST',
+        body: JSON.stringify({ title })
+      });
+      state.conversations.unshift(conv);
+      state.currentConversationId = conv.id;
+      renderConversationList();
+    }
+
+    setMobilePane('chat');
+
+    // Вставляем сообщение пользователя в чат
+    appendUserBubble(promptText);
+
+    document.getElementById('typingRow')?.classList.remove('hidden');
+    await streamChat({
+      conversationId: state.currentConversationId,
+      message: promptText,
+      model: document.getElementById('modelSelect')?.value || null,
+      chatMode: 'general'
+    });
+    document.getElementById('typingRow')?.classList.add('hidden');
+
+    if (status) status.textContent = '✓ Готово! Смотрите результат в чате →';
+  } catch (e) {
+    if (status) status.textContent = 'Ошибка: ' + (e.message || 'не удалось запустить демо');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = type === 'landing' ? 'Запустить ещё раз →' : 'Обновить дашборд →';
+    }
+  }
+}
+
+function appendUserBubble(text) {
+  const box = document.getElementById('chatMessages');
+  if (!box) return;
+  const bubble = document.createElement('div');
+  bubble.className = 'user-bubble';
+  bubble.textContent = text.length > 200 ? text.slice(0, 200) + '…' : text;
+  box.appendChild(bubble);
+  box.scrollTop = box.scrollHeight;
 }
 
 function escapeHtml(s) {
@@ -3416,6 +3560,7 @@ function clearLessonPanel() {
   document.getElementById('lessonEmpty')?.classList.remove('hidden');
   document.getElementById('lessonContent')?.classList.add('hidden');
   document.getElementById('assignmentBlock')?.classList.add('hidden');
+  document.getElementById('demoPanelSection')?.classList.add('hidden');
   document.getElementById('practiceFlowHint')?.classList.add('hidden');
   document.getElementById('askMentorAssignmentBtn')?.classList.add('hidden');
   document.getElementById('newLessonChatBtn')?.classList.add('hidden');
@@ -3431,6 +3576,7 @@ async function openLessonPanel(lesson) {
   state.selectedTaskId = null;
   document.getElementById('lessonPanel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   document.getElementById('lessonEmpty')?.classList.add('hidden');
+  document.getElementById('demoPanelSection')?.classList.add('hidden');
   document.getElementById('lessonContent')?.classList.remove('hidden');
   const lc = document.getElementById('lessonContent');
   if (lc) lc.innerHTML = `<details class="aa-lesson-details"><summary class="aa-lesson-summary">📖 Описание задания</summary><div class="aa-lesson-details-body">${renderMarkdown(lesson.content_md || '')}</div></details>`;
@@ -4599,6 +4745,13 @@ function wireUi() {
     document.getElementById('composer').focus();
   });
   document.getElementById('practiceHintBtn')?.addEventListener('click', () => insertPracticeHintIntoComposer());
+
+  document.getElementById('runDemoLandingBtn')?.addEventListener('click', () =>
+    runDemo('landing').catch(e => alert(e.message || 'Ошибка демо'))
+  );
+  document.getElementById('runDemoDashboardBtn')?.addEventListener('click', () =>
+    runDemo('dashboard').catch(e => alert(e.message || 'Ошибка демо'))
+  );
 }
 
 function formatBytes(bytes) {
