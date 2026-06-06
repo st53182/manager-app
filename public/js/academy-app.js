@@ -3328,7 +3328,7 @@ async function runDemo(type) {
       message: promptText,
       model,
       chatMode: 'general',
-      max_tokens: 6000
+      max_tokens: 16000
     });
     document.getElementById('typingRow')?.classList.add('hidden');
 
