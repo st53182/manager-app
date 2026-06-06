@@ -536,6 +536,7 @@ const TOOLS_RIGHT_WIDTH_KEY = 'academy_right_pane_width';
 const CHAT_PANE_WIDTH_KEY = 'academy_chat_pane_width';
 const CHAT_CONTEXT_KEY = 'academy_chat_context_v1';
 const CHAT_TOOLBAR_EXPANDED_KEY = 'academy_chat_toolbar_expanded';
+const PRACTICE_CHAT_OPEN_KEY = 'academy_practice_chat_open';
 let academyLayoutSetWidths = null;
 let toastHideTimer = null;
 let chatContextSaveTimer = null;
@@ -2093,6 +2094,7 @@ function setPracticeChatOpen(open) {
   const openBtn = document.getElementById('openPracticeChatBtn');
   const closeBtn = document.getElementById('closePracticeChatBtn');
   const backBtn = document.getElementById('backToAssignmentBtn');
+  const toggleBtn = document.getElementById('togglePracticeChatBtn');
   if (!app || !chat) return;
   if (open) {
     chat.classList.remove('chat-collapsed');
@@ -2110,7 +2112,18 @@ function setPracticeChatOpen(open) {
     backBtn?.classList.add('hidden');
     document.getElementById('lessonPanel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
+  if (toggleBtn) {
+    toggleBtn.textContent = open ? 'Скрыть чат' : 'Открыть чат';
+    toggleBtn.classList.toggle('aa-btn-primary', !open);
+    toggleBtn.classList.toggle('aa-btn-ghost', open);
+  }
   refreshAcademyLayout();
+}
+
+function togglePracticeChat() {
+  const open = !document.getElementById('app')?.classList.contains('practice-chat-open');
+  setPracticeChatOpen(open);
+  localStorage.setItem(PRACTICE_CHAT_OPEN_KEY, open ? '1' : '0');
 }
 
 function setPracticeFocusMode(on, lesson = null) {
@@ -2123,7 +2136,11 @@ function setPracticeFocusMode(on, lesson = null) {
     syncChatToolbarVisibility();
     document.getElementById('lessonPanelSubtitle').textContent = lesson.title || 'Практика';
     updateOpenPracticeChatLabel(lesson.scenario_key);
-    setPracticeChatOpen(false);
+    document.getElementById('togglePracticeChatBtn')?.classList.remove('hidden');
+    // По умолчанию на широком экране чат наставника открыт рядом с заданием,
+    // на мобильном — закрыт (открывается поверх). Учитываем выбор пользователя.
+    const chatPref = localStorage.getItem(PRACTICE_CHAT_OPEN_KEY);
+    setPracticeChatOpen(window.innerWidth >= 1280 && chatPref !== '0');
     refreshAcademyLayout();
   } else {
     app.classList.remove('practice-focus', 'practice-chat-open', 'practice-chat-mobile');
@@ -2133,6 +2150,7 @@ function setPracticeFocusMode(on, lesson = null) {
     document.getElementById('taskOptionsBlock')?.classList.add('hidden');
     syncChatToolbarVisibility();
     document.getElementById('chatSection')?.classList.remove('chat-collapsed');
+    document.getElementById('togglePracticeChatBtn')?.classList.add('hidden');
     document.getElementById('backToAssignmentBtn')?.classList.add('hidden');
     document.getElementById('openPracticeChatBtn')?.classList.remove('hidden');
     document.getElementById('closePracticeChatBtn')?.classList.add('hidden');
@@ -3943,8 +3961,15 @@ function wireUi() {
     r.addEventListener('change', scheduleAutoSave);
   });
   document.getElementById('openPracticeChatBtn')?.addEventListener('click', () => openPracticeChat());
-  document.getElementById('closePracticeChatBtn')?.addEventListener('click', () => closePracticeChat());
-  document.getElementById('backToAssignmentBtn')?.addEventListener('click', () => closePracticeChat());
+  document.getElementById('togglePracticeChatBtn')?.addEventListener('click', () => togglePracticeChat());
+  document.getElementById('closePracticeChatBtn')?.addEventListener('click', () => {
+    closePracticeChat();
+    localStorage.setItem(PRACTICE_CHAT_OPEN_KEY, '0');
+  });
+  document.getElementById('backToAssignmentBtn')?.addEventListener('click', () => {
+    closePracticeChat();
+    localStorage.setItem(PRACTICE_CHAT_OPEN_KEY, '0');
+  });
   document.getElementById('sidebarOpenChatBtn')?.addEventListener('click', () => {
     document.getElementById('newChatBtn')?.click();
   });
