@@ -4232,7 +4232,12 @@ function wireUi() {
   document.getElementById('practiceWorkflowBlock')?.addEventListener('click', (e) => {
     if (e.target.closest('.js-practice-substep-next')) advancePracticeStepOrSubstep();
   });
-  document.getElementById('practiceNextS1Btn')?.addEventListener('click', () => advancePracticeStepOrSubstep());
+  document.getElementById('practiceNextS1Btn')?.addEventListener('click', () => {
+    const v1 = document.getElementById('practicePromptV1')?.value?.trim();
+    const v2El = document.getElementById('practicePromptV2');
+    if (v1 && v2El && !v2El.value.trim()) v2El.value = v1;
+    advancePracticeStepOrSubstep();
+  });
   document.getElementById('practiceNextM2P1S1Btn')?.addEventListener('click', () => {
     const notes = document.getElementById('m2PracticeImproveNotes')?.value?.trim() || '';
     if (notes.length < 15) {
@@ -4244,6 +4249,9 @@ function wireUi() {
         return;
       }
     }
+    const m2v1 = document.getElementById('m2PracticePromptV1')?.value?.trim();
+    const m2v2El = document.getElementById('m2PracticePromptV2');
+    if (m2v1 && m2v2El && !m2v2El.value.trim()) m2v2El.value = m2v1;
     advancePracticeStepOrSubstep();
   });
   document.getElementById('practiceNextP2S1Btn')?.addEventListener('click', () => advancePracticeStepOrSubstep());
