@@ -954,6 +954,9 @@ function showApp() {
   document.getElementById('initLoading')?.classList.add('hidden');
   document.getElementById('initError')?.classList.add('hidden');
   document.getElementById('app')?.classList.remove('hidden');
+  // Кнопка повторного открытия инструментов зависит от видимости #app.
+  // На старте #app ещё скрыт, поэтому пере-вычисляем состояние после показа.
+  try { updateToolsPanelToggleUi(isToolsPanelCollapsed()); } catch {}
 }
 
 function parseUser() {
