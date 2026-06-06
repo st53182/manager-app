@@ -290,12 +290,20 @@
     grid-template-columns: 0 0 minmax(280px, 1fr) 0 0;
   }
 
-  /* Практика, чат открыт: чат фиксированной ширины + задание 1fr */
+  /* Практика, чат открыт: задание — основное слева (1fr), чат — справа фикс. ширины.
+     Порядок колонок: [задание] [сплиттер] [чат] [сплиттер] [инструменты] */
   .academy-light #app.practice-focus.practice-chat-open #workspaceRow {
-    grid-template-columns: var(--chat-pane-width) 12px minmax(280px, 1fr) 12px var(--right-pane-width);
+    grid-template-columns: minmax(280px, 1fr) 12px var(--chat-pane-width) 12px var(--right-pane-width);
   }
   .academy-light #app.practice-focus.practice-chat-open.tools-panel-collapsed #workspaceRow {
-    grid-template-columns: var(--chat-pane-width) 12px minmax(280px, 1fr) 0 0;
+    grid-template-columns: minmax(280px, 1fr) 12px var(--chat-pane-width) 0 0;
+  }
+  /* Меняем местами: задание в 1-ю колонку, чат — в 3-ю */
+  .academy-light #app.practice-focus.practice-chat-open #workspaceRow > #lessonPanel {
+    grid-column: 1;
+  }
+  .academy-light #app.practice-focus.practice-chat-open #workspaceRow > #chatSection {
+    grid-column: 3;
   }
 }
 

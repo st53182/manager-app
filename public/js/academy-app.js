@@ -3349,7 +3349,8 @@ function initResizableLayout() {
           localStorage.setItem('academy_left_pane_width', String(Math.round(next)));
         } else if (side === 'lesson') {
           if (practiceFocus && chatOpen) {
-            const next = clamp(chatStart + dx, 280, maxPane);
+            // Чат теперь справа от этого сплиттера: тянем влево — чат шире.
+            const next = clamp(chatStart - dx, 280, maxPane);
             setWidths(null, null, null, next);
             localStorage.setItem(CHAT_PANE_WIDTH_KEY, String(Math.round(next)));
           } else {
@@ -3785,14 +3786,25 @@ function wireUi() {
   document.getElementById('regenerateBtn').addEventListener('click', async () => {
     if (!state.currentConversationId || state.streaming) return;
     document.getElementById('typingRow').classList.remove('hidden');
-    await streamChat({
-      conversationId: state.currentConversationId,
-      regenerate: true,
-      model: document.getElementById('modelSelect').value,
-      chatMode: document.getElementById('chatModeSelect')?.value || 'general',
-      knowledgeBaseId: document.getElementById('knowledgeBaseSelect')?.value || undefined,
-      personaId: document.getElementById('personaSelect')?.value || undefined
-    }).catch(() => {});
+    const dialogueCtx = getActivePracticeDialogueContext();
+    await streamChat(
+      dialogueCtx
+        ? {
+            conversationId: state.currentConversationId,
+            regenerate: true,
+            model: document.getElementById('modelSelect').value,
+            chatMode: 'practice_run',
+            practiceRunContext: dialogueCtx
+          }
+        : {
+            conversationId: state.currentConversationId,
+            regenerate: true,
+            model: document.getElementById('modelSelect').value,
+            chatMode: document.getElementById('chatModeSelect')?.value || 'general',
+            knowledgeBaseId: document.getElementById('knowledgeBaseSelect')?.value || undefined,
+            personaId: document.getElementById('personaSelect')?.value || undefined
+          }
+    ).catch(() => {});
     document.getElementById('typingRow').classList.add('hidden');
   });
 
@@ -4273,6 +4285,18 @@ async function deleteDocumentHandler(documentId) {
   }
 }
 
+// Практика 2 (сценарий диалога): когда студент в чате практики и выбрал вариант с ролью,
+// чат ведём как ролевой диалог — ИИ остаётся в роли собеседника и отвечает по одной реплике.
+function getActivePracticeDialogueContext() {
+  const app = document.getElementById('app');
+  if (!app?.classList.contains('practice-focus')) return null;
+  if (!app.classList.contains('practice-chat-open')) return null;
+  if (state.currentLesson?.scenario_key !== 'block1-practice-scenario') return null;
+  if (!getSelectedTaskOption()) return null;
+  const ctx = buildPracticeRunContext('dialogue');
+  return ctx?.aiRole ? ctx : null;
+}
+
 async function sendHandler() {
   if (state.streaming) return;
   const text = document.getElementById('composer').value.trim();
@@ -4283,21 +4307,35 @@ async function sendHandler() {
   const selectedFiles = fileInput?.files ? Array.from(fileInput.files) : [];
   appendOptimisticUserMessage(text, selectedFiles);
   const typingLabel = document.getElementById('typingLabel');
-  if (typingLabel) typingLabel.textContent = 'Нейросеть обрабатывает запрос...';
+  const dialogueCtx = getActivePracticeDialogueContext();
+  if (typingLabel) {
+    typingLabel.textContent = dialogueCtx
+      ? 'Собеседник печатает…'
+      : 'Нейросеть обрабатывает запрос...';
+  }
   document.getElementById('typingRow').classList.remove('hidden');
 
   persistChatContext();
-  const payload = {
-    conversationId: state.currentConversationId || undefined,
-    lessonId: state.currentLessonId || undefined,
-    message: text,
-    model: document.getElementById('modelSelect').value,
-    chatMode: document.getElementById('chatModeSelect')?.value || 'general',
-    knowledgeBaseId: document.getElementById('knowledgeBaseSelect')?.value || undefined,
-    personaId: document.getElementById('personaSelect')?.value || undefined,
-    strictMode: (document.getElementById('chatModeSelect')?.value || '') === 'strict_knowledge',
-    assistantInstructions: state.activeAssistant?.instructions || undefined
-  };
+  const payload = dialogueCtx
+    ? {
+        conversationId: state.currentConversationId || undefined,
+        lessonId: state.currentLessonId || undefined,
+        message: text,
+        model: document.getElementById('modelSelect').value,
+        chatMode: 'practice_run',
+        practiceRunContext: dialogueCtx
+      }
+    : {
+        conversationId: state.currentConversationId || undefined,
+        lessonId: state.currentLessonId || undefined,
+        message: text,
+        model: document.getElementById('modelSelect').value,
+        chatMode: document.getElementById('chatModeSelect')?.value || 'general',
+        knowledgeBaseId: document.getElementById('knowledgeBaseSelect')?.value || undefined,
+        personaId: document.getElementById('personaSelect')?.value || undefined,
+        strictMode: (document.getElementById('chatModeSelect')?.value || '') === 'strict_knowledge',
+        assistantInstructions: state.activeAssistant?.instructions || undefined
+      };
 
   document.getElementById('composer').value = '';
 
