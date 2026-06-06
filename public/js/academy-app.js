@@ -485,6 +485,135 @@ const PRACTICE_STEP_CELEBRATIONS = {
   ]
 };
 
+/* Симуляция реакции получателя и карточка персоны для Практики 1 */
+const P1_RECIPIENT_DATA = {
+  'p1-task-1': {
+    reactionV1: {
+      avatar: '👩‍💼',
+      name: 'Марина Климова, клиент',
+      time: '17:58',
+      text: 'Подождите, какой именно срок переносится? И что мне сейчас нужно сделать — ждать или у вас нужно что-то подтвердить?'
+    },
+    persona: {
+      avatar: '👩‍💼',
+      name: 'Марина Климова',
+      role: 'Директор по развитию, ключевой клиент',
+      traits: [
+        'Читает почту на телефоне — важны первые две строки',
+        'Раньше жаловалась на расплывчатую коммуникацию',
+        'Ценит конкретность: новая дата + следующий шаг в первом абзаце',
+        'Оправдания воспринимает как слабость — лучше факт и решение'
+      ]
+    },
+    reactionV2: {
+      avatar: '👩‍💼',
+      name: 'Марина Климова, клиент',
+      time: '18:03',
+      text: 'Хорошо, жду до завтра 12:00. Спасибо, что предупредили заранее.'
+    }
+  },
+  'p1-task-2': {
+    reactionV1: {
+      avatar: '🧑‍💼',
+      name: 'Алексей Воронин, руководитель',
+      time: '09:14',
+      text: 'Это я и так знал из разговора. Где риски? Кто за что конкретно отвечает? Мне нужна управленческая сводка, а не пересказ.'
+    },
+    persona: {
+      avatar: '🧑‍💼',
+      name: 'Алексей Воронин',
+      role: 'Руководитель, принимает решения по приоритетам',
+      traits: [
+        'Нужны риски и ответственные — не хронология событий',
+        'Читает по диагонали: заголовки и списки, не сплошной текст',
+        'Открытые вопросы и следующие шаги важнее описания прошлого',
+        'Хочет понять: «Что мне нужно сделать или решить?»'
+      ]
+    },
+    reactionV2: {
+      avatar: '🧑‍💼',
+      name: 'Алексей Воронин, руководитель',
+      time: '09:17',
+      text: 'Теперь вижу картину. Карлис — напомни ему про бюджет к пятнице. Марко — попроси прояснить риск с CRM до конца дня.'
+    }
+  },
+  'p1-task-3': {
+    reactionV1: {
+      avatar: '👨‍💻',
+      name: 'Денис, сотрудник',
+      time: '10:32',
+      text: 'Хм, а старые заявки что — просто отклонят? И куда именно подавать, как выглядит новая форма? Письмо немного непонятное.'
+    },
+    persona: {
+      avatar: '👨‍💻',
+      name: 'Денис и коллеги',
+      role: 'Сотрудники, не читающие длинные инструкции',
+      traits: [
+        'Сканируют письмо за 10 секунд — нужен чёткий список действий',
+        'Реагируют на страх ошибиться: объясни последствия простыми словами',
+        'Вопросы «а что если…» возникают, если инструкция неполная',
+        'Письмо до 150 слов с маркерами воспринимается гораздо лучше'
+      ]
+    },
+    reactionV2: {
+      avatar: '👨‍💻',
+      name: 'Денис, сотрудник',
+      time: '10:35',
+      text: 'Понял, спасибо. Заполню через новую форму и прикреплю обоснование. А если вдруг нужно исключение — пишу руководителю?'
+    }
+  },
+  'p1-task-4': {
+    reactionV1: {
+      avatar: '👩‍🔬',
+      name: 'Наталья, менеджер проекта',
+      time: '14:21',
+      text: 'Хороший список шагов, но непонятно кто конкретно что делает. И что, если данные от аналитика задержатся — план рассыплется?'
+    },
+    persona: {
+      avatar: '👩‍🔬',
+      name: 'Наталья Соколова',
+      role: 'Менеджер проекта, отвечает за координацию команды',
+      traits: [
+        'Нужны конкретные ответственные рядом с каждым шагом',
+        'Зависимости между людьми важнее общей хронологии',
+        'Хочет видеть «план Б» или хотя бы риск с зависимостью от данных',
+        'Критерий готовности к пятнице должен быть в плане явно'
+      ]
+    },
+    reactionV2: {
+      avatar: '👩‍🔬',
+      name: 'Наталья, менеджер проекта',
+      time: '14:24',
+      text: 'Отлично — теперь вижу кто за что отвечает и где узкое место. Аналитику напомню про данные к вторнику. Разошлю команде.'
+    }
+  },
+  'p1-task-5': {
+    reactionV1: {
+      avatar: '🤝',
+      name: 'Константин, партнёр',
+      time: '11:47',
+      text: 'Понял что скидки нет. Но зачем тогда продолжать переговоры? Что именно вы предлагаете взамен?'
+    },
+    persona: {
+      avatar: '🤝',
+      name: 'Константин Лебедев',
+      role: 'Партнёр, важный клиент, ищет выгоду',
+      traits: [
+        'Ценит альтернативу — просто «нет» без предложения закрывает дверь',
+        'Рассрочка или 10% должны звучать как реальная ценность, не утешение',
+        'Важен тон: уважение к запросу, не извинения и не жёсткий отказ',
+        'Предложение обсудить лично или по звонку сохраняет отношения'
+      ]
+    },
+    reactionV2: {
+      avatar: '🤝',
+      name: 'Константин, партнёр',
+      time: '11:52',
+      text: 'Рассрочка интересна. Давайте обсудим условия — можете созвониться завтра?'
+    }
+  }
+};
+
 const RTCFSC_TIP = `<p class="font-medium text-slate-700 mb-1.5">Подсказка: блоки RTCFSC</p><ul class="space-y-0.5 text-slate-600 text-xs"><li><strong>R</strong> — роль: кем выступает ИИ</li><li><strong>T</strong> — задача: что конкретно сделать</li><li><strong>C</strong> — контекст: важные детали ситуации</li><li><strong>F</strong> — формат: письмо, список, таблица, до N слов</li><li><strong>S</strong> — стиль: деловой, нейтральный, дружеский</li><li><strong>C</strong> — критерии: что делает ответ хорошим</li></ul>`;
 
 const STEP_HINTS = {
@@ -2080,6 +2209,34 @@ function updateComposerPlaceholder() {
   }
 }
 
+function renderReactionBubble(r, cls = '') {
+  if (!r) return '';
+  return `<div class="aa-reaction-bubble ${cls}">
+    <span class="aa-reaction-avatar">${r.avatar}</span>
+    <div class="aa-reaction-body">
+      <div class="aa-reaction-meta"><strong>${r.name}</strong><span>${r.time}</span></div>
+      <p class="aa-reaction-text">${r.text}</p>
+    </div>
+  </div>`;
+}
+
+function renderPersonaCard(p) {
+  if (!p) return '';
+  const traits = (p.traits || []).map(t => `<li>${t}</li>`).join('');
+  return `<div class="aa-persona-card">
+    <div class="aa-persona-header">
+      <span class="aa-reaction-avatar">${p.avatar}</span>
+      <div><strong class="aa-persona-name">${p.name}</strong><p class="aa-persona-role">${p.role}</p></div>
+    </div>
+    <ul class="aa-persona-traits">${traits}</ul>
+  </div>`;
+}
+
+function getP1RecipientData() {
+  const taskId = state.selectedTaskId;
+  return taskId ? (P1_RECIPIENT_DATA[taskId] || null) : null;
+}
+
 function updateAssignmentHint() {
   const el = document.getElementById('assignmentText');
   if (!el) return;
@@ -2094,12 +2251,43 @@ function updateAssignmentHint() {
   let html;
   if (!practiceStarted) {
     html = state.selectedTaskId ? hints.taskSelected : hints.initial;
+  } else if (sk === 'block1-practice-prompt') {
+    html = buildP1StepHint(step, sub);
   } else {
     const key = hints.steps[`${step}.${sub}`] ? `${step}.${sub}` : String(step);
     html = hints.steps[key] || hints.steps[String(step)] || hints.taskSelected;
   }
 
   el.innerHTML = html || '';
+}
+
+function buildP1StepHint(step, sub) {
+  const rd = getP1RecipientData();
+  const hints = STEP_HINTS['block1-practice-prompt'].steps;
+
+  if (step === 1) {
+    if (sub === 1) return hints['1.1'];
+    if (sub === 2) {
+      return renderReactionBubble(rd?.reactionV1, 'is-fail') +
+        '<p class="mt-3 text-sm text-slate-700">Получатель не понял письмо. Оцените ответ по 3 критериям: <strong>конкретность</strong>, <strong>тон</strong>, <strong>нет «воды»</strong>.</p>';
+    }
+    if (sub === 3) {
+      return renderPersonaCard(rd?.persona) +
+        '<p class="mt-3 text-sm text-slate-700">Теперь вы знаете получателя. Запишите <strong>минимум 2 конкретных изменения</strong> для промпта v2.</p>';
+    }
+  }
+  if (step === 2) {
+    if (sub === 1) {
+      return renderPersonaCard(rd?.persona) +
+        '<p class="mt-3 text-sm text-slate-700">Напишите <strong>промпт v2</strong> с учётом получателя и ваших улучшений. Запустите нейросеть.</p>';
+    }
+    if (sub === 2) {
+      return renderReactionBubble(rd?.reactionV2, 'is-success') +
+        '<p class="mt-3 text-sm text-slate-700">Получатель среагировал иначе. Запишите главный вывод: <strong>что именно</strong> изменило результат?</p>';
+    }
+  }
+  if (step === 3) return hints['3'];
+  return hints[`${step}.${sub}`] || hints[String(step)] || '';
 }
 
 function startPractice() {

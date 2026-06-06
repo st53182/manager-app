@@ -1118,3 +1118,80 @@
   padding: 0 0.85rem 0.85rem;
   border-top: 1px solid var(--aa-border);
 }
+
+/* Reaction bubble — simulated recipient message */
+.academy-light .aa-reaction-bubble {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.75rem;
+  border-radius: var(--aa-radius-sm);
+  border: 1px solid var(--aa-border);
+  background: #f8fafc;
+}
+.academy-light .aa-reaction-bubble.is-fail {
+  background: #fff7f7;
+  border-color: #fecaca;
+}
+.academy-light .aa-reaction-bubble.is-success {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+.academy-light .aa-reaction-avatar {
+  font-size: 1.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.academy-light .aa-reaction-body {
+  min-width: 0;
+}
+.academy-light .aa-reaction-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  margin-bottom: 0.2rem;
+}
+.academy-light .aa-reaction-meta strong {
+  color: var(--aa-text);
+}
+.academy-light .aa-reaction-meta span {
+  color: var(--aa-text-muted);
+}
+.academy-light .aa-reaction-text {
+  font-size: 0.85rem;
+  color: var(--aa-text);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Persona card — recipient profile reveal */
+.academy-light .aa-persona-card {
+  border: 1px solid #bfdbfe;
+  border-radius: var(--aa-radius-sm);
+  background: #eff6ff;
+  padding: 0.75rem;
+}
+.academy-light .aa-persona-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+.academy-light .aa-persona-name {
+  font-size: 0.875rem;
+  color: var(--aa-text);
+}
+.academy-light .aa-persona-role {
+  font-size: 0.75rem;
+  color: #2563eb;
+  margin: 0;
+}
+.academy-light .aa-persona-traits {
+  margin: 0;
+  padding-left: 1rem;
+  font-size: 0.78rem;
+  color: #1e3a5f;
+  line-height: 1.5;
+  space-y: 0.25rem;
+}
