@@ -2627,8 +2627,8 @@ function insertPracticeHintIntoComposer() {
   let text = sel.value;
   if (task) text += `\n\nМой выбранный вариант: «${task.title}». Контекст: ${task.context}`;
   if (document.getElementById('app')?.classList.contains('practice-focus')) {
-    if (!warnIfNoTaskSelected()) return;
-    openPracticeChat();
+    setPracticeChatOpen(true);
+    setMobilePane('chat');
   }
   composer.value = text;
   composer.focus();
