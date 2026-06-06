@@ -1409,8 +1409,9 @@ function createRouter({ JWT_SECRET }) {
             }
           }
         } catch (streamErr) {
-          console.error('Stream error:', streamErr.message || streamErr);
-          send({ type: 'error', error: 'AI provider error. Try again.' });
+          const errDetail = streamErr?.message || String(streamErr);
+          console.error('Stream error:', errDetail);
+          send({ type: 'error', error: `AI provider error: ${errDetail.slice(0, 200)}` });
           res.end();
           return;
         }
