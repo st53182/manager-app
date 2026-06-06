@@ -3133,6 +3133,88 @@ function renderCourseTree() {
 }
 
 /* ===== ДЕМО-ПАНЕЛЬ ===== */
+// Собирает SSE-поток /api/academy/chat и возвращает полный текст ответа
+async function bufferDemoStream(payload) {
+  const res = await fetch(`${apiBase}/api/academy/chat`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '', fullText = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue;
+      const raw = line.slice(5).trim();
+      if (raw === '[DONE]') continue;
+      try {
+        const ev = JSON.parse(raw);
+        if (ev.type === 'token') fullText += ev.token;
+        if (ev.type === 'error') throw new Error(ev.error || 'AI error');
+      } catch {}
+    }
+  }
+  return fullText;
+}
+
+// Инжектирует готовый HTML как AI-пузырь с iframe (без сохранения в БД)
+function injectHtmlBubble(html) {
+  const box = document.getElementById('chatMessages');
+  if (!box) return;
+  const outer = document.createElement('div');
+  outer.className = 'msg-row assistant-row';
+  const bubble = document.createElement('div');
+  bubble.className = 'assistant-bubble';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'my-3 border border-slate-300 rounded-lg overflow-hidden bg-white';
+  const header = document.createElement('div');
+  header.className = 'flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-1.5 bg-slate-100 text-xs text-slate-600';
+  const label = document.createElement('span');
+  label.className = 'font-medium text-slate-800';
+  label.textContent = 'Превью HTML · JS разрешён';
+  const openBtn = document.createElement('button');
+  openBtn.type = 'button';
+  openBtn.className = 'text-indigo-600 hover:text-indigo-500 transition-colors';
+  openBtn.textContent = 'Открыть в новой вкладке';
+  const dlBtn = document.createElement('button');
+  dlBtn.type = 'button';
+  dlBtn.className = 'text-emerald-700 hover:text-emerald-600';
+  dlBtn.textContent = 'Скачать .html';
+  const iframe = document.createElement('iframe');
+  iframe.className = 'w-full min-h-[min(70vh,560px)] bg-white';
+  iframe.setAttribute('sandbox', 'allow-scripts allow-popups allow-popups-to-escape-sandbox');
+  iframe.title = 'Демо-превью';
+  const safe = sanitizeArtifactHtml(html, true);
+  openBtn.addEventListener('click', () => {
+    const blob = new Blob([safe], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  });
+  dlBtn.addEventListener('click', () => {
+    const blob = new Blob([safe], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'pulse-landing.html';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  });
+  iframe.srcdoc = safe;
+  header.appendChild(label); header.appendChild(openBtn); header.appendChild(dlBtn);
+  wrap.appendChild(header); wrap.appendChild(iframe);
+  bubble.appendChild(wrap);
+  outer.appendChild(bubble);
+  box.appendChild(outer);
+  box.scrollTop = box.scrollHeight;
+}
+
 const DEMO_PROMPTS = {
   landing: `Создай полный, красивый landing page на русском языке для SaaS-продукта «Pulse» — AI-платформы для управления командой и эффективностью сотрудников.
 
@@ -3213,7 +3295,26 @@ body { font-family: 'Inter', sans-serif; }
 8. CTA — «Попробуйте Pulse 14 дней бесплатно» на фиолетовом градиенте
 9. Footer — колонки со ссылками + copyright «© 2025 Pulse»
 
-Дизайн: акценты #7c3aed (фиолетовый) и #06b6d4 (голубой). Тёмный hero, белые секции, серый фон у отзывов. Скруглённые карточки, тени, hover-эффекты.`,
+Дизайн: акценты #7c3aed (фиолетовый) и #06b6d4 (голубой). Тёмный hero, белые секции, серый фон у отзывов. Скруглённые карточки, тени, hover-эффекты.
+
+ВАЖНО: Сгенерируй ТОЛЬКО секции 1–5 (Навбар, Hero, Клиенты, Возможности, Метрики). Заверши HTML ровно на строке <!-- PART1_END --> и ОСТАНОВИСЬ — не закрывай </body> и </html>. Формат:
+
+\`\`\`academy-html-part1
+...HTML секций 1-5...
+<!-- PART1_END -->`,
+
+  landing_part2: (part1tail) => `Продолжи HTML лендинга «Pulse». Вот конец первой части:
+
+${part1tail}
+
+Допиши оставшиеся секции и закрой HTML. Твой ответ — ТОЛЬКО код, начиная сразу после <!-- PART1_END -->, без \`\`\` fence-блоков и без повторения уже написанного:
+
+6. Отзывы — 3 карточки: Анна Смирнова (HR, Яндекс) / Дмитрий Козлов (CTO, Авито) / Мария Иванова (CEO, Сбер)
+7. Тарифы — Старт 0₽ / Про 2 990₽/мес / Энтерпрайз — по запросу, в виде трёх карточек, средняя выделена
+8. CTA — «Попробуйте Pulse 14 дней бесплатно» на фиолетовом градиенте
+9. Footer — колонки со ссылками + copyright «© 2025 Pulse»
+
+Заверши строками </body></html>`,
 
   dashboard: `Ты — старший аналитик рынка труда. Создай структурированный аналитический дашборд по рынку вакансий в Европе и России — 2025.
 
@@ -3388,46 +3489,87 @@ function openDemoPanel() {
 }
 
 async function runDemo(type) {
-  const promptText = DEMO_PROMPTS[type];
-  if (!promptText || state.streaming) return;
+  if (state.streaming) return;
 
   const btn = document.getElementById(type === 'landing' ? 'runDemoLandingBtn' : 'runDemoDashboardBtn');
   const status = document.getElementById(type === 'landing' ? 'demoLandingStatus' : 'demoDashboardStatus');
 
   if (btn) { btn.disabled = true; btn.textContent = 'Генерирую…'; }
-  if (status) { status.textContent = 'ИИ работает — результат появится в чате справа…'; status.classList.remove('hidden'); }
+  if (status) { status.textContent = 'ИИ работает…'; status.classList.remove('hidden'); }
 
   try {
-    // Создаём новый разговор если нет активного
     if (!state.currentConversationId) {
-      const title = type === 'landing' ? 'Демо: Лендинг SlimPro' : 'Демо: Дашборд рынка вакансий';
-      const conv = await api('/api/academy/conversations', {
-        method: 'POST',
-        body: JSON.stringify({ title })
-      });
+      const title = type === 'landing' ? 'Демо: Лендинг Pulse' : 'Демо: Дашборд рынка вакансий';
+      const conv = await api('/api/academy/conversations', { method: 'POST', body: JSON.stringify({ title }) });
       state.conversations.unshift(conv);
       state.currentConversationId = conv.id;
       renderConversationList();
     }
-
     setMobilePane('chat');
 
-    // Вставляем сообщение пользователя в чат
-    appendUserBubble(promptText);
-
-    document.getElementById('typingRow')?.classList.remove('hidden');
     const model = document.getElementById('demoModelSelect')?.value || document.getElementById('modelSelect')?.value || 'openai/gpt-4o';
-    await streamChat({
-      conversationId: state.currentConversationId,
-      message: promptText,
-      model,
-      chatMode: 'general',
-      max_tokens: 16000
-    });
-    document.getElementById('typingRow')?.classList.add('hidden');
 
-    if (status) status.textContent = '✓ Готово! Смотрите результат в чате →';
+    if (type === 'landing') {
+      // ── Двухшаговая генерация лендинга ──────────────────────────────
+      appendUserBubble('Генерирую лендинг «Pulse» в два шага…');
+
+      // Шаг 1
+      if (status) status.textContent = '⏳ Шаг 1/2 — генерирую верх страницы…';
+      document.getElementById('typingRow')?.classList.remove('hidden');
+      const raw1 = await bufferDemoStream({
+        conversationId: state.currentConversationId,
+        message: DEMO_PROMPTS.landing,
+        model,
+        chatMode: 'general',
+        max_tokens: 8000
+      });
+      document.getElementById('typingRow')?.classList.add('hidden');
+
+      // Извлекаем HTML из первой части (между ```academy-html-part1 и ```)
+      let html1 = raw1;
+      const fenceMatch = raw1.match(/```academy-html-part1\n([\s\S]*?)(?:\n```|$)/);
+      if (fenceMatch) html1 = fenceMatch[1];
+      // Убираем маркер если есть
+      html1 = html1.replace('<!-- PART1_END -->', '').trimEnd();
+
+      // Шаг 2
+      if (status) status.textContent = '⏳ Шаг 2/2 — генерирую нижнюю часть…';
+      document.getElementById('typingRow')?.classList.remove('hidden');
+      // Передаём последние 600 символов как контекст
+      const tail = html1.slice(-600);
+      const raw2 = await bufferDemoStream({
+        conversationId: state.currentConversationId,
+        message: DEMO_PROMPTS.landing_part2(tail),
+        model,
+        chatMode: 'general',
+        max_tokens: 8000
+      });
+      document.getElementById('typingRow')?.classList.add('hidden');
+
+      // Очищаем fence-блоки если модель всё же добавила
+      let html2 = raw2.replace(/^```[\w-]*\n?/, '').replace(/\n?```$/, '').trim();
+
+      const fullHtml = html1 + '\n' + html2;
+      injectHtmlBubble(fullHtml);
+      if (status) status.textContent = '✓ Готово! Лендинг собран из двух частей →';
+
+    } else {
+      // ── Одиночный запрос для дашборда ───────────────────────────────
+      appendUserBubble(DEMO_PROMPTS.dashboard);
+      document.getElementById('typingRow')?.classList.remove('hidden');
+      await streamChat({
+        conversationId: state.currentConversationId,
+        message: DEMO_PROMPTS.dashboard,
+        model,
+        chatMode: 'general',
+        max_tokens: 16000
+      });
+      document.getElementById('typingRow')?.classList.add('hidden');
+      if (status) status.textContent = '✓ Готово! Смотрите результат в чате →';
+    }
+
   } catch (e) {
+    document.getElementById('typingRow')?.classList.add('hidden');
     if (status) status.textContent = 'Ошибка: ' + (e.message || 'не удалось запустить демо');
   } finally {
     if (btn) {
