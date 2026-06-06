@@ -209,10 +209,11 @@
         }
       },
       p3: {
-        risks: collectRisks(),
-        safe_version: val('practiceSafeVersion'),
+        suspicious_claims: val('p3SuspiciousClaims'),
+        verify_questions: val('p3VerifyQuestions'),
+        ai_response_eval: val('p3AiResponseEval'),
         decision: document.querySelector('input[name="riskDecision"]:checked')?.value || '',
-        checklist: [1, 2, 3, 4, 5].map((i) => val(`checklistItem${i}`))
+        main_insight: val('p3MainInsight')
       },
       self_check: collectSelfCheck(scenarioKey)
     };
@@ -254,13 +255,14 @@
     set('p2ApplyWork', a.apply_work);
 
     const p3 = wf.p3 || {};
-    restoreRisks(p3.risks);
-    set('practiceSafeVersion', p3.safe_version);
+    set('p3SuspiciousClaims', p3.suspicious_claims);
+    set('p3VerifyQuestions', p3.verify_questions);
+    set('p3AiResponseEval', p3.ai_response_eval);
+    set('p3MainInsight', p3.main_insight);
     if (p3.decision) {
       const radio = document.querySelector(`input[name="riskDecision"][value="${p3.decision}"]`);
       if (radio) radio.checked = true;
     }
-    (p3.checklist || []).forEach((c, i) => set(`checklistItem${i + 1}`, c));
 
     renderSelfCheck(scenarioKey, wf.self_check);
   }
@@ -368,31 +370,25 @@ ${a.apply_work || '—'}
   function buildReportP3(task, wf, taskNum) {
     const p3 = wf.p3 || {};
     const frag = task?.fragment_text || '';
-    let table = '';
-    (p3.risks || []).forEach((r, i) => {
-      if (!r.quote && !r.type) return;
-      table += `${i + 1}) «${r.quote}» — тип: ${riskTypeLabel(r.type)} — уровень: ${riskLevelLabel(r.level)}
-   Почему: ${r.why || '—'}
-   Проверить: ${r.verify || '—'}
-`;
-    });
     const dec = DECISION_LABELS[p3.decision] || p3.decision || '—';
-    const cl = (p3.checklist || []).map((c, i) => `${i + 1}. ${c || '…'}`).join('\n');
     return `Выбранный вариант (${taskNum || '?'}): ${task?.title || ''}
 
 Исходный фрагмент:
 ${frag}
 
-Проблемы:
-${table || '—'}
+Подозрительные утверждения, которые я заметил:
+${p3.suspicious_claims || '—'}
 
-Безопасная версия:
-${p3.safe_version || '—'}
+Вопросы, которые я задал нейросети для проверки:
+${p3.verify_questions || '—'}
 
-Решение: ${dec}
+Как ИИ ответил на вопросы о источниках:
+${p3.ai_response_eval || '—'}
 
-Личный чек-лист проверки ответов ИИ:
-${cl}
+Итоговое решение: ${dec}
+
+Главный вывод:
+${p3.main_insight || '—'}
 `;
   }
 

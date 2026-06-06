@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>AI Academy — Workspace</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/css/academy-workspace.css?v=20260606-9">
+  <link rel="stylesheet" href="/css/academy-workspace.css?v=20260606-10">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github.min.css">
 </head>
 <body class="min-h-screen academy-light">
@@ -335,55 +335,59 @@
                   </div>
                 </div>
 
-                <!-- ===== ПРАКТИКА 3: Риски ===== -->
+                <!-- ===== ПРАКТИКА 3: Проверяй прежде чем верить ===== -->
                 <div id="practiceAnalysisSection" class="hidden space-y-3">
 
-                  <!-- Шаг 1: Найти риски -->
+                  <!-- Шаг 1: Замечаю + формулирую вопросы -->
                   <div class="aa-step-pane aa-practice-workflow-box space-y-3" data-practice-step="1">
                     <div class="aa-practice-substep space-y-3" data-practice-substep="1">
-                      <p class="text-xs text-slate-600">Прочитайте фрагмент выше. Найдите минимум 4 опасных места и заполните таблицу.</p>
-                      <div class="aa-risk-table-wrap overflow-x-auto">
-                        <table class="aa-risk-table w-full text-xs">
-                          <thead><tr><th>Цитата из текста</th><th>Тип проблемы</th><th>Уровень</th><th>Почему опасно</th><th>Что проверить</th></tr></thead>
-                          <tbody id="riskTableBody"></tbody>
-                        </table>
-                      </div>
+                      <p class="text-xs text-slate-600">Прочитайте фрагмент выше. Найдите 3–5 утверждений, которые стоит проверить: цифры, факты, советы, ссылки на авторитеты.</p>
+                      <label class="block">
+                        <span class="aa-label">Подозрительные утверждения</span>
+                        <textarea id="p3SuspiciousClaims" rows="4" class="aa-textarea mt-1" placeholder="1. «ROI 340%» — нет источника&#10;2. «McKinsey рекомендует» — нет ссылки&#10;3. ..."></textarea>
+                      </label>
+                      <label class="block">
+                        <span class="aa-label">Вопросы для проверки (задайте их нейросети в чате)</span>
+                        <textarea id="p3VerifyQuestions" rows="5" class="aa-textarea mt-1" placeholder="1. Назови источник этой статистики&#10;2. Эта рекомендация справедлива для всех случаев или только для конкретного контекста?&#10;3. ..."></textarea>
+                      </label>
                       <button type="button" id="practiceNextP3S1Btn" class="aa-btn aa-btn-primary w-full mt-1">
-                        Риски нашёл, перехожу к решению →
+                        Вопросы готовы — иду в чат →
                       </button>
                     </div>
                   </div>
 
-                  <!-- Шаг 2: Решение и чек-лист -->
+                  <!-- Шаг 2: Проверяю + решение -->
                   <div class="aa-step-pane hidden aa-practice-workflow-box space-y-3" data-practice-step="2">
                     <div class="aa-practice-substep space-y-3" data-practice-substep="1">
-                      <label class="block"><span class="aa-label">Безопасная версия фрагмента</span><textarea id="practiceSafeVersion" rows="5" class="aa-textarea mt-1" placeholder="Перепишите фрагмент так, чтобы убрать или исправить найденные риски"></textarea></label>
-                      <button type="button" class="aa-btn aa-btn-primary w-full js-practice-substep-next">Далее к решению →</button>
+                      <p class="text-xs text-slate-600">Отправьте вопросы из шага 1 в нейросеть через чат справа. Посмотрите как ИИ реагирует — признаёт ли ограничения или остаётся уверен.</p>
+                      <label class="block">
+                        <span class="aa-label">Как ИИ ответил на вопросы о источниках?</span>
+                        <textarea id="p3AiResponseEval" rows="4" class="aa-textarea mt-1" placeholder="Например: признал что ROI — примерная оценка, источник не назвал. По ссылке на McKinsey — сказал что это обобщение, точный отчёт не нашёл."></textarea>
+                      </label>
+                      <button type="button" class="aa-btn aa-btn-primary w-full js-practice-substep-next">Оценил ответы — принять решение →</button>
                     </div>
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
-                      <fieldset class="text-sm"><legend class="aa-label mb-2">Итоговое решение</legend>
+                      <fieldset class="text-sm"><legend class="aa-label mb-2">Итоговое решение по фрагменту</legend>
                         <label class="flex items-center gap-2 py-1"><input type="radio" name="riskDecision" value="usable" /> <span>Можно использовать</span></label>
                         <label class="flex items-center gap-2 py-1"><input type="radio" name="riskDecision" value="after_check" /> <span>Можно использовать после проверки</span></label>
                         <label class="flex items-center gap-2 py-1"><input type="radio" name="riskDecision" value="not_usable" /> <span>Нельзя использовать в текущем виде</span></label>
                       </fieldset>
-                      <div>
-                        <p class="aa-label text-sm mb-1">Мой личный чек-лист проверки ответов ИИ (5 пунктов)</p>
-                        <p class="text-xs text-slate-500 mb-2">Что вы будете проверять в следующий раз, прежде чем использовать текст от нейросети?</p>
-                        <div class="space-y-1">
-                          <input id="checklistItem1" type="text" class="aa-input text-sm" placeholder="1. Например: проверить все цифры в независимом источнике" />
-                          <input id="checklistItem2" type="text" class="aa-input text-sm" placeholder="2." />
-                          <input id="checklistItem3" type="text" class="aa-input text-sm" placeholder="3." />
-                          <input id="checklistItem4" type="text" class="aa-input text-sm" placeholder="4." />
-                          <input id="checklistItem5" type="text" class="aa-input text-sm" placeholder="5." />
-                        </div>
-                      </div>
-                      <button type="button" id="runAnalysisInAiBtn" class="aa-btn aa-btn-ghost w-full text-sm">Подсказка от нейросети (не готовый отчёт)</button>
+                      <label class="block">
+                        <span class="aa-label">Главный вывод</span>
+                        <p class="text-xs text-slate-500 mb-1">Какой вопрос сработал лучше всего? Что будете спрашивать у ИИ в следующий раз?</p>
+                        <textarea id="p3MainInsight" rows="3" class="aa-textarea mt-1" placeholder="Например: вопрос «Назови источник» сразу показал что статистика выдуманная. Теперь буду задавать его к любой цифре от ИИ."></textarea>
+                      </label>
+                      <!-- скрытые поля для совместимости с autosave -->
+                      <input type="hidden" id="checklistItem1" /><input type="hidden" id="checklistItem2" /><input type="hidden" id="checklistItem3" /><input type="hidden" id="checklistItem4" /><input type="hidden" id="checklistItem5" />
                       <div id="aiResultBlockAnalysis" class="hidden"><div id="aiResultAnalysisPreview" class="aa-task-detail max-h-36 overflow-y-auto whitespace-pre-wrap text-sm"></div></div>
                       <button type="button" id="buildReportP3Btn" class="aa-btn aa-btn-primary w-full">
                         Собрать отчёт и перейти к отправке →
                       </button>
                     </div>
                   </div>
+                  <!-- скрытые поля для совместимости с autosave/restore -->
+                  <textarea id="practiceSafeVersion" class="hidden" aria-hidden="true"></textarea>
+                  <tbody id="riskTableBody" class="hidden" aria-hidden="true"></tbody>
                 </div>
 
                 <!-- ===== МОДУЛЬ 2 · ПРАКТИКА 1: AIM ===== -->
@@ -725,4 +729,5 @@
   <script type="module" src="/js/academy-app.js?v=20260606-6"></script>
 </body>
 </html>
+
 

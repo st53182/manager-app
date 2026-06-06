@@ -431,8 +431,8 @@ const PRACTICE_STEP_LABELS = {
     'Проверить отчёт и отправить'
   ],
   'block1-practice-hallucination': [
-    'Найти и классифицировать риски в тексте',
-    'Написать безопасную версию и принять решение',
+    'Заметить утверждения и составить вопросы для проверки',
+    'Проверить в чате и принять решение',
     'Проверить отчёт и отправить'
   ],
   'block2-practice-aim': [
@@ -465,8 +465,8 @@ const PRACTICE_STEP_CELEBRATIONS = {
   ],
   'block1-practice-hallucination': [
     null,
-    '✓ Риски найдены! Теперь напишите безопасную версию текста и примите решение.',
-    '✓ Готово! Отчёт собран. Проверьте его и нажмите «Отправить».'
+    '✓ Вопросы готовы! Отправьте их в чат и оцените ответы ИИ — это самая важная часть.',
+    '✓ Готово! Отчёт собран. Проверьте его и нажмите «Завершить задание».'
   ],
   'block2-practice-aim': [
     null,
@@ -784,13 +784,13 @@ const STEP_HINTS = {
     }
   },
   'block1-practice-hallucination': {
-    initial: '<p>Выберите один из 5 фрагментов — тексты с ошибками и рисками ИИ.</p>',
-    taskSelected: '<p>Прочитайте выбранный фрагмент внимательно. Нажмите <strong>«Начать задание»</strong> — ниже появится шпаргалка по типам рисков.</p>',
+    initial: '<p>Выберите один из 5 фрагментов — реальные тексты от нейросети с непроверенными утверждениями.</p>',
+    taskSelected: '<p>Прочитайте фрагмент. Нажмите <strong>«Начать задание»</strong> — научимся задавать правильные вопросы, прежде чем верить ИИ.</p>',
     steps: {
-      '1': '<p>Найдите минимум <strong>4 опасных места</strong> в тексте. Заполните таблицу: цитата → тип проблемы → уровень → почему опасно → что проверить.</p>',
-      '2.1': '<p>Перепишите фрагмент так, чтобы <strong>убрать или исправить</strong> найденные риски.</p>',
-      '2.2': '<p>Примите решение: можно использовать / после проверки / нельзя. Составьте <strong>личный чек-лист</strong> из 5 пунктов.</p>',
-      '3': '<p>Проверьте отчёт и нажмите <strong>«Отправить»</strong>.</p>'
+      '1': '<p>Найдите 3–5 утверждений которые стоит проверить. Составьте вопросы которые зададите нейросети.</p>',
+      '2.1': '<p>Отправьте вопросы в чат справа. Оцените: признал ли ИИ ограничения или остался уверен?</p>',
+      '2.2': '<p>Примите решение и запишите главный вывод: какой вопрос сработал лучше всего?</p>',
+      '3': '<p>Проверьте отчёт и нажмите <strong>«Завершить задание»</strong>.</p>'
     }
   },
   'block2-practice-aim': {
@@ -846,10 +846,10 @@ const PRACTICE_HINTS = {
     { label: 'Как оформить выводы', text: 'Покажи структуру блока «Выводы»: 4 пункта-заголовка и по одному примеру предложения. Без выдуманного диалога.' }
   ],
   'block1-practice-hallucination': [
-    { label: 'Типы ошибок ИИ', text: 'Объясни простыми словами 5 типов рисков в ответах ИИ на моём выбранном фрагменте. Без готового «безопасного» текста.' },
-    { label: 'Разбор по шагам', text: 'Веди меня по шагам разбору моего выбранного фрагмента. Задавай наводящие вопросы, не выдавай готовый список проблем сразу.' },
-    { label: 'Проверь мой список', text: 'Я пришлю список проблем в выбранном фрагменте. Скажи, что упустил(а) и какие типы перепутал(а).' },
-    { label: 'Безопасные формулировки', text: 'Дай 5 примеров фраз для рабочей переписки, когда данных нет или нужна проверка. Коротко.' }
+    { label: 'Помоги заметить', text: 'В моём выбранном фрагменте — какие типы утверждений чаще всего оказываются непроверенными? Дай 3 подсказки без готового списка.' },
+    { label: 'Как спросить об источнике', text: 'Дай 5 шаблонов вопросов для проверки конкретного утверждения ИИ. Примеры разного типа: цифра, совет, ссылка на авторитет.' },
+    { label: 'ИИ настаивает на ответе', text: 'ИИ отвечает уверенно и не признаёт неточностей. Дай 2 уточняющих вопроса, чтобы выявить ограничения.' },
+    { label: 'Оформить вывод', text: 'Как одним абзацем написать «Главный вывод» по результатам проверки? Дай структуру: что проверял, что выяснил, что буду делать иначе.' }
   ],
   'block2-practice-aim': [
     { label: 'Как заполнить AIM', text: 'Объясни, что писать в Aim, Inputs и Method для моего выбранного кейса. По одному примеру на блок, без готового полного промпта.' },
@@ -1989,6 +1989,10 @@ function clearPracticeFormUi() {
     'practiceRoleAi',
     'practiceRoleMe',
     'practiceSafeVersion',
+    'p3SuspiciousClaims',
+    'p3VerifyQuestions',
+    'p3AiResponseEval',
+    'p3MainInsight',
     'p2GoodReplies',
     'p2WeakReply',
     'p2AiIssues',
@@ -2490,28 +2494,30 @@ function buildP2StepHint(step, sub) {
   return hints[`${step}.${sub}`] || hints[String(step)] || '';
 }
 
+const VERIFY_QUESTIONS_TIP = `<p class="font-medium text-slate-700 mb-1.5">Шпаргалка: вопросы-верификаторы</p><ul class="space-y-1 text-xs text-slate-600"><li><strong>На цифру:</strong> «Назови источник этой статистики»</li><li><strong>На совет:</strong> «Это справедливо для всех случаев или только для конкретного контекста?»</li><li><strong>На ссылку:</strong> «Приведи точное название документа / отчёта»</li><li><strong>На уверенность:</strong> «Какова погрешность этого прогноза?»</li><li><strong>На авторитет:</strong> «Какую именно работу McKinsey / Gartner ты имеешь в виду?»</li><li><strong>На вывод:</strong> «Приведи 2 альтернативные точки зрения по этому вопросу»</li><li><strong>Общий:</strong> «Что ты не знаешь об этой теме?»</li></ul>`;
+
 function buildP3StepHint(step, sub) {
   const fd = getP3FragmentData();
   const hints = STEP_HINTS['block1-practice-hallucination'].steps;
 
   if (step === 1) {
-    return `${RISK_TYPES_TIP}<p class="mt-3 text-sm text-slate-700">Найдите минимум <strong>4 опасных места</strong> в тексте. Заполните таблицу: цитата → тип проблемы → уровень → почему опасно → что проверить.</p>`;
+    const consequences = fd?.consequences
+      ? `<div class="aa-reaction-bubble is-fail mb-3"><p class="text-xs font-medium text-red-700 mb-1">⚠️ Что случится если использовать без проверки:</p><p class="text-sm text-slate-700">${fd.consequences}</p></div>`
+      : '';
+    return consequences + `${VERIFY_QUESTIONS_TIP}<p class="mt-3 text-sm text-slate-700">Найдите <strong>3–5 утверждений</strong> которые стоит проверить, и напишите вопросы которые зададите нейросети.</p>`;
   }
   if (step === 2) {
     if (sub === 1) {
-      const consequences = fd?.consequences
-        ? `<div class="aa-reaction-bubble is-fail mt-2 mb-3"><p class="text-xs font-medium text-red-700 mb-1">⚠️ Что произойдёт если использовать без проверки:</p><p class="text-sm text-slate-700">${fd.consequences}</p></div>`
-        : '';
-      return consequences + '<p class="text-sm text-slate-700">Перепишите фрагмент так, чтобы <strong>убрать или исправить</strong> найденные риски.</p>';
+      return `<p class="text-sm text-slate-700 mb-2">Скопируйте вопросы из шага 1 и отправьте их в чат справа.</p><div class="aa-persona-card p-3"><p class="text-xs font-medium text-slate-500 mb-1">На что смотреть в ответах ИИ:</p><ul class="text-xs text-slate-600 space-y-1 list-disc list-inside"><li>Признаёт ли что не знает точный источник?</li><li>Меняет ли формулировки на менее уверенные?</li><li>Предлагает ли проверить в независимом источнике?</li><li>Или продолжает настаивать без доказательств?</li></ul></div>`;
     }
     if (sub === 2) {
       if (fd?.expertVerdict) {
         const ev = fd.expertVerdict;
-        const badge = ev.decision.includes('нельзя') || ev.decision.includes('Нельзя')
+        const badge = ev.decision.toLowerCase().includes('нельзя')
           ? `<span class="inline-block bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5 rounded">🚫 ${ev.decision}</span>`
           : `<span class="inline-block bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded">⚠️ ${ev.decision}</span>`;
         const risks = ev.mainRisks.map(r => `<li>${r}</li>`).join('');
-        return `<div class="aa-persona-card p-3 mb-3"><p class="text-xs font-medium text-slate-500 mb-1">Экспертный разбор</p>${badge}<ul class="mt-2 text-xs text-slate-600 space-y-1 list-disc list-inside">${risks}</ul></div><p class="text-sm text-slate-700">Примите решение и составьте <strong>личный чек-лист</strong> из 5 пунктов.</p>`;
+        return `<div class="aa-persona-card p-3 mb-3"><p class="text-xs font-medium text-slate-500 mb-1">Экспертный разбор</p>${badge}<ul class="mt-2 text-xs text-slate-600 space-y-1 list-disc list-inside">${risks}</ul></div><p class="text-sm text-slate-700">Примите решение и запишите <strong>главный вывод</strong>: какой вопрос сработал лучше всего?</p>`;
       }
       return hints['2.2'];
     }
@@ -2526,9 +2532,7 @@ function startPractice() {
   const wf = document.getElementById('practiceWorkflowBlock');
   wf?.classList.remove('hidden');
   document.getElementById('startPracticeBtn')?.classList.add('hidden');
-  if (sk === 'block1-practice-hallucination') {
-    getPracticeWorkflowApi()?.initRiskTable();
-  }
+  // initRiskTable removed — P3 redesigned to verification questions flow
   if (sk === 'block2-practice-library') {
     const task = getSelectedTaskOption();
     getPracticeWorkflowApi()?.initLibraryCards([], task?.title);
@@ -2819,6 +2823,10 @@ function initAssignmentAutoSave() {
     'practiceRoleAi',
     'practiceRoleMe',
     'practiceSafeVersion',
+    'p3SuspiciousClaims',
+    'p3VerifyQuestions',
+    'p3AiResponseEval',
+    'p3MainInsight',
     'p2GoodReplies',
     'p2WeakReply',
     'p2AiIssues',
@@ -4508,8 +4516,9 @@ function wireUi() {
   document.getElementById('restartPracticeBtn')?.addEventListener('click', () => {
     restartPractice().catch((e) => alert(e.message || 'Не удалось сбросить задание'));
   });
-  document.getElementById('riskTableBody')?.addEventListener('input', scheduleAutoSave);
-  document.getElementById('riskTableBody')?.addEventListener('change', scheduleAutoSave);
+  ['p3SuspiciousClaims', 'p3VerifyQuestions', 'p3AiResponseEval', 'p3MainInsight'].forEach((id) => {
+    document.getElementById(id)?.addEventListener('input', scheduleAutoSave);
+  });
   document.getElementById('practiceSelfCheckList')?.addEventListener('change', scheduleAutoSave);
   ['evalConcrete', 'evalTone', 'evalNoHype', 'aimEvalSolves', 'aimEvalConcrete'].forEach((id) => {
     document.getElementById(id)?.addEventListener('change', scheduleAutoSave);
