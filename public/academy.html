@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>AI Academy — Workspace</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/css/academy-workspace.css?v=20260606-4">
+  <link rel="stylesheet" href="/css/academy-workspace.css?v=20260606-5">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github.min.css">
 </head>
 <body class="min-h-screen academy-light">
@@ -100,7 +100,7 @@
 
     <div id="leftSplitter" class="aa-splitter aa-splitter-left" aria-hidden="true"></div>
 
-    <nav id="mobileWorkspaceTabs" class="aa-mobile-tabs xl:hidden shrink-0" aria-label="Разделы workspace">
+    <nav id="mobileWorkspaceTabs" class="aa-mobile-tabs lg:hidden shrink-0" aria-label="Разделы workspace">
       <button type="button" class="aa-mobile-tab is-active" data-pane="chat">Чат</button>
       <button type="button" class="aa-mobile-tab" data-pane="lesson">Задание</button>
       <button type="button" class="aa-mobile-tab" data-pane="sidebar">Курсы</button>
@@ -108,9 +108,9 @@
     </nav>
 
     <main id="workspaceMain" class="flex-1 flex flex-col min-h-0 min-w-0 bg-slate-100">
-      <div id="workspaceRow" class="flex-1 flex flex-col xl:flex-row min-h-0 min-w-0">
+      <div id="workspaceRow" class="flex-1 flex flex-col lg:flex-row min-h-0 min-w-0">
         <!-- Чат с наставником -->
-        <section id="chatSection" class="flex-1 min-w-0 flex flex-col aa-panel border-b xl:border-b-0 xl:border-r min-h-[50vh] xl:min-h-0">
+        <section id="chatSection" class="flex-1 min-w-0 flex flex-col aa-panel border-b lg:border-b-0 lg:border-r min-h-[50vh] lg:min-h-0">
           <header class="px-4 py-3 border-b shrink-0" style="border-color: var(--aa-border);">
             <div class="flex items-start gap-2">
               <button type="button" id="backToAssignmentBtn" class="aa-btn aa-btn-ghost shrink-0 hidden text-sm">← К заданию</button>
@@ -132,7 +132,7 @@
             <select id="knowledgeBaseSelect" title="База знаний" class="aa-select"></select>
             <select id="personaSelect" title="Персона" class="aa-select"></select>
             <button type="button" id="regenerateBtn" class="aa-btn">Перегенерировать</button>
-            <button type="button" id="toggleToolsPanelBtn" class="aa-btn hidden xl:inline-flex" title="Показать или скрыть панель инструментов (промпты, база знаний, ассистенты)">Инструменты</button>
+            <button type="button" id="toggleToolsPanelBtn" class="aa-btn hidden lg:inline-flex" title="Показать или скрыть панель инструментов (промпты, база знаний, ассистенты)">Инструменты</button>
           </div>
           <button type="button" id="toggleChatAdvancedBtn" class="hidden mx-4 mt-1 text-xs text-blue-600 hover:underline text-left">Скрыть настройки чата</button>
           <p id="chatActiveAssistantChip" class="hidden mx-4 mt-1 text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-1"></p>
@@ -171,7 +171,7 @@
         <div id="lessonSplitter" class="aa-splitter aa-splitter-wide" aria-hidden="true"></div>
 
         <!-- Урок и задание -->
-        <section id="lessonPanel" class="flex flex-col w-full xl:shrink-0 aa-panel border-b xl:border-b-0 xl:border-r overflow-hidden max-h-[45vh] xl:max-h-none min-h-0">
+        <section id="lessonPanel" class="flex flex-col w-full lg:shrink-0 aa-panel border-b lg:border-b-0 lg:border-r overflow-hidden max-h-[45vh] lg:max-h-none min-h-0">
           <div class="px-4 py-3 border-b shrink-0 flex items-start justify-between gap-2" style="border-color: var(--aa-border);">
             <div class="min-w-0">
               <h2 class="font-semibold text-slate-900">Задание</h2>
@@ -184,7 +184,7 @@
               <button type="button" id="newLessonChatBtn" class="hidden aa-btn aa-btn-ghost text-xs px-2 min-h-0 h-8" title="Создать новый диалог по этому уроку">
                 Новый диалог
               </button>
-            <button type="button" id="hideToolsPanelBtn" class="aa-btn aa-btn-ghost shrink-0 text-xs hidden xl:inline-flex" title="Скрыть панель инструментов и расширить задание">
+            <button type="button" id="hideToolsPanelBtn" class="aa-btn aa-btn-ghost shrink-0 text-xs hidden lg:inline-flex" title="Скрыть панель инструментов и расширить задание">
               Скрыть инструменты
             </button>
             </div>
@@ -619,7 +619,7 @@
         <div id="rightSplitter" class="aa-splitter aa-splitter-wide" aria-hidden="true"></div>
 
         <!-- Инструменты -->
-        <section id="toolsPanel" class="w-full xl:shrink-0 flex flex-col aa-panel overflow-hidden min-h-0 max-h-[40vh] xl:max-h-none">
+        <section id="toolsPanel" class="w-full lg:shrink-0 flex flex-col aa-panel overflow-hidden min-h-0 max-h-[40vh] lg:max-h-none">
           <div class="px-4 py-3 border-b shrink-0 flex items-start justify-between gap-2" style="border-color: var(--aa-border);">
             <div class="min-w-0">
               <h2 class="font-semibold text-slate-900" data-i18n="academy.tools.title">Инструменты</h2>
@@ -719,9 +719,9 @@
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-  <script src="/js/translations.js?v=20260606-4"></script>
-  <script src="/js/academy-practice-workflow.js?v=20260606-4"></script>
-  <script src="/js/academy-practice-workflow-m2.js?v=20260606-4"></script>
-  <script type="module" src="/js/academy-app.js?v=20260606-4"></script>
+  <script src="/js/translations.js?v=20260606-5"></script>
+  <script src="/js/academy-practice-workflow.js?v=20260606-5"></script>
+  <script src="/js/academy-practice-workflow-m2.js?v=20260606-5"></script>
+  <script type="module" src="/js/academy-app.js?v=20260606-5"></script>
 </body>
 </html>

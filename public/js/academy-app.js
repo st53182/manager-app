@@ -869,7 +869,7 @@ function updateActiveAssistantChip() {
 function activateToolTab(tabId) {
   const tab = document.querySelector(`[data-tool-tab="${tabId}"]`);
   tab?.click();
-  if (window.innerWidth < 1280) {
+  if (window.innerWidth < 1024) {
     setMobilePane('tools');
   }
 }
@@ -1133,7 +1133,7 @@ const MOBILE_PANE_CLASSES = [
 
 function setMobilePane(pane) {
   const app = document.getElementById('app');
-  if (!app || window.innerWidth >= 1280) return;
+  if (!app || window.innerWidth >= 1024) return;
   app.classList.remove(...MOBILE_PANE_CLASSES);
   app.classList.add(`aa-mobile-pane-${pane}`);
   document.querySelectorAll('#mobileWorkspaceTabs [data-pane]').forEach((el) => {
@@ -1145,7 +1145,7 @@ function initMobileWorkspaceTabs() {
   const app = document.getElementById('app');
   if (!app) return;
   const syncDefault = () => {
-    if (window.innerWidth >= 1280) {
+    if (window.innerWidth >= 1024) {
       app.classList.remove(...MOBILE_PANE_CLASSES);
       return;
     }
@@ -2099,7 +2099,7 @@ function setPracticeChatOpen(open) {
   if (open) {
     chat.classList.remove('chat-collapsed');
     app.classList.add('practice-chat-open');
-    if (window.innerWidth < 1280) app.classList.add('practice-chat-mobile');
+    if (window.innerWidth < 1024) app.classList.add('practice-chat-mobile');
     openBtn?.classList.add('hidden');
     closeBtn?.classList.remove('hidden');
     backBtn?.classList.remove('hidden');
@@ -2140,7 +2140,7 @@ function setPracticeFocusMode(on, lesson = null) {
     // По умолчанию на широком экране чат наставника открыт рядом с заданием,
     // на мобильном — закрыт (открывается поверх). Учитываем выбор пользователя.
     const chatPref = localStorage.getItem(PRACTICE_CHAT_OPEN_KEY);
-    setPracticeChatOpen(window.innerWidth >= 1280 && chatPref !== '0');
+    setPracticeChatOpen(window.innerWidth >= 1024 && chatPref !== '0');
     refreshAcademyLayout();
   } else {
     app.classList.remove('practice-focus', 'practice-chat-open', 'practice-chat-mobile');
@@ -3233,7 +3233,7 @@ function updateToolsPanelToggleUi(collapsed) {
   if (showBtn) {
     const app = document.getElementById('app');
     const appVisible = app && !app.classList.contains('hidden');
-    showBtn.classList.toggle('hidden', !(collapsed && appVisible && window.innerWidth >= 1280));
+    showBtn.classList.toggle('hidden', !(collapsed && appVisible && window.innerWidth >= 1024));
   }
 }
 
@@ -3323,7 +3323,7 @@ function initResizableLayout() {
     if (!splitter) return;
     splitter.addEventListener('pointerdown', (e) => {
       if (window.innerWidth < 768) return;
-      if ((side === 'lesson' || side === 'right') && window.innerWidth < 1280) return;
+      if ((side === 'lesson' || side === 'right') && window.innerWidth < 1024) return;
       const practiceFocus = app.classList.contains('practice-focus');
       const chatOpen = app.classList.contains('practice-chat-open');
       const collapsed = app.classList.contains('tools-panel-collapsed');
@@ -3993,9 +3993,9 @@ function wireUi() {
   });
   window.addEventListener('resize', () => {
     const app = document.getElementById('app');
-    if (app?.classList.contains('practice-chat-open') && window.innerWidth >= 1280) {
+    if (app?.classList.contains('practice-chat-open') && window.innerWidth >= 1024) {
       app.classList.remove('practice-chat-mobile');
-    } else if (app?.classList.contains('practice-chat-open') && window.innerWidth < 1280) {
+    } else if (app?.classList.contains('practice-chat-open') && window.innerWidth < 1024) {
       app.classList.add('practice-chat-mobile');
     }
   });

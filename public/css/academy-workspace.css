@@ -72,7 +72,7 @@
   border-bottom-color: var(--aa-primary);
 }
 
-@media (max-width: 1279px) {
+@media (max-width: 1023px) {
   #app.aa-mobile-pane-sidebar #leftSidebar,
   #app.aa-mobile-pane-sidebar #leftSplitter {
     display: flex !important;
@@ -239,7 +239,7 @@
    Растущая колонка всегда 1fr → серых «мёртвых» зон не бывает.
    Колонки: [чат] [сплиттер] [задание] [сплиттер] [инструменты]
    ============================================================ */
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .academy-light #workspaceRow {
     display: grid !important;
     grid-template-columns:
@@ -517,8 +517,8 @@
   }
 }
 
-/* Показываем разделители чат/задание и задание/инструменты только на xl+ */
-@media (min-width: 1280px) {
+/* Показываем разделители чат/задание и задание/инструменты на десктопе (lg+) */
+@media (min-width: 1024px) {
   .academy-light .aa-splitter-wide {
     display: flex;
   }
@@ -786,7 +786,7 @@
   display: none !important;
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .academy-light #app.practice-focus #leftSplitter {
     display: flex !important;
   }
