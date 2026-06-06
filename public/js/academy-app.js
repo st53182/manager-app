@@ -2394,9 +2394,14 @@ function updateAssignmentHint() {
   if (!practiceStarted) {
     if (state.selectedTaskId && sk === 'block1-practice-scenario') {
       const sd = getP2ScenarioData();
-      html = sd
-        ? renderPersonaCard(sd.persona) + '<p class="mt-3 text-sm text-slate-700">Познакомьтесь с персонажем. Нажмите <strong>«Начать задание»</strong>.</p>'
-        : hints.taskSelected;
+      const task = getSelectedTaskOption();
+      const reqList = Array.isArray(task?.dialogue_requirements)
+        ? `<ul class="mt-1 space-y-0.5 text-xs text-slate-600 list-disc list-inside">${task.dialogue_requirements.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul>`
+        : '';
+      const situationBlock = task?.description
+        ? `<div class="aa-persona-card p-3 mb-3"><p class="text-xs font-medium text-slate-500 mb-1">Ситуация</p><p class="text-sm text-slate-700">${escapeHtml(task.description)}</p>${task.student_role ? `<p class="mt-2 text-xs text-slate-500">Ваша роль: <strong class="text-slate-700">${escapeHtml(task.student_role)}</strong></p>` : ''}${task.student_goal ? `<p class="mt-1 text-xs text-slate-500">Ваша цель: <strong class="text-slate-700">${escapeHtml(task.student_goal)}</strong></p>` : ''}${reqList ? `<p class="mt-2 text-xs font-medium text-slate-500">Диалог должен включать:</p>${reqList}` : ''}</div>`
+        : '';
+      html = situationBlock + (sd ? renderPersonaCard(sd.persona) + '<p class="mt-3 text-sm text-slate-700">Познакомьтесь с ситуацией и персонажем. Нажмите <strong>«Начать задание»</strong>.</p>' : hints.taskSelected);
     } else {
       html = state.selectedTaskId ? hints.taskSelected : hints.initial;
     }
@@ -2461,8 +2466,12 @@ function buildP2StepHint(step, sub) {
 
   if (step === 1) {
     if (sub === 1) {
+      const task = getSelectedTaskOption();
+      const reqList = Array.isArray(task?.dialogue_requirements)
+        ? `<p class="mt-2 text-xs font-medium text-slate-500">Диалог должен включать:</p><ul class="mt-1 space-y-0.5 text-xs text-slate-600 list-disc list-inside">${task.dialogue_requirements.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul>`
+        : '';
       const card = sd ? renderPersonaCard(sd.persona) : '';
-      return card + '<p class="mt-3 text-sm text-slate-700">Это ваш собеседник. Прочитайте его профиль — опишите роли участников и вашу <strong>цель в разговоре</strong>.</p>';
+      return card + `<p class="mt-3 text-sm text-slate-700">Ваша цель: <strong>${escapeHtml(task?.student_goal || 'добиться результата через диалог')}</strong></p>${reqList}<p class="mt-3 text-sm text-slate-600">Заполните поля ролей ниже и запишите что именно хотите добиться в этом разговоре.</p>`;
     }
     if (sub === 2) {
       const reaction = sd ? renderReactionBubble(sd.hardReaction, 'is-fail') : '';
