@@ -4538,9 +4538,9 @@ function wireUi() {
 
   document.getElementById('requestFeedbackBtn')?.addEventListener('click', async () => {
     if (!state.currentLessonId) return;
-    if (!warnIfNoTaskSelected()) return;
+    if (!state.selectedTaskId) return alert('Сначала выберите вариант задания.');
     const answer_text = document.getElementById('assignmentAnswer')?.value?.trim();
-    if (!answer_text) return alert('Введите ответ или соберите отчёт перед запросом обратной связи.');
+    if (!answer_text) return alert('Нажмите «Собрать отчёт» — кнопка появится на предыдущем шаге.');
     const btn = document.getElementById('requestFeedbackBtn');
     const loading = document.getElementById('assignmentFeedbackLoading');
     const fbBox = document.getElementById('assignmentFeedback');
@@ -4558,17 +4558,19 @@ function wireUi() {
         body: JSON.stringify({ answer_text, model: document.getElementById('modelSelect').value })
       });
       renderAssignmentFeedback(out.feedback);
-      state.catalog = await api('/api/academy/catalog');
-      renderCourseTree();
-      await loadProgressSummary();
-      updateNewLessonChatBtn();
+      await markLessonCompleted();
+      renderContinuePractice();
+      showAutosaveStatus('Задание завершено · практика пройдена', { hideAfterMs: 4000 });
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Обновить обратную связь';
+      }
     } catch (e) {
       loading?.classList.add('hidden');
       alert(e.message || 'Не удалось получить обратную связь');
-    } finally {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = prevLabel || 'Обратная связь ИИ';
+        btn.textContent = prevLabel || 'Завершить задание →';
       }
     }
   });
