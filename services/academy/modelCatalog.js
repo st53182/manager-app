@@ -4,6 +4,12 @@
  */
 const MODEL_CATALOG = [
   {
+    id: 'openai/gpt-5-chat',
+    label: 'GPT-5 · лучшее качество',
+    group: 'general',
+    hint: 'Флагманская модель OpenAI — максимальное качество для демо и сложных задач'
+  },
+  {
     id: 'openai/gpt-4o-mini',
     label: 'Экономно · текст',
     group: 'general',

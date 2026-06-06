@@ -3252,6 +3252,7 @@ function openDemoPanel() {
     demoSel.dataset.inited = '1';
     // Берём все опции из главного селектора + добавляем популярные OpenAI
     const extraModels = [
+      { id: 'openai/gpt-5-chat', label: 'GPT-5 · лучшее' },
       { id: 'openai/gpt-4o', label: 'GPT-4o · OpenAI' },
       { id: 'openai/gpt-4o-mini', label: 'GPT-4o mini · быстро' },
       { id: 'anthropic/claude-opus-4.8', label: 'Claude Opus 4.8 · лучшее' },
@@ -3275,7 +3276,7 @@ function openDemoPanel() {
       }
     });
     // Выбираем gpt-4o по умолчанию если есть
-    const preferred = ['openai/gpt-4o', 'anthropic/claude-opus-4.8', 'anthropic/claude-3.5-sonnet'];
+    const preferred = ['openai/gpt-5-chat', 'openai/gpt-4o', 'anthropic/claude-opus-4.8', 'anthropic/claude-3.5-sonnet'];
     for (const m of preferred) {
       if ([...demoSel.options].some(o => o.value === m)) { demoSel.value = m; break; }
     }
