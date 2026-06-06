@@ -3424,7 +3424,29 @@ createApp({
 
 **Таблица топ-10 профессий** — кликабельные заголовки для сортировки, строки с hover. Колонки: Специальность, EU €/мес, RU ₽/мес, Дефицит кадров (прогресс-бар), Тренд (↑↓→).
 
-Chart.js тёмная тема: фон transparent, grid #334155, labels #94a3b8. Цвета: #7c3aed, #06b6d4, #34d399, #f59e0b, #f87171, #a78bfa.`
+Chart.js тёмная тема: фон transparent, grid #334155, labels #94a3b8. Цвета: #7c3aed, #06b6d4, #34d399, #f59e0b, #f87171, #a78bfa.
+
+ВАЖНО: Сгенерируй ТОЛЬКО:
+- весь <head> (с CDN-скриптами и стилями)
+- <body> с шапкой, KPI-карточками, фильтром регионов и вкладками «Секторы» и «Зарплаты» (с Chart.js графиками)
+- Vue data() и методы для этих двух вкладок
+
+Заверши ровно на комментарии <!-- PART1_END --> и ОСТАНОВИСЬ — не закрывай </body></html>.
+
+\`\`\`academy-html-part1
+...код первой части...
+<!-- PART1_END -->`,
+
+  dashboard_part2: (part1tail) => `Продолжи Vue 3 + Chart.js дашборд «Рынок вакансий 2025». Вот конец первой части:
+
+${part1tail}
+
+Допиши оставшееся и закрой HTML. Только код, без \`\`\` fence и без повторения написанного:
+
+- Вкладка «Тренды» — line-график помесячной динамики Jan–Jun 2025 для EU и RU с заливкой
+- Вкладка «Прогноз» — три карточки H2 2025: 🟢 Оптимистичный / 🟡 Базовый / 🔴 Пессимистичный с описанием условий и прогнозом роста
+- Таблица топ-10 профессий — кликабельные заголовки для сортировки, прогресс-бар дефицита, Тренд ↑↓→
+- Закрыть Vue-приложение: }).mount('#app'); и закрыть </script></body></html>`
 };
 
 function openDemoPanel() {
@@ -3554,18 +3576,43 @@ async function runDemo(type) {
       if (status) status.textContent = '✓ Готово! Лендинг собран из двух частей →';
 
     } else {
-      // ── Одиночный запрос для дашборда ───────────────────────────────
-      appendUserBubble(DEMO_PROMPTS.dashboard);
+      // ── Двухшаговая генерация дашборда ──────────────────────────────
+      appendUserBubble('Генерирую интерактивный дашборд Vue.js в два шага…');
+
+      // Шаг 1
+      if (status) status.textContent = '⏳ Шаг 1/2 — генерирую структуру и графики…';
       document.getElementById('typingRow')?.classList.remove('hidden');
-      await streamChat({
+      const dash1 = await bufferDemoStream({
         conversationId: state.currentConversationId,
         message: DEMO_PROMPTS.dashboard,
         model,
         chatMode: 'general',
-        max_tokens: 16000
+        max_tokens: 8000
       });
       document.getElementById('typingRow')?.classList.add('hidden');
-      if (status) status.textContent = '✓ Готово! Смотрите результат в чате →';
+
+      let dashHtml1 = dash1;
+      const dashFence = dash1.match(/```academy-html-part1\n([\s\S]*?)(?:\n```|$)/);
+      if (dashFence) dashHtml1 = dashFence[1];
+      dashHtml1 = dashHtml1.replace('<!-- PART1_END -->', '').trimEnd();
+
+      // Шаг 2
+      if (status) status.textContent = '⏳ Шаг 2/2 — генерирую таблицу и прогноз…';
+      document.getElementById('typingRow')?.classList.remove('hidden');
+      const dashTail = dashHtml1.slice(-600);
+      const dash2 = await bufferDemoStream({
+        conversationId: state.currentConversationId,
+        message: DEMO_PROMPTS.dashboard_part2(dashTail),
+        model,
+        chatMode: 'general',
+        max_tokens: 8000
+      });
+      document.getElementById('typingRow')?.classList.add('hidden');
+
+      let dashHtml2 = dash2.replace(/^```[\w-]*\n?/, '').replace(/\n?```$/, '').trim();
+
+      injectHtmlBubble(dashHtml1 + '\n' + dashHtml2);
+      if (status) status.textContent = '✓ Готово! Дашборд собран из двух частей →';
     }
 
   } catch (e) {
