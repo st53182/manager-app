@@ -18,6 +18,7 @@
   --aa-danger: #dc2626;
   --aa-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
   --aa-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+  --aa-shadow-md: 0 8px 30px rgba(15, 23, 42, 0.14);
   --aa-radius: 12px;
   --aa-radius-sm: 8px;
   --aa-control-h: 2.25rem;
@@ -125,6 +126,64 @@
     max-height: none !important;
     width: 100% !important;
   }
+
+  /* Панель инструментов как отдельная мобильная вкладка */
+  #app.aa-mobile-pane-tools #leftSidebar,
+  #app.aa-mobile-pane-tools #leftSplitter {
+    display: none !important;
+  }
+  #app.aa-mobile-pane-tools #workspaceMain {
+    display: flex !important;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  #app.aa-mobile-pane-tools #chatSection,
+  #app.aa-mobile-pane-tools #lessonSplitter,
+  #app.aa-mobile-pane-tools #lessonPanel,
+  #app.aa-mobile-pane-tools #rightSplitter {
+    display: none !important;
+  }
+  /* Двойной селектор повышает специфичность над правилом .tools-panel-collapsed */
+  .academy-light #app.aa-mobile-pane-tools.tools-panel-collapsed #toolsPanel,
+  .academy-light #app.aa-mobile-pane-tools #toolsPanel {
+    display: flex !important;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none !important;
+    width: 100% !important;
+  }
+}
+
+/* ===== Мобильная эргономика: тач-цели и отсутствие авто-зума iOS ===== */
+@media (max-width: 1023px) {
+  .academy-light {
+    --aa-control-h: 2.75rem;
+  }
+  /* font-size >= 16px не даёт iOS Safari зумить при фокусе на поле */
+  .academy-light .aa-input,
+  .academy-light .aa-select,
+  .academy-light .aa-textarea {
+    font-size: 16px;
+  }
+  .academy-light .aa-btn {
+    font-size: 0.9375rem;
+  }
+  .academy-light .aa-btn.text-xs,
+  .academy-light .aa-btn.text-sm {
+    font-size: 0.875rem;
+  }
+  /* Безопасная зона снизу (нотчи/жесты) для поля ввода */
+  .academy-light .aa-composer-row {
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
+  .academy-light .aa-mobile-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+  .academy-light .aa-mobile-tab {
+    font-size: 0.8125rem;
+  }
 }
 
 .aa-feedback-section {
@@ -154,6 +213,13 @@
   --chat-pane-width: 26rem;
 }
 
+/* Реальная высота вьюпорта на мобильных (учёт адресной строки браузера),
+   чтобы поле ввода/кнопка «Отправить» не уезжали под хром браузера. */
+.academy-light #app {
+  height: 100vh;
+  height: 100dvh;
+}
+
 @media (min-width: 768px) {
   .academy-light #leftSidebar {
     width: var(--left-pane-width);
@@ -163,25 +229,73 @@
 }
 
 
-/* Скрытая панель инструментов */
+/* Скрытая панель инструментов (контент не рендерим) */
 .academy-light #app.tools-panel-collapsed #toolsPanel {
   display: none !important;
 }
 
-.academy-light #app.tools-panel-collapsed #rightSplitter {
-  display: none !important;
-}
-
-/* В практике: разделитель справа от задания остаётся — можно менять ширину задания */
-.academy-light #app.practice-focus.tools-panel-collapsed #rightSplitter {
-  display: flex !important;
-}
-
+/* ============================================================
+   Desktop (xl+) раскладка рабочей области — CSS Grid.
+   Растущая колонка всегда 1fr → серых «мёртвых» зон не бывает.
+   Колонки: [чат] [сплиттер] [задание] [сплиттер] [инструменты]
+   ============================================================ */
 @media (min-width: 1280px) {
-  .academy-light #app.tools-panel-collapsed:not(.practice-focus) #lessonPanel {
-    width: var(--lesson-pane-expanded-width, 36rem) !important;
-    flex: 0 0 var(--lesson-pane-expanded-width, 36rem) !important;
-    max-width: min(48vw, 42rem) !important;
+  .academy-light #workspaceRow {
+    display: grid !important;
+    grid-template-columns:
+      minmax(280px, 1fr)        /* чат */
+      12px                      /* сплиттер чат|задание */
+      var(--lesson-pane-width)  /* задание */
+      12px                      /* сплиттер задание|инструменты */
+      var(--right-pane-width);  /* инструменты */
+    align-items: stretch;
+    min-height: 0;
+  }
+
+  /* Жёсткая привязка элементов к колонкам — устойчиво к display:none */
+  .academy-light #workspaceRow > #chatSection { grid-column: 1; }
+  .academy-light #workspaceRow > #lessonSplitter { grid-column: 2; }
+  .academy-light #workspaceRow > #lessonPanel { grid-column: 3; }
+  .academy-light #workspaceRow > #rightSplitter { grid-column: 4; }
+  .academy-light #workspaceRow > #toolsPanel { grid-column: 5; }
+
+  /* Панели не навязывают собственную ширину — её задаёт колонка грида */
+  .academy-light #workspaceRow > #chatSection,
+  .academy-light #workspaceRow > #lessonPanel,
+  .academy-light #workspaceRow > #toolsPanel {
+    width: auto !important;
+    max-width: none !important;
+    flex: initial !important;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .academy-light #workspaceRow > .aa-splitter {
+    display: block !important;
+    width: 100%;
+    height: auto;
+    flex: initial;
+  }
+
+  /* Инструменты скрыты (свободный чат): убираем колонку и её сплиттер */
+  .academy-light #app.tools-panel-collapsed:not(.practice-focus) #workspaceRow {
+    grid-template-columns: minmax(280px, 1fr) 12px var(--lesson-pane-width) 0 0;
+  }
+
+  /* Практика, чат закрыт: задание занимает всё свободное место */
+  .academy-light #app.practice-focus:not(.practice-chat-open) #workspaceRow {
+    grid-template-columns: 0 0 minmax(280px, 1fr) 12px var(--right-pane-width);
+  }
+  .academy-light #app.practice-focus:not(.practice-chat-open).tools-panel-collapsed #workspaceRow {
+    grid-template-columns: 0 0 minmax(280px, 1fr) 0 0;
+  }
+
+  /* Практика, чат открыт: чат фиксированной ширины + задание 1fr */
+  .academy-light #app.practice-focus.practice-chat-open #workspaceRow {
+    grid-template-columns: var(--chat-pane-width) 12px minmax(280px, 1fr) 12px var(--right-pane-width);
+  }
+  .academy-light #app.practice-focus.practice-chat-open.tools-panel-collapsed #workspaceRow {
+    grid-template-columns: var(--chat-pane-width) 12px minmax(280px, 1fr) 0 0;
   }
 }
 
@@ -216,18 +330,7 @@
   display: none !important;
 }
 
-@media (min-width: 1280px) {
-  .academy-light #lessonPanel {
-    width: var(--lesson-pane-width);
-    flex: 0 0 var(--lesson-pane-width);
-    max-width: var(--lesson-pane-width);
-  }
-  .academy-light #toolsPanel {
-    width: var(--right-pane-width);
-    flex: 0 0 var(--right-pane-width);
-    max-width: var(--right-pane-width);
-  }
-}
+/* Ширины задания/инструментов на десктопе задаёт грид #workspaceRow выше. */
 
 .academy-light .aa-sidebar {
   background: var(--aa-surface);
@@ -487,7 +590,7 @@
 
 .academy-light .aa-toast {
   position: fixed;
-  bottom: 1.25rem;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 60;
@@ -680,46 +783,18 @@
     display: flex !important;
   }
 
-  .academy-light #app.practice-focus:not(.practice-chat-open) #lessonSplitter {
+  .academy-light #app.practice-focus #chatSection {
+    display: flex !important;
+  }
+
+  .academy-light #app.practice-focus #chatSection.chat-collapsed {
     display: none !important;
   }
-
-  .academy-light #app.practice-focus.practice-chat-open #lessonSplitter {
-    display: flex !important;
-  }
-
-  .academy-light #app.practice-focus.practice-chat-open #chatSection {
-    display: flex !important;
-    min-width: 240px;
-  }
-
-  .academy-light #app.practice-focus #lessonPanel {
-    min-width: 280px;
-    min-height: 0;
-  }
-
-  .academy-light #app.practice-focus:not(.practice-chat-open) #lessonPanel {
-    flex: 1 1 auto !important;
-    width: var(--lesson-pane-width, 28rem) !important;
-    max-width: min(96vw, 56rem) !important;
-  }
-
-  .academy-light #app.practice-focus.practice-chat-open #lessonPanel {
-    flex: 1 1 auto !important;
-    width: auto !important;
-    min-width: 280px;
-    max-width: none !important;
-  }
 }
 
-.academy-light #app.practice-focus #lessonPanel,
-.academy-light #app.practice-focus.tools-panel-collapsed #lessonPanel {
+.academy-light #app.practice-focus #lessonPanel {
   max-height: none !important;
   min-height: 0;
-}
-
-.academy-light #app.practice-focus.practice-chat-open #lessonPanel {
-  max-height: none !important;
 }
 
 .academy-light #app.practice-chat-mobile #chatSection {

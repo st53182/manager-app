@@ -869,12 +869,7 @@ function activateToolTab(tabId) {
   const tab = document.querySelector(`[data-tool-tab="${tabId}"]`);
   tab?.click();
   if (window.innerWidth < 1280) {
-    const app = document.getElementById('app');
-    app?.classList.remove('aa-mobile-pane-sidebar', 'aa-mobile-pane-lesson');
-    app?.classList.add('aa-mobile-pane-chat');
-    document.querySelectorAll('#mobileWorkspaceTabs [data-pane]').forEach((el) => {
-      el.classList.toggle('is-active', el.dataset.pane === 'chat');
-    });
+    setMobilePane('tools');
   }
 }
 
@@ -1128,10 +1123,17 @@ function renderContinuePractice() {
   };
 }
 
+const MOBILE_PANE_CLASSES = [
+  'aa-mobile-pane-sidebar',
+  'aa-mobile-pane-chat',
+  'aa-mobile-pane-lesson',
+  'aa-mobile-pane-tools'
+];
+
 function setMobilePane(pane) {
   const app = document.getElementById('app');
   if (!app || window.innerWidth >= 1280) return;
-  app.classList.remove('aa-mobile-pane-sidebar', 'aa-mobile-pane-chat', 'aa-mobile-pane-lesson');
+  app.classList.remove(...MOBILE_PANE_CLASSES);
   app.classList.add(`aa-mobile-pane-${pane}`);
   document.querySelectorAll('#mobileWorkspaceTabs [data-pane]').forEach((el) => {
     el.classList.toggle('is-active', el.dataset.pane === pane);
@@ -1143,10 +1145,10 @@ function initMobileWorkspaceTabs() {
   if (!app) return;
   const syncDefault = () => {
     if (window.innerWidth >= 1280) {
-      app.classList.remove('aa-mobile-pane-sidebar', 'aa-mobile-pane-chat', 'aa-mobile-pane-lesson');
+      app.classList.remove(...MOBILE_PANE_CLASSES);
       return;
     }
-    if (!['aa-mobile-pane-sidebar', 'aa-mobile-pane-chat', 'aa-mobile-pane-lesson'].some((c) => app.classList.contains(c))) {
+    if (!MOBILE_PANE_CLASSES.some((c) => app.classList.contains(c))) {
       setMobilePane('chat');
     }
   };
@@ -3217,25 +3219,6 @@ function applyToolsPanelCollapsed(collapsed, { persist = true } = {}) {
   if (!app) return;
   app.classList.toggle('tools-panel-collapsed', collapsed);
   if (persist) localStorage.setItem(TOOLS_COLLAPSED_KEY, collapsed ? '1' : '0');
-
-  const left = parseInt(getComputedStyle(app).getPropertyValue('--left-pane-width'), 10) || 272;
-  const lesson = parseInt(getComputedStyle(app).getPropertyValue('--lesson-pane-width'), 10) || 352;
-  let right = parseInt(getComputedStyle(app).getPropertyValue('--right-pane-width'), 10) || 320;
-
-  if (collapsed) {
-    if (persist) localStorage.setItem(TOOLS_RIGHT_WIDTH_KEY, String(right));
-    const practiceFocus = app.classList.contains('practice-focus');
-    const expanded = practiceFocus
-      ? Math.min(window.innerWidth - left - 48, Math.max(400, lesson + right))
-      : Math.min(672, Math.max(400, lesson + right));
-    app.style.setProperty('--lesson-pane-expanded-width', `${expanded}px`);
-  } else {
-    const saved = parseInt(localStorage.getItem(TOOLS_RIGHT_WIDTH_KEY), 10);
-    if (saved > 260) right = saved;
-    app.style.removeProperty('--lesson-pane-expanded-width');
-  }
-
-  if (academyLayoutSetWidths) refreshAcademyLayout();
   updateToolsPanelToggleUi(collapsed);
 }
 
@@ -3282,111 +3265,25 @@ function initResizableLayout() {
     app.style.setProperty('--chat-pane-width', `${savedChat}px`);
   }
 
-  function resetChatSectionInline() {
-    if (!chatSection) return;
-    chatSection.style.width = '';
-    chatSection.style.flexBasis = '';
-    chatSection.style.flexGrow = '';
-    chatSection.style.minWidth = '';
-    chatSection.style.maxWidth = '';
-    chatSection.style.overflow = '';
-  }
+  // Снимаем возможные устаревшие инлайн-ширины от старой раскладки —
+  // на десктопе размеры теперь задаёт CSS Grid (#workspaceRow) через переменные.
+  [leftSidebar, chatSection, lessonPanel, toolsPanel].forEach((el) => {
+    if (!el) return;
+    el.style.width = '';
+    el.style.flexBasis = '';
+    el.style.flexGrow = '';
+    el.style.minWidth = '';
+    el.style.maxWidth = '';
+    el.style.overflow = '';
+  });
+  app.style.removeProperty('--lesson-pane-expanded-width');
 
-  function setWidths(leftPx, lessonPx, rightPx, chatPx = null) {
-    const collapsed = app.classList.contains('tools-panel-collapsed');
-    const practiceFocus = app.classList.contains('practice-focus');
-    const chatOpen = app.classList.contains('practice-chat-open');
-
-    app.style.setProperty('--left-pane-width', `${leftPx}px`);
-    app.style.setProperty('--lesson-pane-width', `${lessonPx}px`);
-    app.style.setProperty('--right-pane-width', `${rightPx}px`);
-
-    if (window.innerWidth >= 768) {
-      leftSidebar.style.width = `${leftPx}px`;
-      leftSidebar.style.flexBasis = `${leftPx}px`;
-    } else {
-      leftSidebar.style.width = '';
-      leftSidebar.style.flexBasis = '';
-    }
-    if (window.innerWidth < 1280) {
-      if (lessonPanel) {
-        lessonPanel.style.width = '';
-        lessonPanel.style.flexBasis = '';
-        lessonPanel.style.flexGrow = '';
-        lessonPanel.style.maxWidth = '';
-      }
-      resetChatSectionInline();
-      if (!collapsed) {
-        toolsPanel.style.width = '';
-        toolsPanel.style.flexBasis = '';
-      }
-      return;
-    }
-
-    if (practiceFocus && !chatOpen) {
-      resetChatSectionInline();
-      if (lessonPanel) {
-        if (collapsed) {
-          let expanded = parseInt(getComputedStyle(app).getPropertyValue('--lesson-pane-expanded-width'), 10);
-          if (!expanded || Number.isNaN(expanded)) {
-            expanded = Math.min(window.innerWidth - leftPx - 48, Math.max(400, lessonPx + rightPx));
-            app.style.setProperty('--lesson-pane-expanded-width', `${expanded}px`);
-          }
-          lessonPanel.style.width = `${expanded}px`;
-          lessonPanel.style.flexBasis = `${expanded}px`;
-          lessonPanel.style.flexGrow = '1';
-        } else {
-          lessonPanel.style.width = `${lessonPx}px`;
-          lessonPanel.style.flexBasis = `${lessonPx}px`;
-          lessonPanel.style.flexGrow = '1';
-        }
-        lessonPanel.style.maxWidth = 'none';
-      }
-    } else if (practiceFocus && chatOpen) {
-      const cw = chatPx ?? (parseInt(getComputedStyle(app).getPropertyValue('--chat-pane-width'), 10) || 420);
-      app.style.setProperty('--chat-pane-width', `${cw}px`);
-      localStorage.setItem(CHAT_PANE_WIDTH_KEY, String(cw));
-      if (chatSection) {
-        chatSection.style.width = `${cw}px`;
-        chatSection.style.flexBasis = `${cw}px`;
-        chatSection.style.flexGrow = '0';
-        chatSection.style.minWidth = '240px';
-        chatSection.style.maxWidth = '50vw';
-      }
-      if (lessonPanel) {
-        lessonPanel.style.width = '';
-        lessonPanel.style.flexBasis = '';
-        lessonPanel.style.flexGrow = '1';
-        lessonPanel.style.maxWidth = 'none';
-      }
-    } else {
-      resetChatSectionInline();
-      if (lessonPanel) {
-        lessonPanel.style.flexGrow = '';
-        if (collapsed) {
-          const savedRight = parseInt(localStorage.getItem(TOOLS_RIGHT_WIDTH_KEY), 10) || rightPx;
-          let expanded = parseInt(getComputedStyle(app).getPropertyValue('--lesson-pane-expanded-width'), 10);
-          if (!expanded || Number.isNaN(expanded)) {
-            expanded = Math.min(672, Math.max(400, lessonPx + savedRight));
-            app.style.setProperty('--lesson-pane-expanded-width', `${expanded}px`);
-          }
-          lessonPanel.style.width = `${expanded}px`;
-          lessonPanel.style.flexBasis = `${expanded}px`;
-        } else {
-          lessonPanel.style.width = `${lessonPx}px`;
-          lessonPanel.style.flexBasis = `${lessonPx}px`;
-        }
-        lessonPanel.style.maxWidth = '';
-      }
-    }
-
-    if (!collapsed) {
-      toolsPanel.style.width = `${rightPx}px`;
-      toolsPanel.style.flexBasis = `${rightPx}px`;
-    } else {
-      toolsPanel.style.width = '';
-      toolsPanel.style.flexBasis = '';
-    }
+  // setWidths теперь только обновляет CSS-переменные; грид сам растягивает 1fr-колонку.
+  function setWidths(leftPx, lessonPx, rightPx, chatPx) {
+    if (leftPx) app.style.setProperty('--left-pane-width', `${Math.round(leftPx)}px`);
+    if (lessonPx) app.style.setProperty('--lesson-pane-width', `${Math.round(lessonPx)}px`);
+    if (rightPx) app.style.setProperty('--right-pane-width', `${Math.round(rightPx)}px`);
+    if (chatPx) app.style.setProperty('--chat-pane-width', `${Math.round(chatPx)}px`);
   }
 
   const initialLeft = parseInt(localStorage.getItem('academy_left_pane_width'), 10) || 272;
@@ -3395,19 +3292,20 @@ function initResizableLayout() {
   const initialChat = parseInt(localStorage.getItem(CHAT_PANE_WIDTH_KEY), 10) || 420;
   setWidths(initialLeft, initialLesson, initialRight, initialChat);
 
-  window.addEventListener('resize', () => refreshAcademyLayout());
+  const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
 
   function bindSplitter(splitter, side) {
     if (!splitter) return;
     splitter.addEventListener('pointerdown', (e) => {
-      if (side === 'left' && window.innerWidth < 768) return;
-      if (side === 'lesson' && window.innerWidth < 1280) return;
-      if (side === 'right' && window.innerWidth < 1280) return;
+      if (window.innerWidth < 768) return;
+      if ((side === 'lesson' || side === 'right') && window.innerWidth < 1280) return;
       const practiceFocus = app.classList.contains('practice-focus');
       const chatOpen = app.classList.contains('practice-chat-open');
       const collapsed = app.classList.contains('tools-panel-collapsed');
-      if (side === 'right' && collapsed && !practiceFocus) return;
+      // В практике без открытого чата сплиттер чат|задание неактивен (колонка 0)
       if (side === 'lesson' && practiceFocus && !chatOpen) return;
+      // Сплиттер задание|инструменты неактивен, когда инструменты скрыты
+      if (side === 'right' && collapsed) return;
 
       splitter.setPointerCapture(e.pointerId);
       splitter.classList.add('is-dragging');
@@ -3416,42 +3314,28 @@ function initResizableLayout() {
       const chatStart = chatSection?.getBoundingClientRect().width || 0;
       const lessonStart = lessonPanel ? lessonPanel.getBoundingClientRect().width : 352;
       const rightStart = toolsPanel.getBoundingClientRect().width;
+      const maxPane = window.innerWidth * 0.6;
 
       const onMove = (ev) => {
         const dx = ev.clientX - startX;
         if (side === 'left') {
-          const nextLeft = Math.max(220, Math.min(420, leftStart + dx));
-          localStorage.setItem('academy_left_pane_width', String(nextLeft));
-          setWidths(nextLeft, lessonStart, rightStart, chatStart);
+          const next = clamp(leftStart + dx, 220, 460);
+          setWidths(next);
+          localStorage.setItem('academy_left_pane_width', String(Math.round(next)));
         } else if (side === 'lesson') {
-          if (practiceFocus && chatOpen && chatSection) {
-            const nextChat = Math.max(240, Math.min(window.innerWidth * 0.55, chatStart + dx));
-            setWidths(leftStart, lessonStart, rightStart, nextChat);
+          if (practiceFocus && chatOpen) {
+            const next = clamp(chatStart + dx, 280, maxPane);
+            setWidths(null, null, null, next);
+            localStorage.setItem(CHAT_PANE_WIDTH_KEY, String(Math.round(next)));
           } else {
-            const nextLesson = Math.max(280, Math.min(672, lessonStart + (startX - ev.clientX)));
-            if (collapsed) {
-              app.style.setProperty('--lesson-pane-expanded-width', `${nextLesson}px`);
-              if (lessonPanel) {
-                lessonPanel.style.width = `${nextLesson}px`;
-                lessonPanel.style.flexBasis = `${nextLesson}px`;
-              }
-            } else {
-              localStorage.setItem('academy_lesson_pane_width', String(nextLesson));
-              setWidths(leftStart, nextLesson, rightStart, chatStart);
-            }
+            const next = clamp(lessonStart - dx, 280, maxPane);
+            setWidths(null, next);
+            localStorage.setItem('academy_lesson_pane_width', String(Math.round(next)));
           }
         } else if (side === 'right') {
-          if (collapsed) {
-            const mainRow = splitter.parentElement?.getBoundingClientRect().width || window.innerWidth;
-            const maxLesson = Math.max(320, mainRow - leftStart - 80);
-            const nextLesson = Math.max(280, Math.min(maxLesson, lessonStart + dx));
-            app.style.setProperty('--lesson-pane-expanded-width', `${nextLesson}px`);
-            setWidths(leftStart, nextLesson, rightStart, chatStart);
-          } else {
-            const nextRight = Math.max(260, Math.min(520, rightStart - dx));
-            localStorage.setItem(TOOLS_RIGHT_WIDTH_KEY, String(nextRight));
-            setWidths(leftStart, lessonStart, nextRight, chatStart);
-          }
+          const next = clamp(rightStart - dx, 260, window.innerWidth * 0.5);
+          setWidths(null, null, next);
+          localStorage.setItem(TOOLS_RIGHT_WIDTH_KEY, String(Math.round(next)));
         }
       };
       const onUp = () => {

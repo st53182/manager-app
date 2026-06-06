@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>AI Academy — Workspace</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/academy-workspace.css">
@@ -104,10 +104,11 @@
       <button type="button" class="aa-mobile-tab is-active" data-pane="chat">Чат</button>
       <button type="button" class="aa-mobile-tab" data-pane="lesson">Задание</button>
       <button type="button" class="aa-mobile-tab" data-pane="sidebar">Курсы</button>
+      <button type="button" class="aa-mobile-tab" data-pane="tools">Инструменты</button>
     </nav>
 
     <main id="workspaceMain" class="flex-1 flex flex-col min-h-0 min-w-0 bg-slate-100">
-      <div class="flex-1 flex flex-col xl:flex-row min-h-0 min-w-0">
+      <div id="workspaceRow" class="flex-1 flex flex-col xl:flex-row min-h-0 min-w-0">
         <!-- Чат с наставником -->
         <section id="chatSection" class="flex-1 min-w-0 flex flex-col aa-panel border-b xl:border-b-0 xl:border-r min-h-[50vh] xl:min-h-0">
           <header class="px-4 py-3 border-b shrink-0" style="border-color: var(--aa-border);">
