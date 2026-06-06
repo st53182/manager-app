@@ -3204,8 +3204,13 @@ function isToolsPanelCollapsed() {
 function updateToolsPanelToggleUi(collapsed) {
   const hideBtn = document.getElementById('hideToolsPanelBtn');
   const showBtn = document.getElementById('showToolsPanelBtn');
+  const toggleBtn = document.getElementById('toggleToolsPanelBtn');
   if (hideBtn) {
     hideBtn.textContent = collapsed ? 'Показать инструменты' : 'Скрыть инструменты';
+  }
+  if (toggleBtn) {
+    toggleBtn.textContent = collapsed ? 'Показать инструменты' : 'Скрыть инструменты';
+    toggleBtn.classList.toggle('aa-btn-primary', collapsed);
   }
   if (showBtn) {
     const app = document.getElementById('app');
@@ -3226,10 +3231,12 @@ function initToolsPanelToggle() {
   const hideBtn = document.getElementById('hideToolsPanelBtn');
   const collapseBtn = document.getElementById('collapseToolsPanelBtn');
   const showBtn = document.getElementById('showToolsPanelBtn');
+  const toggleBtn = document.getElementById('toggleToolsPanelBtn');
   const toggle = () => applyToolsPanelCollapsed(!isToolsPanelCollapsed());
   hideBtn?.addEventListener('click', toggle);
   collapseBtn?.addEventListener('click', toggle);
   showBtn?.addEventListener('click', toggle);
+  toggleBtn?.addEventListener('click', toggle);
   window.addEventListener('resize', () => updateToolsPanelToggleUi(isToolsPanelCollapsed()));
   if (localStorage.getItem(TOOLS_COLLAPSED_KEY) === '1') {
     applyToolsPanelCollapsed(true, { persist: false });
