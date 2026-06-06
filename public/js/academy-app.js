@@ -3238,7 +3238,7 @@ async function runDemo(type) {
     await streamChat({
       conversationId: state.currentConversationId,
       message: promptText,
-      model: document.getElementById('modelSelect')?.value || null,
+      model: 'anthropic/claude-3.7-sonnet',
       chatMode: 'general'
     });
     document.getElementById('typingRow')?.classList.add('hidden');
