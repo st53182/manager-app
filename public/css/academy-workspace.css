@@ -259,6 +259,11 @@
   .academy-light #workspaceRow > #rightSplitter { grid-column: 4; }
   .academy-light #workspaceRow > #toolsPanel { grid-column: 5; }
 
+  /* Все панели — строго в одной строке. Без этого при свопе колонок
+     (задание в кол.1, хотя в DOM оно после чата) авто-раскладка grid
+     переносит элементы на новые строки и появляется серая «лесенка». */
+  .academy-light #workspaceRow > * { grid-row: 1; }
+
   /* Панели не навязывают собственную ширину — её задаёт колонка грида */
   .academy-light #workspaceRow > #chatSection,
   .academy-light #workspaceRow > #lessonPanel,
