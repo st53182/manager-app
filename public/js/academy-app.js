@@ -3216,105 +3216,182 @@ function injectHtmlBubble(html) {
 }
 
 const DEMO_PROMPTS = {
-  landing: `Создай полный, красивый landing page на русском языке для SaaS-продукта «Pulse» — AI-платформы для управления командой и эффективностью сотрудников.
-
-КРИТИЧЕСКИ ВАЖНО:
-1. Твой ответ должен содержать ТОЛЬКО один блок кода — никакого текста до или после.
-2. Используй Tailwind CSS через CDN — это сэкономит место и позволит сделать красивый дизайн.
-3. HTML должен быть ПОЛНЫМ и ЗАВЕРШЁННЫМ — закрытый </html> тег обязателен.
-
-Формат ответа (строго):
+  landing: `Ответь ТОЛЬКО кодом — никакого текста до или после.
 
 \`\`\`academy-html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pulse — AI для управления командой</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pulse</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = {
-  theme: { extend: { colors: { purple: { 600: '#7c3aed', 700: '#6d28d9' }, cyan: { 500: '#06b6d4' } } } }
-}
-</script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
-body { font-family: 'Inter', sans-serif; }
-.grad-text { background: linear-gradient(135deg, #a78bfa, #22d3ee); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-.hero-bg { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); }
-.card-hover { transition: transform .25s, box-shadow .25s; }
-.card-hover:hover { transform: translateY(-6px); box-shadow: 0 20px 44px rgba(124,58,237,.18); }
+body{font-family:system-ui,sans-serif}
+.g{background:linear-gradient(135deg,#7c3aed,#06b6d4)}
+.gt{background:linear-gradient(135deg,#a78bfa,#22d3ee);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero{background:linear-gradient(135deg,#0f172a,#1e1b4b)}
+.card{transition:transform .2s,box-shadow .2s}
+.card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(124,58,237,.2)}
 </style>
 </head>
-<body class="bg-white text-slate-900 antialiased">
+<body class="bg-white text-slate-900">
 
-<!-- Navbar -->
-<nav class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur border-b border-white/10">
-  ...полный навбар...
+<nav class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur border-b border-white/10 px-6 h-14 flex items-center justify-between">
+  <span class="text-white font-bold text-lg">⚡ Pulse</span>
+  <div class="flex gap-6 text-sm text-slate-300 font-medium">
+    <a href="#feat" class="hover:text-white">Возможности</a>
+    <a href="#price" class="hover:text-white">Цены</a>
+    <a href="#rev" class="hover:text-white">Отзывы</a>
+  </div>
+  <a href="#cta" class="g text-white text-sm font-semibold px-4 py-2 rounded-lg">Начать бесплатно</a>
 </nav>
 
-<!-- Hero -->
-<section class="hero-bg text-white py-24">
-  ...полный hero с SVG-дашбордом справа...
+<section class="hero text-white py-20 px-6">
+  <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
+    <div>
+      <span class="text-xs font-semibold text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-full">🚀 AI-платформа</span>
+      <h1 class="text-4xl md:text-5xl font-black mt-4 leading-tight">Управляйте командой<br>с силой <span class="gt">ИИ</span></h1>
+      <p class="mt-4 text-slate-300 text-lg max-w-md">Pulse анализирует эффективность, предсказывает выгорание и автоматизирует встречи 1:1.</p>
+      <div class="mt-6 flex gap-3">
+        <a href="#cta" class="g text-white font-semibold px-6 py-3 rounded-xl">Начать бесплатно</a>
+        <a href="#feat" class="bg-white/10 border border-white/20 text-white font-semibold px-6 py-3 rounded-xl hover:bg-white/20">Возможности</a>
+      </div>
+    </div>
+    <div class="bg-white/5 border border-white/10 rounded-2xl p-5">
+      <div class="flex justify-between mb-3"><span class="font-semibold text-sm">Дашборд команды</span><span class="text-cyan-300 text-xs bg-cyan-500/10 px-2 py-0.5 rounded-full">Live</span></div>
+      <svg viewBox="0 0 320 120" class="w-full">
+        <line x1="0" y1="90" x2="320" y2="90" stroke="#334155" stroke-width="1"/>
+        <path d="M0,80 L64,65 L128,70 L192,45 L256,50 L320,25" fill="none" stroke="#22d3ee" stroke-width="2.5"/>
+        <path d="M0,90 L64,82 L128,78 L192,68 L256,60 L320,52" fill="none" stroke="#a78bfa" stroke-width="2.5"/>
+      </svg>
+      <table class="w-full text-xs mt-3 text-slate-300">
+        <tr class="text-slate-500 border-b border-white/10"><th class="text-left pb-1">Команда</th><th class="text-left pb-1">Продуктивность</th><th class="text-left pb-1">Риск</th></tr>
+        <tr class="border-b border-white/5"><td class="py-1">Продукт</td><td class="text-cyan-300 font-bold">94%</td><td class="text-green-400">Низкий</td></tr>
+        <tr class="border-b border-white/5"><td class="py-1">Дизайн</td><td class="text-cyan-300 font-bold">88%</td><td class="text-yellow-400">Средний</td></tr>
+        <tr><td class="py-1">Разработка</td><td class="text-cyan-300 font-bold">91%</td><td class="text-green-400">Низкий</td></tr>
+      </table>
+    </div>
+  </div>
 </section>
 
-<!-- Клиенты -->
-...
+<div class="py-8 bg-slate-50 border-y border-slate-100 text-center">
+  <p class="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-4">Нам доверяют</p>
+  <div class="flex flex-wrap justify-center gap-8 text-xl font-black text-slate-300">
+    <span>Яндекс</span><span>Сбер</span><span>Озон</span><span>Авито</span><span>МТС</span>
+  </div>
+</div>
 
-<!-- Возможности -->
-...
+<section id="feat" class="py-16 px-6">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-3xl font-black text-center mb-10">Всё для <span class="gt">сильной команды</span></h2>
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="card border border-slate-100 rounded-2xl p-6 shadow-sm">
+        <div class="w-10 h-10 g rounded-xl flex items-center justify-center text-white text-lg mb-4">✦</div>
+        <h3 class="font-bold text-lg mb-2">AI-аналитика</h3>
+        <p class="text-slate-500 text-sm">Автоматический анализ эффективности по командам и проектам. Понятные дашборды без ручных отчётов.</p>
+      </div>
+      <div class="card border border-slate-100 rounded-2xl p-6 shadow-sm">
+        <div class="w-10 h-10 g rounded-xl flex items-center justify-center text-white text-lg mb-4">✦</div>
+        <h3 class="font-bold text-lg mb-2">Умные 1:1</h3>
+        <p class="text-slate-500 text-sm">ИИ готовит повестку встреч, подсказывает темы и отслеживает выполнение договорённостей.</p>
+      </div>
+      <div class="card border border-slate-100 rounded-2xl p-6 shadow-sm">
+        <div class="w-10 h-10 g rounded-xl flex items-center justify-center text-white text-lg mb-4">✦</div>
+        <h3 class="font-bold text-lg mb-2">Прогноз выгорания</h3>
+        <p class="text-slate-500 text-sm">Модель определяет риски заранее по поведенческим сигналам и помогает вовремя поддержать команду.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-<!-- Метрики -->
-...
+<section class="hero py-14 px-6 text-white text-center">
+  <div class="max-w-3xl mx-auto grid grid-cols-3 gap-8">
+    <div><div class="text-5xl font-black gt">+34%</div><p class="text-slate-300 mt-2 font-medium">рост продуктивности</p></div>
+    <div><div class="text-5xl font-black gt">2×</div><p class="text-slate-300 mt-2 font-medium">быстрее онбординг</p></div>
+    <div><div class="text-5xl font-black gt">89%</div><p class="text-slate-300 mt-2 font-medium">NPS сотрудников</p></div>
+  </div>
+</section>
 
-<!-- Отзывы -->
-...
+<section id="rev" class="py-16 px-6 bg-slate-50">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-3xl font-black text-center mb-10">Что говорят <span class="gt">клиенты</span></h2>
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="card bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+        <p class="text-slate-600 text-sm italic mb-4">«Pulse изменил то, как мы проводим встречи 1:1. Команда стала открытее, а я наконец вижу реальную картину.»</p>
+        <div class="flex items-center gap-3"><div class="w-9 h-9 g rounded-full flex items-center justify-center text-white font-bold text-sm">А</div><div><p class="font-bold text-sm">Анна Смирнова</p><p class="text-slate-400 text-xs">HR-директор, Яндекс</p></div></div>
+      </div>
+      <div class="card bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+        <p class="text-slate-600 text-sm italic mb-4">«Прогноз выгорания реально работает. За полгода ни одного неожиданного увольнения в команде разработки.»</p>
+        <div class="flex items-center gap-3"><div class="w-9 h-9 g rounded-full flex items-center justify-center text-white font-bold text-sm">Д</div><div><p class="font-bold text-sm">Дмитрий Козлов</p><p class="text-slate-400 text-xs">CTO, Авито</p></div></div>
+      </div>
+      <div class="card bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+        <p class="text-slate-600 text-sm italic mb-4">«Онбординг сократился вдвое. ИИ-аналитика показывает где тормозит процесс и что нужно улучшить.»</p>
+        <div class="flex items-center gap-3"><div class="w-9 h-9 g rounded-full flex items-center justify-center text-white font-bold text-sm">М</div><div><p class="font-bold text-sm">Мария Иванова</p><p class="text-slate-400 text-xs">CEO, Сбер</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
 
-<!-- Тарифы -->
-...
+<section id="price" class="py-16 px-6">
+  <div class="max-w-4xl mx-auto">
+    <h2 class="text-3xl font-black text-center mb-10">Простые <span class="gt">тарифы</span></h2>
+    <div class="grid md:grid-cols-3 gap-6 items-stretch">
+      <div class="card border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col">
+        <h3 class="font-bold text-lg">Старт</h3>
+        <p class="text-slate-400 text-sm mb-3">Для малых команд</p>
+        <div class="text-4xl font-black mb-1">0₽</div>
+        <p class="text-slate-400 text-xs mb-5">навсегда</p>
+        <ul class="text-sm text-slate-600 space-y-2 flex-1">
+          <li>✓ До 5 сотрудников</li><li>✓ Базовая аналитика</li><li>✓ 1:1 встречи</li>
+        </ul>
+        <a href="#cta" class="mt-6 border border-slate-200 text-slate-700 font-semibold text-sm py-2.5 rounded-xl text-center hover:bg-slate-50">Начать</a>
+      </div>
+      <div class="card rounded-2xl p-6 flex flex-col relative" style="background:linear-gradient(135deg,#0f172a,#1e1b4b);color:#fff;box-shadow:0 20px 50px rgba(124,58,237,.3)">
+        <span class="absolute -top-3 left-1/2 -translate-x-1/2 g text-white text-xs font-bold px-3 py-1 rounded-full">Популярный</span>
+        <h3 class="font-bold text-lg">Про</h3>
+        <p class="text-white/60 text-sm mb-3">Для растущих команд</p>
+        <div class="text-4xl font-black mb-1">2 990₽</div>
+        <p class="text-white/50 text-xs mb-5">/мес за команду</p>
+        <ul class="text-sm text-white/80 space-y-2 flex-1">
+          <li>✓ До 50 сотрудников</li><li>✓ Прогноз выгорания</li><li>✓ Умные 1:1</li><li>✓ Приоритетная поддержка</li>
+        </ul>
+        <a href="#cta" class="mt-6 g text-white font-semibold text-sm py-2.5 rounded-xl text-center">Попробовать</a>
+      </div>
+      <div class="card border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col">
+        <h3 class="font-bold text-lg">Энтерпрайз</h3>
+        <p class="text-slate-400 text-sm mb-3">Для крупных компаний</p>
+        <div class="text-4xl font-black mb-1">По запросу</div>
+        <p class="text-slate-400 text-xs mb-5">&nbsp;</p>
+        <ul class="text-sm text-slate-600 space-y-2 flex-1">
+          <li>✓ Без ограничений</li><li>✓ SSO и интеграции</li><li>✓ Персональный менеджер</li>
+        </ul>
+        <a href="#cta" class="mt-6 border border-slate-200 text-slate-700 font-semibold text-sm py-2.5 rounded-xl text-center hover:bg-slate-50">Связаться</a>
+      </div>
+    </div>
+  </div>
+</section>
 
-<!-- CTA -->
-...
+<section id="cta" class="py-16 px-6">
+  <div class="max-w-3xl mx-auto g rounded-3xl p-12 text-center text-white">
+    <h2 class="text-3xl font-black mb-3">Попробуйте Pulse 14 дней бесплатно</h2>
+    <p class="text-white/80 mb-6">Без карты. Без обязательств. Результат — с первого дня.</p>
+    <a href="#" class="bg-white text-purple-700 font-bold px-8 py-3 rounded-xl hover:shadow-xl transition">Начать бесплатно →</a>
+  </div>
+</section>
 
-<!-- Footer -->
-...
+<footer class="bg-slate-900 text-slate-400 py-10 px-6">
+  <div class="max-w-5xl mx-auto flex flex-wrap justify-between gap-6 text-sm mb-8">
+    <div><p class="text-white font-bold text-lg mb-2">⚡ Pulse</p><p class="text-slate-500 max-w-xs">AI-платформа для управления командой и эффективностью сотрудников.</p></div>
+    <div><p class="text-white font-semibold mb-2">Продукт</p><ul class="space-y-1"><li><a href="#" class="hover:text-white">Возможности</a></li><li><a href="#" class="hover:text-white">Цены</a></li><li><a href="#" class="hover:text-white">Безопасность</a></li></ul></div>
+    <div><p class="text-white font-semibold mb-2">Компания</p><ul class="space-y-1"><li><a href="#" class="hover:text-white">О нас</a></li><li><a href="#" class="hover:text-white">Блог</a></li><li><a href="#" class="hover:text-white">Карьера</a></li></ul></div>
+  </div>
+  <div class="max-w-5xl mx-auto border-t border-white/10 pt-6 text-xs text-slate-500">© 2025 Pulse. Все права защищены.</div>
+</footer>
 
 </body>
 </html>
-\`\`\`
-
-Секции (все обязательны):
-1. Навбар — логотип «⚡ Pulse», меню (Возможности / Цены / Отзывы), кнопка «Начать бесплатно» (фиолетовая)
-2. Hero — H1 «Управляйте командой с силой ИИ», подзаголовок, 2 кнопки, справа SVG-дашборд (таблица с метриками и мини-графиком)
-3. Клиенты — «Нам доверяют:» + 5 компаний: Яндекс, Сбер, Озон, Авито, МТС
-4. Возможности — 3 карточки с иконками ✦: AI-аналитика / Умные 1:1 / Прогноз выгорания
-5. Метрики — 3 большие цифры: +34% продуктивность / 2× быстрее онбординг / 89% NPS
-6. Отзывы — 3 карточки: Анна Смирнова (HR, Яндекс) / Дмитрий Козлов (CTO, Авито) / Мария Иванова (CEO, Сбер)
-7. Тарифы — Старт 0₽ / Про 2 990₽/мес / Энтерпрайз — по запросу
-8. CTA — «Попробуйте Pulse 14 дней бесплатно» на фиолетовом градиенте
-9. Footer — колонки со ссылками + copyright «© 2025 Pulse»
-
-Дизайн: акценты #7c3aed (фиолетовый) и #06b6d4 (голубой). Тёмный hero, белые секции, серый фон у отзывов. Скруглённые карточки, тени, hover-эффекты.
-
-ВАЖНО: Сгенерируй ТОЛЬКО секции 1–5 (Навбар, Hero, Клиенты, Возможности, Метрики). Заверши HTML ровно на строке <!-- PART1_END --> и ОСТАНОВИСЬ — не закрывай </body> и </html>. Формат:
-
-\`\`\`academy-html-part1
-...HTML секций 1-5...
-<!-- PART1_END -->`,
-
-  landing_part2: (part1tail) => `Продолжи HTML лендинга «Pulse». Вот конец первой части:
-
-${part1tail}
-
-Допиши оставшиеся секции и закрой HTML. Твой ответ — ТОЛЬКО код, начиная сразу после <!-- PART1_END -->, без \`\`\` fence-блоков и без повторения уже написанного:
-
-6. Отзывы — 3 карточки: Анна Смирнова (HR, Яндекс) / Дмитрий Козлов (CTO, Авито) / Мария Иванова (CEO, Сбер)
-7. Тарифы — Старт 0₽ / Про 2 990₽/мес / Энтерпрайз — по запросу, в виде трёх карточек, средняя выделена
-8. CTA — «Попробуйте Pulse 14 дней бесплатно» на фиолетовом градиенте
-9. Footer — колонки со ссылками + copyright «© 2025 Pulse»
-
-Заверши строками </body></html>`,
+\`\`\``,
 
   dashboard: `Ты — старший аналитик рынка труда. Создай структурированный аналитический дашборд по рынку вакансий в Европе и России — 2025.
 
@@ -3424,29 +3501,166 @@ createApp({
 
 **Таблица топ-10 профессий** — кликабельные заголовки для сортировки, строки с hover. Колонки: Специальность, EU €/мес, RU ₽/мес, Дефицит кадров (прогресс-бар), Тренд (↑↓→).
 
-Chart.js тёмная тема: фон transparent, grid #334155, labels #94a3b8. Цвета: #7c3aed, #06b6d4, #34d399, #f59e0b, #f87171, #a78bfa.
+Chart.js тёмная тема: фон transparent, grid #334155, labels #94a3b8. Цвета: #7c3aed, #06b6d4, #34d399, #f59e0b, #f87171, #a78bfa.`,
 
-ВАЖНО: Сгенерируй ТОЛЬКО:
-- весь <head> (с CDN-скриптами и стилями)
-- <body> с шапкой, KPI-карточками, фильтром регионов и вкладками «Секторы» и «Зарплаты» (с Chart.js графиками)
-- Vue data() и методы для этих двух вкладок
+  dashboard: `Ответь ТОЛЬКО кодом — никакого текста до или после.
 
-Заверши ровно на комментарии <!-- PART1_END --> и ОСТАНОВИСЬ — не закрывай </body></html>.
+\`\`\`academy-html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Рынок вакансий 2025</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<style>
+body{font-family:system-ui,sans-serif;background:#0f172a;color:#f1f5f9}
+canvas{max-height:260px}
+.tab-on{background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff}
+.tab-off{background:#1e293b;color:#94a3b8}
+.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const {createApp,ref,onMounted,nextTick}=Vue;
+createApp({
+  setup(){
+    const tab=ref('sectors');
+    const region=ref('all');
+    let charts={};
 
-\`\`\`academy-html-part1
-...код первой части...
-<!-- PART1_END -->`,
+    const euSectors=[28,19,14,13,11,9,6];
+    const ruSectors=[31,22,16,12,11,8];
+    const sectorLabelsEU=['IT/AI','Здоровье','Производство','Финансы','Маркетинг','Логистика','ESG'];
+    const sectorLabelsRU=['IT','ВПК','Здоровье','Финансы','Ритейл','Маркетинг'];
 
-  dashboard_part2: (part1tail) => `Продолжи Vue 3 + Chart.js дашборд «Рынок вакансий 2025». Вот конец первой части:
+    const professions=[
+      {name:'ML-инженер',eu:6800,ru:320000,deficit:92,trend:'↑'},
+      {name:'DevOps',eu:5900,ru:280000,deficit:85,trend:'↑'},
+      {name:'Product Manager',eu:5200,ru:240000,deficit:78,trend:'↑'},
+      {name:'Data Analyst',eu:4800,ru:210000,deficit:70,trend:'↑'},
+      {name:'iOS/Android',eu:5500,ru:260000,deficit:65,trend:'→'},
+      {name:'UX Designer',eu:4200,ru:180000,deficit:55,trend:'→'},
+      {name:'Backend Dev',eu:5100,ru:230000,deficit:80,trend:'↑'},
+      {name:'HR Business Partner',eu:3800,ru:160000,deficit:40,trend:'↓'},
+    ];
 
-${part1tail}
+    const months=['Янв','Фев','Мар','Апр','Май','Июн'];
+    const euTrend=[2050,2120,2180,2240,2290,2340];
+    const ruTrend=[960,980,1010,1040,1070,1100];
 
-Допиши оставшееся и закрой HTML. Только код, без \`\`\` fence и без повторения написанного:
+    const darkGrid={color:'#334155'};
+    const darkLabels={color:'#94a3b8'};
+    const palette=['#7c3aed','#06b6d4','#34d399','#f59e0b','#f87171','#a78bfa','#fb923c'];
 
-- Вкладка «Тренды» — line-график помесячной динамики Jan–Jun 2025 для EU и RU с заливкой
-- Вкладка «Прогноз» — три карточки H2 2025: 🟢 Оптимистичный / 🟡 Базовый / 🔴 Пессимистичный с описанием условий и прогнозом роста
-- Таблица топ-10 профессий — кликабельные заголовки для сортировки, прогресс-бар дефицита, Тренд ↑↓→
-- Закрыть Vue-приложение: }).mount('#app'); и закрыть </script></body></html>`
+    function destroyAll(){Object.values(charts).forEach(c=>c.destroy());charts={};}
+
+    async function drawTab(){
+      destroyAll();
+      await nextTick();
+      if(tab.value==='sectors'){
+        const show=region.value;
+        if(show!=='ru'){
+          const c1=document.getElementById('c1');
+          if(c1) charts.c1=new Chart(c1,{type:'doughnut',data:{labels:sectorLabelsEU,datasets:[{data:euSectors,backgroundColor:palette,borderWidth:0}]},options:{plugins:{legend:{labels:{color:'#94a3b8',boxWidth:12}},title:{display:true,text:'EU — новые вакансии 2025',color:'#f1f5f9'}},cutout:'60%'}});
+        }
+        if(show!=='eu'){
+          const c2=document.getElementById('c2');
+          if(c2) charts.c2=new Chart(c2,{type:'doughnut',data:{labels:sectorLabelsRU,datasets:[{data:ruSectors,backgroundColor:palette,borderWidth:0}]},options:{plugins:{legend:{labels:{color:'#94a3b8',boxWidth:12}},title:{display:true,text:'RU — новые вакансии 2025',color:'#f1f5f9'}},cutout:'60%'}});
+        }
+      } else if(tab.value==='salaries'){
+        const names=professions.map(p=>p.name);
+        const euVals=professions.map(p=>p.eu);
+        const ruVals=professions.map(p=>Math.round(p.ru/90));
+        const c3=document.getElementById('c3');
+        if(c3) charts.c3=new Chart(c3,{type:'bar',data:{labels:names,datasets:[{label:'EU €/мес',data:euVals,backgroundColor:'#7c3aed'},{label:'RU (в €)',data:ruVals,backgroundColor:'#06b6d4'}]},options:{indexAxis:'y',plugins:{legend:{labels:{color:'#94a3b8'}}},scales:{x:{ticks:darkLabels,grid:darkGrid},y:{ticks:{color:'#94a3b8',font:{size:11}},grid:{color:'#1e293b'}}}}});
+      } else if(tab.value==='trends'){
+        const c4=document.getElementById('c4');
+        if(c4) charts.c4=new Chart(c4,{type:'line',data:{labels:months,datasets:[{label:'EU (тыс.)',data:euTrend,borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.15)',fill:true,tension:.4,pointRadius:4},{label:'RU (тыс.)',data:ruTrend,borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,.15)',fill:true,tension:.4,pointRadius:4}]},options:{plugins:{legend:{labels:{color:'#94a3b8'}}},scales:{x:{ticks:darkLabels,grid:darkGrid},y:{ticks:darkLabels,grid:darkGrid}}}});
+      }
+    }
+
+    function setTab(t){tab.value=t;drawTab();}
+    function setRegion(r){region.value=r;if(tab.value==='sectors'||tab.value==='salaries')drawTab();}
+
+    onMounted(()=>drawTab());
+
+    return{tab,region,professions,setTab,setRegion};
+  },
+  template:\`
+<div class="min-h-screen p-6">
+  <div class="max-w-5xl mx-auto">
+    <h1 class="text-2xl font-black mb-1">📊 Рынок вакансий 2025</h1>
+    <p class="text-slate-400 text-sm mb-6">Европа vs Россия · Интерактивная аналитика</p>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="card"><p class="text-xs text-slate-400 mb-1">Вакансий EU</p><p class="text-2xl font-black text-purple-400">2.3М</p><p class="text-xs text-green-400">↑ 8%</p></div>
+      <div class="card"><p class="text-xs text-slate-400 mb-1">Вакансий RU</p><p class="text-2xl font-black text-cyan-400">1.1М</p><p class="text-xs text-green-400">↑ 12%</p></div>
+      <div class="card"><p class="text-xs text-slate-400 mb-1">Зарплата EU</p><p class="text-2xl font-black text-purple-400">€3 840</p><p class="text-xs text-slate-400">ср./мес</p></div>
+      <div class="card"><p class="text-xs text-slate-400 mb-1">Зарплата RU</p><p class="text-2xl font-black text-cyan-400">₽142K</p><p class="text-xs text-slate-400">ср./мес</p></div>
+    </div>
+
+    <div class="flex gap-2 mb-4 flex-wrap">
+      <button @click="setTab('sectors')" :class="tab==='sectors'?'tab-on':'tab-off'" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition">Секторы</button>
+      <button @click="setTab('salaries')" :class="tab==='salaries'?'tab-on':'tab-off'" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition">Зарплаты</button>
+      <button @click="setTab('trends')" :class="tab==='trends'?'tab-on':'tab-off'" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition">Тренды</button>
+      <button @click="setTab('forecast')" :class="tab==='forecast'?'tab-on':'tab-off'" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition">Прогноз</button>
+      <span class="ml-auto flex gap-2">
+        <button @click="setRegion('all')" :class="region==='all'?'tab-on':'tab-off'" class="px-3 py-1 rounded-lg text-xs font-semibold">Все</button>
+        <button @click="setRegion('eu')" :class="region==='eu'?'tab-on':'tab-off'" class="px-3 py-1 rounded-lg text-xs font-semibold">EU</button>
+        <button @click="setRegion('ru')" :class="region==='ru'?'tab-on':'tab-off'" class="px-3 py-1 rounded-lg text-xs font-semibold">RU</button>
+      </span>
+    </div>
+
+    <div class="card mb-6">
+      <div v-if="tab==='sectors'" class="grid md:grid-cols-2 gap-6">
+        <canvas v-if="region!=='ru'" id="c1"></canvas>
+        <canvas v-if="region!=='eu'" id="c2"></canvas>
+      </div>
+      <div v-else-if="tab==='salaries'"><canvas id="c3"></canvas></div>
+      <div v-else-if="tab==='trends'"><canvas id="c4"></canvas></div>
+      <div v-else class="grid md:grid-cols-3 gap-4">
+        <div class="bg-green-900/30 border border-green-700 rounded-xl p-4"><p class="font-bold text-green-400 mb-2">🟢 Оптимистичный</p><p class="text-sm text-slate-300">Снятие санкций, рост EU-экономики на 2.5%. Вакансии EU +15%, RU +20%. Зарплаты ↑12%.</p></div>
+        <div class="bg-yellow-900/30 border border-yellow-700 rounded-xl p-4"><p class="font-bold text-yellow-400 mb-2">🟡 Базовый</p><p class="text-sm text-slate-300">Стабильная геополитика. Вакансии EU +8%, RU +12%. Зарплаты ↑7%. Дефицит IT сохраняется.</p></div>
+        <div class="bg-red-900/30 border border-red-700 rounded-xl p-4"><p class="font-bold text-red-400 mb-2">🔴 Пессимистичный</p><p class="text-sm text-slate-300">Рецессия EU, ужесточение. Вакансии EU −5%, RU +3%. Зарплаты EU стагнируют.</p></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="font-bold mb-3 text-sm text-slate-300 uppercase tracking-wide">Топ профессий</h2>
+      <table class="w-full text-sm">
+        <thead><tr class="text-xs text-slate-500 border-b border-slate-700">
+          <th class="text-left py-2">Специальность</th>
+          <th class="text-right py-2">EU €/мес</th>
+          <th class="text-right py-2">RU ₽/мес</th>
+          <th class="text-center py-2 hidden md:table-cell">Дефицит</th>
+          <th class="text-center py-2">Тренд</th>
+        </tr></thead>
+        <tbody>
+          <tr v-for="p in professions" :key="p.name" class="border-b border-slate-800 hover:bg-slate-800/50 transition">
+            <td class="py-2 font-medium">{{p.name}}</td>
+            <td class="py-2 text-right text-purple-400 font-semibold">€{{p.eu.toLocaleString()}}</td>
+            <td class="py-2 text-right text-cyan-400 font-semibold">₽{{p.ru.toLocaleString()}}</td>
+            <td class="py-2 hidden md:table-cell px-4">
+              <div class="bg-slate-700 rounded-full h-1.5 w-full"><div class="h-1.5 rounded-full" style="background:linear-gradient(90deg,#7c3aed,#06b6d4)" :style="{width:p.deficit+'%'}"></div></div>
+            </td>
+            <td class="py-2 text-center" :class="p.trend==='↑'?'text-green-400':p.trend==='↓'?'text-red-400':'text-slate-400'">{{p.trend}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+\`
+}).mount('#app');
+</script>
+</body>
+</html>
+\`\`\``
 };
 
 function openDemoPanel() {
@@ -3531,89 +3745,18 @@ async function runDemo(type) {
 
     const model = document.getElementById('demoModelSelect')?.value || document.getElementById('modelSelect')?.value || 'openai/gpt-4o';
 
-    if (type === 'landing') {
-      // ── Двухшаговая генерация лендинга ──────────────────────────────
-      appendUserBubble('Генерирую лендинг «Pulse» в два шага…');
-
-      // Шаг 1
-      if (status) status.textContent = '⏳ Шаг 1/2 — генерирую верх страницы…';
-      document.getElementById('typingRow')?.classList.remove('hidden');
-      const raw1 = await bufferDemoStream({
-        conversationId: state.currentConversationId,
-        message: DEMO_PROMPTS.landing,
-        model,
-        chatMode: 'general',
-        max_tokens: 8000
-      });
-      document.getElementById('typingRow')?.classList.add('hidden');
-
-      // Извлекаем HTML из первой части (между ```academy-html-part1 и ```)
-      let html1 = raw1;
-      const fenceMatch = raw1.match(/```academy-html-part1\n([\s\S]*?)(?:\n```|$)/);
-      if (fenceMatch) html1 = fenceMatch[1];
-      // Убираем маркер если есть
-      html1 = html1.replace('<!-- PART1_END -->', '').trimEnd();
-
-      // Шаг 2
-      if (status) status.textContent = '⏳ Шаг 2/2 — генерирую нижнюю часть…';
-      document.getElementById('typingRow')?.classList.remove('hidden');
-      // Передаём последние 600 символов как контекст
-      const tail = html1.slice(-600);
-      const raw2 = await bufferDemoStream({
-        conversationId: state.currentConversationId,
-        message: DEMO_PROMPTS.landing_part2(tail),
-        model,
-        chatMode: 'general',
-        max_tokens: 8000
-      });
-      document.getElementById('typingRow')?.classList.add('hidden');
-
-      // Очищаем fence-блоки если модель всё же добавила
-      let html2 = raw2.replace(/^```[\w-]*\n?/, '').replace(/\n?```$/, '').trim();
-
-      const fullHtml = html1 + '\n' + html2;
-      injectHtmlBubble(fullHtml);
-      if (status) status.textContent = '✓ Готово! Лендинг собран из двух частей →';
-
-    } else {
-      // ── Двухшаговая генерация дашборда ──────────────────────────────
-      appendUserBubble('Генерирую интерактивный дашборд Vue.js в два шага…');
-
-      // Шаг 1
-      if (status) status.textContent = '⏳ Шаг 1/2 — генерирую структуру и графики…';
-      document.getElementById('typingRow')?.classList.remove('hidden');
-      const dash1 = await bufferDemoStream({
-        conversationId: state.currentConversationId,
-        message: DEMO_PROMPTS.dashboard,
-        model,
-        chatMode: 'general',
-        max_tokens: 8000
-      });
-      document.getElementById('typingRow')?.classList.add('hidden');
-
-      let dashHtml1 = dash1;
-      const dashFence = dash1.match(/```academy-html-part1\n([\s\S]*?)(?:\n```|$)/);
-      if (dashFence) dashHtml1 = dashFence[1];
-      dashHtml1 = dashHtml1.replace('<!-- PART1_END -->', '').trimEnd();
-
-      // Шаг 2
-      if (status) status.textContent = '⏳ Шаг 2/2 — генерирую таблицу и прогноз…';
-      document.getElementById('typingRow')?.classList.remove('hidden');
-      const dashTail = dashHtml1.slice(-600);
-      const dash2 = await bufferDemoStream({
-        conversationId: state.currentConversationId,
-        message: DEMO_PROMPTS.dashboard_part2(dashTail),
-        model,
-        chatMode: 'general',
-        max_tokens: 8000
-      });
-      document.getElementById('typingRow')?.classList.add('hidden');
-
-      let dashHtml2 = dash2.replace(/^```[\w-]*\n?/, '').replace(/\n?```$/, '').trim();
-
-      injectHtmlBubble(dashHtml1 + '\n' + dashHtml2);
-      if (status) status.textContent = '✓ Готово! Дашборд собран из двух частей →';
-    }
+    const promptText = type === 'landing' ? DEMO_PROMPTS.landing : DEMO_PROMPTS.dashboard;
+    appendUserBubble(type === 'landing' ? 'Генерирую лендинг «Pulse»…' : 'Генерирую аналитический дашборд…');
+    document.getElementById('typingRow')?.classList.remove('hidden');
+    await streamChat({
+      conversationId: state.currentConversationId,
+      message: promptText,
+      model,
+      chatMode: 'general',
+      max_tokens: 16000
+    });
+    document.getElementById('typingRow')?.classList.add('hidden');
+    if (status) status.textContent = '✓ Готово! Смотрите результат в чате →';
 
   } catch (e) {
     document.getElementById('typingRow')?.classList.add('hidden');
