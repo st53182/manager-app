@@ -708,7 +708,7 @@ function syncChatToolbarVisibility() {
   if (!toolbar || !toggleBtn) return;
 
   if (inPractice) {
-    const expanded = localStorage.getItem(CHAT_TOOLBAR_EXPANDED_KEY) !== '0';
+    const expanded = localStorage.getItem(CHAT_TOOLBAR_EXPANDED_KEY) === '1';
     toolbar.classList.toggle('hidden', !expanded);
     hint?.classList.toggle('hidden', !expanded);
     toggleBtn.classList.remove('hidden');
@@ -1987,6 +1987,18 @@ function selectTaskOption(taskId, { persist = true } = {}) {
   }
   renderTaskOptionDetail();
   if (persist && state.currentLessonId) scheduleAutoSave();
+  updateComposerPlaceholder();
+}
+
+function updateComposerPlaceholder() {
+  const composer = document.getElementById('composer');
+  if (!composer) return;
+  const task = getSelectedTaskOption();
+  if (task) {
+    composer.placeholder = `Задача выбрана: «${task.title}». Напишите наставнику — он поможет с первым шагом.`;
+  } else {
+    composer.placeholder = 'Сообщение наставнику…';
+  }
 }
 
 function startPractice() {
@@ -2894,7 +2906,7 @@ async function openLessonPanel(lesson) {
   document.getElementById('lessonEmpty')?.classList.add('hidden');
   document.getElementById('lessonContent')?.classList.remove('hidden');
   const lc = document.getElementById('lessonContent');
-  if (lc) lc.innerHTML = renderMarkdown(lesson.content_md || '');
+  if (lc) lc.innerHTML = `<details class="aa-lesson-details"><summary class="aa-lesson-summary">📖 Описание задания</summary><div class="aa-lesson-details-body">${renderMarkdown(lesson.content_md || '')}</div></details>`;
   document.getElementById('lessonHint').textContent = (lesson.course_title || '') + ' · ' + lesson.title;
   const ab = document.getElementById('assignmentBlock');
   const at = document.getElementById('assignmentText');

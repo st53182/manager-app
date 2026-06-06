@@ -1079,3 +1079,42 @@
 .academy-light .aa-library-prompt-card + .aa-library-prompt-card {
   margin-top: 0;
 }
+
+/* Collapsible lesson description */
+.academy-light .aa-lesson-details {
+  border: 1px solid var(--aa-border);
+  border-radius: var(--aa-radius-sm);
+  background: #f8f9fc;
+}
+
+.academy-light .aa-lesson-summary {
+  padding: 0.6rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #3b5bdb;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.academy-light .aa-lesson-summary::-webkit-details-marker { display: none; }
+
+.academy-light .aa-lesson-summary::after {
+  content: '▸';
+  margin-left: auto;
+  transition: transform 0.2s;
+  font-size: 0.75rem;
+  color: #868e96;
+}
+
+.academy-light .aa-lesson-details[open] .aa-lesson-summary::after {
+  transform: rotate(90deg);
+}
+
+.academy-light .aa-lesson-details-body {
+  padding: 0 0.85rem 0.85rem;
+  border-top: 1px solid var(--aa-border);
+}
