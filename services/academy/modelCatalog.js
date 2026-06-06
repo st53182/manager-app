@@ -16,16 +16,16 @@ const MODEL_CATALOG = [
     hint: 'Мультимодальность: картинки, PDF, аудио, видео (зависит от лимитов модели)'
   },
   {
+    id: 'anthropic/claude-opus-4.8',
+    label: 'Claude Opus 4.8 · лучшее качество',
+    group: 'data',
+    hint: 'Самая мощная модель Anthropic — идеально для сложных задач и демо'
+  },
+  {
     id: 'anthropic/claude-3.5-sonnet',
     label: 'Claude Sonnet · анализ · текст',
     group: 'data',
     hint: 'Claude 3.5 Sonnet — сильный текстовый и аналитический ИИ от Anthropic'
-  },
-  {
-    id: 'anthropic/claude-3.7-sonnet',
-    label: 'Claude 3.7 Sonnet · код · данные',
-    group: 'data',
-    hint: 'Claude 3.7 Sonnet; PDF в чате — извлечённый текст на сервере'
   },
   {
     id: 'google/gemini-2.5-flash-image',
