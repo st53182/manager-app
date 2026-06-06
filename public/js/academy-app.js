@@ -614,6 +614,148 @@ const P1_RECIPIENT_DATA = {
   }
 };
 
+/* ===== ПРАКТИКА 2: персонажи и hard_reaction ===== */
+const P2_SCENARIO_DATA = {
+  'p2-task-1': {
+    persona: {
+      avatar: '😤',
+      name: 'Игорь Савченко',
+      role: 'Клиент, директор по ИТ',
+      traits: [
+        'Срок уже переносился раньше — доверие подорвано',
+        'Реагирует на общие слова агрессией: нужны факты и даты',
+        'Хочет знать кто конкретно отвечает, а не «команда»',
+        'Успокаивается, если слышит признание ошибки + конкретный план'
+      ]
+    },
+    hardReaction: 'Вы это уже обещали в прошлый раз. Почему я должен верить сейчас?',
+    dialogueTip: 'Признайте что срок переносился раньше — не оправдывайтесь. Назовите конкретную дату и ответственного человека.'
+  },
+  'p2-task-2': {
+    persona: {
+      avatar: '🤨',
+      name: 'Андрей Волков',
+      role: 'Руководитель, скептик по ИИ',
+      traits: [
+        'Пробовал автоматизацию раньше — результата не было',
+        'Воспринимает «ИИ» как модное слово без доказательств',
+        'Требует метрики: что измеряем, за сколько, сколько стоит',
+        'Открывается к идее если пилот маленький и с чёткими критериями'
+      ]
+    },
+    hardReaction: 'Мы уже пробовали автоматизацию, результата не было. Почему сейчас должно быть иначе?',
+    dialogueTip: 'Не продавайте ИИ — предложите маленький безопасный пилот с конкретной метрикой. Спросите что для него важнее: скорость или надёжность?'
+  },
+  'p2-task-3': {
+    persona: {
+      avatar: '😟',
+      name: 'Дмитрий, новый сотрудник',
+      role: 'Джуниор, 3 месяца в компании',
+      traits: [
+        'Считает что ему не дали достаточно контекста для задачи',
+        'При давлении уходит в защиту — нужна поддержка сначала',
+        'Факты воспринимает, если они не звучат как обвинение',
+        'Хочет понять критерии — "хорошая работа" для него неочевидна'
+      ]
+    },
+    hardReaction: 'Мне никто нормально не объяснил задачу, а теперь получается, что виноват я.',
+    dialogueTip: 'Сначала признайте его ощущение — без согласия с ним. Потом перейдите к фактам. Закончите договорённостью о критериях, а не требованием.'
+  },
+  'p2-task-4': {
+    persona: {
+      avatar: '🧐',
+      name: 'Карлис Озолс',
+      role: 'Партнёр, сравнивает варианты',
+      traits: [
+        'Конкурент уже предложил более низкую цену и быстрый старт',
+        'Не против вашего продукта — ищет аргументы чтобы выбрать вас',
+        'Реагирует на вопрос о критериях — ему важно чувствовать что слышат',
+        'Нужен конкретный следующий шаг: встреча, демо, расчёт'
+      ]
+    },
+    hardReaction: 'У конкурента дешевле и быстрее. Почему я должен выбрать вас?',
+    dialogueTip: 'Не спорьте с ценой напрямую. Спросите: "Что для вас важнее — стартовая цена или стоимость через год?" Выясните критерии выбора прежде чем аргументировать.'
+  },
+  'p2-task-5': {
+    persona: {
+      avatar: '😩',
+      name: 'Максим, разработчик',
+      role: 'Коллега, перегруженный параллельными задачами',
+      traits: [
+        'Реально перегружен — не пытается уйти от работы',
+        'При давлении закрывается; при вопросах объясняет детали',
+        'Хочет чтобы его ситуацию поняли, а не просто решили проблему',
+        'Готов к компромиссу если видит что на него не давят'
+      ]
+    },
+    hardReaction: 'Если не перенесём, я просто не успею нормально сделать.',
+    dialogueTip: 'Не требуйте — исследуйте. "Что именно тормозит?" Ищите компромисс: что можно сдать частично, что можно делегировать.'
+  }
+};
+
+/* ===== ПРАКТИКА 3: последствия и эталонный разбор ===== */
+const P3_FRAGMENT_DATA = {
+  'p3-task-1': {
+    consequences: 'Менеджер принимает решение о внедрении ИИ без пилота, опираясь на выдуманный ROI 340%. Реальный результат оказывается в 5–10 раз скромнее — доверие к ИИ-инициативам в компании подорвано.',
+    expertVerdict: {
+      decision: 'Нельзя использовать в текущем виде',
+      mainRisks: [
+        '«ROI 340%» — цифра без методики и источника (McKinsey такого не публиковал)',
+        '«Срочно внедрить без пилота» — опасная рекомендация без оснований',
+        'Ссылка на бренды McKinsey/Forbes создаёт ложный авторитет'
+      ]
+    }
+  },
+  'p3-task-2': {
+    consequences: 'Руководство принимает решение о срочном внедрении ИИ во все отделы. Через год выясняется что «78% лидеров» — непроверяемая цифра, а массовое внедрение без пилота обернулось потерями.',
+    expertVerdict: {
+      decision: 'Нельзя использовать в текущем виде',
+      mainRisks: [
+        '«78% лидеров» — источник не указан, цифра непроверяема',
+        '«Навсегда отстать» — манипуляция страхом без доказательной базы',
+        'Рекомендация «сразу подключить ко всем отделам» — без пилота и метрик'
+      ]
+    }
+  },
+  'p3-task-3': {
+    consequences: 'Менеджер подписывает контракт до конца недели под давлением дедлайна. После выясняется что «гарантия 45%» нигде не зафиксирована юридически, а экономия не достигнута.',
+    expertVerdict: {
+      decision: 'Нельзя использовать в текущем виде',
+      mainRisks: [
+        '«Внутренние данные рынка» — непроверяемый источник',
+        '«Гарантированно сократит на 45%» — юридически не обязывающее обещание',
+        'Дедлайн «до конца недели» — классическая техника давления для отключения критического мышления'
+      ]
+    }
+  },
+  'p3-task-4': {
+    consequences: 'Юридический отдел начинает срочно менять политики хранения данных. Юрист потом выясняет что конкретная норма штрафа указана неточно, а требование к сроку хранения — 5 лет, а не для всех категорий данных.',
+    expertVerdict: {
+      decision: 'Можно использовать только после проверки',
+      mainRisks: [
+        'AI Act существует, но конкретная норма штрафа 500 000 € указана неточно',
+        '«5 лет хранения» — требование зависит от типа данных, не универсальное',
+        'Рекомендация «с этого квартала» без консультации юриста — опасна'
+      ]
+    }
+  },
+  'p3-task-5': {
+    consequences: 'Образовательная платформа начинает срочно перестраивать программы под ИИ. Через год выясняется что прогноз не учитывал регуляторные ограничения, а «почти все платформы» — преувеличение.',
+    expertVerdict: {
+      decision: 'Можно использовать только после проверки',
+      mainRisks: [
+        '«В 5 раз к 2030» — прогноз без источника и без оговорок об условиях',
+        '«Почти все платформы перейдут» — нет доказательной базы',
+        'Рекомендация «полностью перестроить» — без учёта конкретной аудитории и ресурсов'
+      ]
+    }
+  }
+};
+
+const PFVSH_TIP = `<p class="font-medium text-slate-700 mb-1.5">Шпаргалка: сильная реплика (ПФВШ)</p><ul class="space-y-1 text-xs text-slate-600"><li><strong>П — Признание:</strong> «Понимаю, это неудобно…» — показываете что слышите</li><li><strong>Ф — Факт:</strong> не «скоро», а «во вторник к 12:00» — конкретика</li><li><strong>В — Вопрос:</strong> «Что для вас сейчас важнее всего?» — уточняете позицию</li><li><strong>Ш — Шаг:</strong> «Давайте договоримся о звонке в пятницу» — конкретное действие</li></ul>`;
+
+const RISK_TYPES_TIP = `<p class="font-medium text-slate-700 mb-1.5">Типы проблем в тексте ИИ</p><ul class="space-y-1 text-xs text-slate-600"><li><strong>Выдуманный факт</strong> — утверждение которое нельзя проверить</li><li><strong>Цифра без источника</strong> — процент, ROI, статистика без ссылки</li><li><strong>Фейковая ссылка</strong> — бренд или закон упомянут без точной нормы</li><li><strong>Излишняя уверенность</strong> — «гарантированно», «обязательно», «всегда»</li><li><strong>Давление срочностью</strong> — «немедленно», «иначе опоздаете», дедлайн</li><li><strong>Широкий вывод</strong> — совет «для всех» без учёта контекста</li><li><strong>Юридический/финансовый риск</strong> — призыв к действию без проверки</li></ul>`;
+
 const RTCFSC_TIP = `<p class="font-medium text-slate-700 mb-1.5">Подсказка: блоки RTCFSC</p><ul class="space-y-0.5 text-slate-600 text-xs"><li><strong>R</strong> — роль: кем выступает ИИ</li><li><strong>T</strong> — задача: что конкретно сделать</li><li><strong>C</strong> — контекст: важные детали ситуации</li><li><strong>F</strong> — формат: письмо, список, таблица, до N слов</li><li><strong>S</strong> — стиль: деловой, нейтральный, дружеский</li><li><strong>C</strong> — критерии: что делает ответ хорошим</li></ul>`;
 
 const STEP_HINTS = {
@@ -643,7 +785,7 @@ const STEP_HINTS = {
   },
   'block1-practice-hallucination': {
     initial: '<p>Выберите один из 5 фрагментов — тексты с ошибками и рисками ИИ.</p>',
-    taskSelected: '<p>Прочитайте выбранный фрагмент. Нажмите <strong>«Начать задание»</strong> — найдите минимум 4 проблемных места.</p>',
+    taskSelected: '<p>Прочитайте выбранный фрагмент внимательно. Нажмите <strong>«Начать задание»</strong> — ниже появится шпаргалка по типам рисков.</p>',
     steps: {
       '1': '<p>Найдите минимум <strong>4 опасных места</strong> в тексте. Заполните таблицу: цитата → тип проблемы → уровень → почему опасно → что проверить.</p>',
       '2.1': '<p>Перепишите фрагмент так, чтобы <strong>убрать или исправить</strong> найденные риски.</p>',
@@ -2250,9 +2392,20 @@ function updateAssignmentHint() {
 
   let html;
   if (!practiceStarted) {
-    html = state.selectedTaskId ? hints.taskSelected : hints.initial;
+    if (state.selectedTaskId && sk === 'block1-practice-scenario') {
+      const sd = getP2ScenarioData();
+      html = sd
+        ? renderPersonaCard(sd.persona) + '<p class="mt-3 text-sm text-slate-700">Познакомьтесь с персонажем. Нажмите <strong>«Начать задание»</strong>.</p>'
+        : hints.taskSelected;
+    } else {
+      html = state.selectedTaskId ? hints.taskSelected : hints.initial;
+    }
   } else if (sk === 'block1-practice-prompt') {
     html = buildP1StepHint(step, sub);
+  } else if (sk === 'block1-practice-scenario') {
+    html = buildP2StepHint(step, sub);
+  } else if (sk === 'block1-practice-hallucination') {
+    html = buildP3StepHint(step, sub);
   } else {
     const key = hints.steps[`${step}.${sub}`] ? `${step}.${sub}` : String(step);
     html = hints.steps[key] || hints.steps[String(step)] || hints.taskSelected;
@@ -2284,6 +2437,74 @@ function buildP1StepHint(step, sub) {
     if (sub === 2) {
       return renderReactionBubble(rd?.reactionV2, 'is-success') +
         '<p class="mt-3 text-sm text-slate-700">Получатель среагировал иначе. Запишите главный вывод: <strong>что именно</strong> изменило результат?</p>';
+    }
+  }
+  if (step === 3) return hints['3'];
+  return hints[`${step}.${sub}`] || hints[String(step)] || '';
+}
+
+function getP2ScenarioData() {
+  const task = getSelectedTaskOption();
+  if (!task) return null;
+  return P2_SCENARIO_DATA[task.id] || null;
+}
+
+function getP3FragmentData() {
+  const task = getSelectedTaskOption();
+  if (!task) return null;
+  return P3_FRAGMENT_DATA[task.id] || null;
+}
+
+function buildP2StepHint(step, sub) {
+  const sd = getP2ScenarioData();
+  const hints = STEP_HINTS['block1-practice-scenario'].steps;
+
+  if (step === 1) {
+    if (sub === 1) {
+      const card = sd ? renderPersonaCard(sd.persona) : '';
+      return card + '<p class="mt-3 text-sm text-slate-700">Это ваш собеседник. Прочитайте его профиль — опишите роли участников и вашу <strong>цель в разговоре</strong>.</p>';
+    }
+    if (sub === 2) {
+      const reaction = sd ? renderReactionBubble(sd.hardReaction, 'is-fail') : '';
+      const tip = sd?.dialogueTip ? `<p class="mt-2 text-xs text-amber-700 bg-amber-50 rounded p-2">💡 ${sd.dialogueTip}</p>` : '';
+      return reaction + tip + `<div class="mt-3">${PFVSH_TIP}</div>`;
+    }
+    if (sub === 3) {
+      return `${PFVSH_TIP}<p class="mt-3 text-sm text-slate-700">Продолжайте диалог в чате — минимум <strong>4 пары реплик</strong>. ИИ будет намеренно возражать — это тренировка.</p>`;
+    }
+  }
+  if (step === 2) {
+    if (sub === 1) return hints['2.1'];
+    if (sub === 2) return hints['2.2'];
+  }
+  if (step === 3) return hints['3'];
+  return hints[`${step}.${sub}`] || hints[String(step)] || '';
+}
+
+function buildP3StepHint(step, sub) {
+  const fd = getP3FragmentData();
+  const hints = STEP_HINTS['block1-practice-hallucination'].steps;
+
+  if (step === 1) {
+    return `${RISK_TYPES_TIP}<p class="mt-3 text-sm text-slate-700">Найдите минимум <strong>4 опасных места</strong> в тексте. Заполните таблицу: цитата → тип проблемы → уровень → почему опасно → что проверить.</p>`;
+  }
+  if (step === 2) {
+    if (sub === 1) {
+      const consequences = fd?.consequences
+        ? `<div class="aa-reaction-bubble is-fail mt-2 mb-3"><p class="text-xs font-medium text-red-700 mb-1">⚠️ Что произойдёт если использовать без проверки:</p><p class="text-sm text-slate-700">${fd.consequences}</p></div>`
+        : '';
+      return consequences + '<p class="text-sm text-slate-700">Перепишите фрагмент так, чтобы <strong>убрать или исправить</strong> найденные риски.</p>';
+    }
+    if (sub === 2) {
+      if (fd?.expertVerdict) {
+        const ev = fd.expertVerdict;
+        const badge = ev.decision.includes('нельзя') || ev.decision.includes('Нельзя')
+          ? `<span class="inline-block bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5 rounded">🚫 ${ev.decision}</span>`
+          : `<span class="inline-block bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded">⚠️ ${ev.decision}</span>`;
+        const risks = ev.mainRisks.map(r => `<li>${r}</li>`).join('');
+        return `<div class="aa-persona-card p-3 mb-3"><p class="text-xs font-medium text-slate-500 mb-1">Экспертный разбор</p>${badge}<ul class="mt-2 text-xs text-slate-600 space-y-1 list-disc list-inside">${risks}</ul></div><p class="text-sm text-slate-700">Примите решение и составьте <strong>личный чек-лист</strong> из 5 пунктов.</p>`;
+      }
+      return hints['2.2'];
     }
   }
   if (step === 3) return hints['3'];
