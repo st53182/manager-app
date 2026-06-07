@@ -3218,184 +3218,25 @@ function injectHtmlBubble(html) {
 const DEMO_PROMPTS = {
   landing: `Создай landing page для SaaS «Pulse» — AI-платформы управления командой. Ответь ТОЛЬКО кодом, без пояснений.
 
-Ограничение: НЕ БОЛЕЕ 120 строк HTML. Используй Tailwind CDN — не пиши свой CSS. Будь лаконичен.
+Ограничение: НЕ БОЛЕЕ 120 строк HTML. Tailwind CDN — не пиши свой CSS (кроме 3–4 утилит в <style>). Минимально, но красиво.
 
-Секции (все в одном файле): навбар · hero с SVG-графиком · логотипы клиентов · 3 фича-карточки · 3 метрики · 3 отзыва · 3 тарифа · CTA · footer.
-Дизайн: hero тёмный (#0f172a→#1e1b4b), акцент #7c3aed и #06b6d4, hover на карточках.
+Секции: навбар · hero с SVG-графиком справа · логотипы (Яндекс Сбер Озон Авито МТС) · 3 фича-карточки · 3 метрики (+34% / 2× / 89% NPS) · 3 отзыва · 3 тарифа (0₽/2990₽/запрос) · CTA · footer.
+Дизайн: hero тёмный (#0f172a→#1e1b4b), акцент #7c3aed и #06b6d4, hover на карточках, градиентный текст на заголовках.
 
 \`\`\`academy-html
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<!DOCTYPE html><html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pulse</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-body{font-family:system-ui,sans-serif}
 .g{background:linear-gradient(135deg,#7c3aed,#06b6d4)}
 .gt{background:linear-gradient(135deg,#a78bfa,#22d3ee);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .hero{background:linear-gradient(135deg,#0f172a,#1e1b4b)}
-.card{transition:transform .2s,box-shadow .2s}
-.card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(124,58,237,.2)}
-</style>
-</head>
+.hov{transition:transform .2s,box-shadow .2s}.hov:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(124,58,237,.18)}
+</style></head>
 <body class="bg-white text-slate-900">
-
-<nav class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur border-b border-white/10 px-6 h-14 flex items-center justify-between">
-  <span class="text-white font-bold text-lg">⚡ Pulse</span>
-  <div class="flex gap-6 text-sm text-slate-300 font-medium">
-    <a href="#feat" class="hover:text-white">Возможности</a>
-    <a href="#price" class="hover:text-white">Цены</a>
-    <a href="#rev" class="hover:text-white">Отзывы</a>
-  </div>
-  <a href="#cta" class="g text-white text-sm font-semibold px-4 py-2 rounded-lg">Начать бесплатно</a>
-</nav>
-
-<section class="hero text-white py-20 px-6">
-  <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
-    <div>
-      <span class="text-xs font-semibold text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-full">🚀 AI-платформа</span>
-      <h1 class="text-4xl md:text-5xl font-black mt-4 leading-tight">Управляйте командой<br>с силой <span class="gt">ИИ</span></h1>
-      <p class="mt-4 text-slate-300 text-lg max-w-md">Pulse анализирует эффективность, предсказывает выгорание и автоматизирует встречи 1:1.</p>
-      <div class="mt-6 flex gap-3">
-        <a href="#cta" class="g text-white font-semibold px-6 py-3 rounded-xl">Начать бесплатно</a>
-        <a href="#feat" class="bg-white/10 border border-white/20 text-white font-semibold px-6 py-3 rounded-xl hover:bg-white/20">Возможности</a>
-      </div>
-    </div>
-    <div class="bg-white/5 border border-white/10 rounded-2xl p-5">
-      <div class="flex justify-between mb-3"><span class="font-semibold text-sm">Дашборд команды</span><span class="text-cyan-300 text-xs bg-cyan-500/10 px-2 py-0.5 rounded-full">Live</span></div>
-      <svg viewBox="0 0 320 120" class="w-full">
-        <line x1="0" y1="90" x2="320" y2="90" stroke="#334155" stroke-width="1"/>
-        <path d="M0,80 L64,65 L128,70 L192,45 L256,50 L320,25" fill="none" stroke="#22d3ee" stroke-width="2.5"/>
-        <path d="M0,90 L64,82 L128,78 L192,68 L256,60 L320,52" fill="none" stroke="#a78bfa" stroke-width="2.5"/>
-      </svg>
-      <table class="w-full text-xs mt-3 text-slate-300">
-        <tr class="text-slate-500 border-b border-white/10"><th class="text-left pb-1">Команда</th><th class="text-left pb-1">Продуктивность</th><th class="text-left pb-1">Риск</th></tr>
-        <tr class="border-b border-white/5"><td class="py-1">Продукт</td><td class="text-cyan-300 font-bold">94%</td><td class="text-green-400">Низкий</td></tr>
-        <tr class="border-b border-white/5"><td class="py-1">Дизайн</td><td class="text-cyan-300 font-bold">88%</td><td class="text-yellow-400">Средний</td></tr>
-        <tr><td class="py-1">Разработка</td><td class="text-cyan-300 font-bold">91%</td><td class="text-green-400">Низкий</td></tr>
-      </table>
-    </div>
-  </div>
-</section>
-
-<div class="py-8 bg-slate-50 border-y border-slate-100 text-center">
-  <p class="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-4">Нам доверяют</p>
-  <div class="flex flex-wrap justify-center gap-8 text-xl font-black text-slate-300">
-    <span>Яндекс</span><span>Сбер</span><span>Озон</span><span>Авито</span><span>МТС</span>
-  </div>
-</div>
-
-<section id="feat" class="py-16 px-6">
-  <div class="max-w-5xl mx-auto">
-    <h2 class="text-3xl font-black text-center mb-10">Всё для <span class="gt">сильной команды</span></h2>
-    <div class="grid md:grid-cols-3 gap-6">
-      <div class="card border border-slate-100 rounded-2xl p-6 shadow-sm">
-        <div class="w-10 h-10 g rounded-xl flex items-center justify-center text-white text-lg mb-4">✦</div>
-        <h3 class="font-bold text-lg mb-2">AI-аналитика</h3>
-        <p class="text-slate-500 text-sm">Автоматический анализ эффективности по командам и проектам. Понятные дашборды без ручных отчётов.</p>
-      </div>
-      <div class="card border border-slate-100 rounded-2xl p-6 shadow-sm">
-        <div class="w-10 h-10 g rounded-xl flex items-center justify-center text-white text-lg mb-4">✦</div>
-        <h3 class="font-bold text-lg mb-2">Умные 1:1</h3>
-        <p class="text-slate-500 text-sm">ИИ готовит повестку встреч, подсказывает темы и отслеживает выполнение договорённостей.</p>
-      </div>
-      <div class="card border border-slate-100 rounded-2xl p-6 shadow-sm">
-        <div class="w-10 h-10 g rounded-xl flex items-center justify-center text-white text-lg mb-4">✦</div>
-        <h3 class="font-bold text-lg mb-2">Прогноз выгорания</h3>
-        <p class="text-slate-500 text-sm">Модель определяет риски заранее по поведенческим сигналам и помогает вовремя поддержать команду.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="hero py-14 px-6 text-white text-center">
-  <div class="max-w-3xl mx-auto grid grid-cols-3 gap-8">
-    <div><div class="text-5xl font-black gt">+34%</div><p class="text-slate-300 mt-2 font-medium">рост продуктивности</p></div>
-    <div><div class="text-5xl font-black gt">2×</div><p class="text-slate-300 mt-2 font-medium">быстрее онбординг</p></div>
-    <div><div class="text-5xl font-black gt">89%</div><p class="text-slate-300 mt-2 font-medium">NPS сотрудников</p></div>
-  </div>
-</section>
-
-<section id="rev" class="py-16 px-6 bg-slate-50">
-  <div class="max-w-5xl mx-auto">
-    <h2 class="text-3xl font-black text-center mb-10">Что говорят <span class="gt">клиенты</span></h2>
-    <div class="grid md:grid-cols-3 gap-6">
-      <div class="card bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
-        <p class="text-slate-600 text-sm italic mb-4">«Pulse изменил то, как мы проводим встречи 1:1. Команда стала открытее, а я наконец вижу реальную картину.»</p>
-        <div class="flex items-center gap-3"><div class="w-9 h-9 g rounded-full flex items-center justify-center text-white font-bold text-sm">А</div><div><p class="font-bold text-sm">Анна Смирнова</p><p class="text-slate-400 text-xs">HR-директор, Яндекс</p></div></div>
-      </div>
-      <div class="card bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
-        <p class="text-slate-600 text-sm italic mb-4">«Прогноз выгорания реально работает. За полгода ни одного неожиданного увольнения в команде разработки.»</p>
-        <div class="flex items-center gap-3"><div class="w-9 h-9 g rounded-full flex items-center justify-center text-white font-bold text-sm">Д</div><div><p class="font-bold text-sm">Дмитрий Козлов</p><p class="text-slate-400 text-xs">CTO, Авито</p></div></div>
-      </div>
-      <div class="card bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
-        <p class="text-slate-600 text-sm italic mb-4">«Онбординг сократился вдвое. ИИ-аналитика показывает где тормозит процесс и что нужно улучшить.»</p>
-        <div class="flex items-center gap-3"><div class="w-9 h-9 g rounded-full flex items-center justify-center text-white font-bold text-sm">М</div><div><p class="font-bold text-sm">Мария Иванова</p><p class="text-slate-400 text-xs">CEO, Сбер</p></div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="price" class="py-16 px-6">
-  <div class="max-w-4xl mx-auto">
-    <h2 class="text-3xl font-black text-center mb-10">Простые <span class="gt">тарифы</span></h2>
-    <div class="grid md:grid-cols-3 gap-6 items-stretch">
-      <div class="card border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col">
-        <h3 class="font-bold text-lg">Старт</h3>
-        <p class="text-slate-400 text-sm mb-3">Для малых команд</p>
-        <div class="text-4xl font-black mb-1">0₽</div>
-        <p class="text-slate-400 text-xs mb-5">навсегда</p>
-        <ul class="text-sm text-slate-600 space-y-2 flex-1">
-          <li>✓ До 5 сотрудников</li><li>✓ Базовая аналитика</li><li>✓ 1:1 встречи</li>
-        </ul>
-        <a href="#cta" class="mt-6 border border-slate-200 text-slate-700 font-semibold text-sm py-2.5 rounded-xl text-center hover:bg-slate-50">Начать</a>
-      </div>
-      <div class="card rounded-2xl p-6 flex flex-col relative" style="background:linear-gradient(135deg,#0f172a,#1e1b4b);color:#fff;box-shadow:0 20px 50px rgba(124,58,237,.3)">
-        <span class="absolute -top-3 left-1/2 -translate-x-1/2 g text-white text-xs font-bold px-3 py-1 rounded-full">Популярный</span>
-        <h3 class="font-bold text-lg">Про</h3>
-        <p class="text-white/60 text-sm mb-3">Для растущих команд</p>
-        <div class="text-4xl font-black mb-1">2 990₽</div>
-        <p class="text-white/50 text-xs mb-5">/мес за команду</p>
-        <ul class="text-sm text-white/80 space-y-2 flex-1">
-          <li>✓ До 50 сотрудников</li><li>✓ Прогноз выгорания</li><li>✓ Умные 1:1</li><li>✓ Приоритетная поддержка</li>
-        </ul>
-        <a href="#cta" class="mt-6 g text-white font-semibold text-sm py-2.5 rounded-xl text-center">Попробовать</a>
-      </div>
-      <div class="card border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col">
-        <h3 class="font-bold text-lg">Энтерпрайз</h3>
-        <p class="text-slate-400 text-sm mb-3">Для крупных компаний</p>
-        <div class="text-4xl font-black mb-1">По запросу</div>
-        <p class="text-slate-400 text-xs mb-5">&nbsp;</p>
-        <ul class="text-sm text-slate-600 space-y-2 flex-1">
-          <li>✓ Без ограничений</li><li>✓ SSO и интеграции</li><li>✓ Персональный менеджер</li>
-        </ul>
-        <a href="#cta" class="mt-6 border border-slate-200 text-slate-700 font-semibold text-sm py-2.5 rounded-xl text-center hover:bg-slate-50">Связаться</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="cta" class="py-16 px-6">
-  <div class="max-w-3xl mx-auto g rounded-3xl p-12 text-center text-white">
-    <h2 class="text-3xl font-black mb-3">Попробуйте Pulse 14 дней бесплатно</h2>
-    <p class="text-white/80 mb-6">Без карты. Без обязательств. Результат — с первого дня.</p>
-    <a href="#" class="bg-white text-purple-700 font-bold px-8 py-3 rounded-xl hover:shadow-xl transition">Начать бесплатно →</a>
-  </div>
-</section>
-
-<footer class="bg-slate-900 text-slate-400 py-10 px-6">
-  <div class="max-w-5xl mx-auto flex flex-wrap justify-between gap-6 text-sm mb-8">
-    <div><p class="text-white font-bold text-lg mb-2">⚡ Pulse</p><p class="text-slate-500 max-w-xs">AI-платформа для управления командой и эффективностью сотрудников.</p></div>
-    <div><p class="text-white font-semibold mb-2">Продукт</p><ul class="space-y-1"><li><a href="#" class="hover:text-white">Возможности</a></li><li><a href="#" class="hover:text-white">Цены</a></li><li><a href="#" class="hover:text-white">Безопасность</a></li></ul></div>
-    <div><p class="text-white font-semibold mb-2">Компания</p><ul class="space-y-1"><li><a href="#" class="hover:text-white">О нас</a></li><li><a href="#" class="hover:text-white">Блог</a></li><li><a href="#" class="hover:text-white">Карьера</a></li></ul></div>
-  </div>
-  <div class="max-w-5xl mx-auto border-t border-white/10 pt-6 text-xs text-slate-500">© 2025 Pulse. Все права защищены.</div>
-</footer>
-
-</body>
-</html>
+<!-- ... -->
+</body></html>
 \`\`\``,
 
 
