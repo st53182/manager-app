@@ -3224,40 +3224,44 @@ a{text-decoration:none;color:inherit}
 \`\`\``,
 
 
-  dashboard: `Создай интерактивный дашборд «Рынок вакансий 2025: Европа vs Россия» на Vue 3 + Chart.js. Ответь ТОЛЬКО кодом, без пояснений.
+  dashboard: `Создай интерактивный HTML-дашборд «Рынок вакансий 2025: Европа vs Россия» на чистом JS + Chart.js (без фреймворков). Ответь ТОЛЬКО кодом, без пояснений.
 
-Ограничение: НЕ БОЛЕЕ 160 строк HTML. Данные хардкоди в JS. Стили — только встроенный <style>.
+Ограничение: НЕ БОЛЕЕ 160 строк. Стили — встроенный <style>. Данные — в JS-константах.
 
 Структура:
-- Тёмный фон #0f172a, карточки #1e293b, акценты #7c3aed и #06b6d4
-- 4 KPI: Вакансий EU 2.3М↑8%, RU 1.1М↑12%, Зарплата EU €3840, RU ₽142K
-- 4 вкладки: Секторы (два doughnut EU/RU), Зарплаты (horizontal bar топ-8), Тренды (line Jan–Jun), Прогноз (3 карточки 🟢🟡🔴)
-- Таблица топ-8 профессий: EU€, RU₽, прогресс-бар дефицита, тренд ↑↓→
-- Chart.js: grid #334155, labels #94a3b8
+- Тёмный фон #0f172a, карточки #1e293b, акценты #7c3aed / #06b6d4
+- 4 KPI-карточки: Вакансий EU 2.3М↑8%, RU 1.1М↑12%, Зарплата EU €3840, RU ₽142K
+- 4 кнопки-вкладки переключают видимость секций через display:none/block (чистый JS, addEventListener)
+- Секция «Секторы» — два <canvas> рядом: doughnut EU и doughnut RU
+- Секция «Зарплаты» — один <canvas>: horizontal bar топ-8 профессий (EU€ vs RU в €)
+- Секция «Тренды» — один <canvas>: line Jan–Jun для EU и RU с заливкой
+- Секция «Прогноз» — три div-карточки 🟢🟡🔴 с текстом
+- Таблица топ-8 профессий: EU€, RU₽, прогресс-бар дефицита (<div> шириной %), тренд ↑↓→
+- Chart.js: новый Chart() на каждый canvas в DOMContentLoaded, grid #334155, labels #94a3b8
 
 \`\`\`academy-html
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<!DOCTYPE html><html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Рынок вакансий 2025</title>
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,sans-serif;background:#0f172a;color:#f1f5f9;padding:24px}
-canvas{max-height:260px}
-.tab-on{background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px}
-.tab-off{background:#1e293b;color:#94a3b8;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px}
-.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;margin-bottom:16px}
-</style>
-</head>
+body{font-family:system-ui,sans-serif;background:#0f172a;color:#f1f5f9;padding:20px}
+canvas{max-height:250px}
+.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:18px;margin-bottom:14px}
+.tab-on{background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600}
+.tab-off{background:#1e293b;color:#94a3b8;border:none;padding:8px 16px;border-radius:8px;cursor:pointer}
+</style></head>
 <body>
-<div id="app"><!-- Vue рендерит сюда --></div>
-<script>/* твой полный Vue 3 код */</script>
-</body>
-</html>
+<!-- KPI, вкладки и секции здесь -->
+<script>
+// данные и Chart() вызовы здесь
+document.addEventListener('DOMContentLoaded', () => {
+  // переключение вкладок
+  // инициализация графиков
+});
+</script>
+</body></html>
 \`\`\``
 };
 
