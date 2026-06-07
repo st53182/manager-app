@@ -67,7 +67,19 @@ function sanitizeArtifactHtml(html, allowScripts) {
   if (!html || typeof DOMPurify === 'undefined') return '';
 
   if (allowScripts) {
-    return DOMPurify.sanitize(html.trim(), {
+    // DOMPurify strips src from <script> even when tag is allowed — restore it via hook
+    DOMPurify.addHook('afterSanitizeAttributes', function(node) {
+      if (node.tagName === 'SCRIPT' && node.hasAttribute('data-src-saved')) {
+        node.setAttribute('src', node.getAttribute('data-src-saved'));
+        node.removeAttribute('data-src-saved');
+      }
+    });
+    // Pre-process: rename src → data-src-saved so DOMPurify doesn't strip it
+    const processed = html.trim().replace(
+      /<script([^>]*)\ssrc=(["'])([^"']+)\2/gi,
+      '<script$1 data-src-saved=$2$3$2'
+    );
+    const result = DOMPurify.sanitize(processed, {
       WHOLE_DOCUMENT: true,
       ADD_TAGS: [
         'script',
@@ -97,48 +109,16 @@ function sanitizeArtifactHtml(html, allowScripts) {
         'tspan'
       ],
       ADD_ATTR: [
-        'charset',
-        'name',
-        'content',
-        'media',
-        'colspan',
-        'rowspan',
-        'scope',
-        'rel',
-        'href',
-        'class',
-        'id',
-        'src',
-        'type',
-        'crossorigin',
-        'integrity',
-        'defer',
-        'async',
-        'nomodule',
-        'referrerpolicy',
-        'importance',
-        'loading',
-        'viewBox',
-        'xmlns',
-        'xmlns:xlink',
-        'fill',
-        'stroke',
-        'd',
-        'x',
-        'y',
-        'width',
-        'height',
-        'rx',
-        'cx',
-        'cy',
-        'r',
-        'points',
-        'transform',
-        'aria-hidden',
-        'role'
+        'charset','name','content','media','colspan','rowspan','scope','rel','href',
+        'class','id','src','type','crossorigin','integrity','defer','async','nomodule',
+        'referrerpolicy','importance','loading','viewBox','xmlns','xmlns:xlink',
+        'fill','stroke','d','x','y','width','height','rx','cx','cy','r','points',
+        'transform','aria-hidden','role','data-src-saved'
       ],
       FORBID_TAGS: ['iframe', 'object', 'embed', 'base']
     });
+    DOMPurify.removeHook('afterSanitizeAttributes');
+    return result;
   }
 
   function stripUnsafeLink(node) {
@@ -3218,35 +3198,39 @@ function injectHtmlBubble(html) {
 const DEMO_PROMPTS = {
   landing: `Создай landing page для SaaS «Pulse» — AI-платформы управления командой. Ответь ТОЛЬКО кодом, без пояснений.
 
-Ограничение: НЕ БОЛЕЕ 120 строк HTML. Tailwind CDN — не пиши свой CSS (кроме 3–4 утилит в <style>). Минимально, но красиво.
+Ограничение: НЕ БОЛЕЕ 130 строк HTML. Все стили — встроенный <style> в <head>, без внешних CDN. Минимально, но красиво.
 
 Секции: навбар · hero с SVG-графиком справа · логотипы (Яндекс Сбер Озон Авито МТС) · 3 фича-карточки · 3 метрики (+34% / 2× / 89% NPS) · 3 отзыва · 3 тарифа (0₽/2990₽/запрос) · CTA · footer.
-Дизайн: hero тёмный (#0f172a→#1e1b4b), акцент #7c3aed и #06b6d4, hover на карточках, градиентный текст на заголовках.
+Дизайн: hero тёмный (#0f172a→#1e1b4b), акцент #7c3aed и #06b6d4, hover на карточках, градиентный текст.
+CSS: используй flexbox/grid, пиши лаконично. Никаких внешних скриптов или таблиц стилей.
 
 \`\`\`academy-html
 <!DOCTYPE html><html lang="ru"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pulse</title>
-<script src="https://cdn.tailwindcss.com"></script>
 <style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;color:#0f172a}
+a{text-decoration:none;color:inherit}
 .g{background:linear-gradient(135deg,#7c3aed,#06b6d4)}
 .gt{background:linear-gradient(135deg,#a78bfa,#22d3ee);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.hero{background:linear-gradient(135deg,#0f172a,#1e1b4b)}
+.hero{background:linear-gradient(135deg,#0f172a,#1e1b4b);color:#fff}
 .hov{transition:transform .2s,box-shadow .2s}.hov:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(124,58,237,.18)}
+/* продолжай писать нужные стили */
 </style></head>
-<body class="bg-white text-slate-900">
-<!-- ... -->
+<body>
+<!-- все секции здесь -->
 </body></html>
 \`\`\``,
 
 
-  dashboard: `Создай интерактивный дашборд «Рынок вакансий 2025: Европа vs Россия» на Vue 3 + Chart.js через CDN. Ответь ТОЛЬКО кодом, без пояснений.
+  dashboard: `Создай интерактивный дашборд «Рынок вакансий 2025: Европа vs Россия» на Vue 3 + Chart.js. Ответь ТОЛЬКО кодом, без пояснений.
 
-Ограничение: НЕ БОЛЕЕ 150 строк HTML. Пиши минимальный, но рабочий код. Данные хардкоди в JS.
+Ограничение: НЕ БОЛЕЕ 160 строк HTML. Данные хардкоди в JS. Стили — только встроенный <style>.
 
-Структура одним файлом:
+Структура:
 - Тёмный фон #0f172a, карточки #1e293b, акценты #7c3aed и #06b6d4
-- 4 KPI вверху: Вакансий EU 2.3М↑8%, RU 1.1М↑12%, Зарплата EU €3840, RU ₽142K
+- 4 KPI: Вакансий EU 2.3М↑8%, RU 1.1М↑12%, Зарплата EU €3840, RU ₽142K
 - 4 вкладки: Секторы (два doughnut EU/RU), Зарплаты (horizontal bar топ-8), Тренды (line Jan–Jun), Прогноз (3 карточки 🟢🟡🔴)
 - Таблица топ-8 профессий: EU€, RU₽, прогресс-бар дефицита, тренд ↑↓→
 - Chart.js: grid #334155, labels #94a3b8
@@ -3258,20 +3242,20 @@ const DEMO_PROMPTS = {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Рынок вакансий 2025</title>
-<script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
-body{font-family:system-ui,sans-serif;background:#0f172a;color:#f1f5f9}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:#0f172a;color:#f1f5f9;padding:24px}
 canvas{max-height:260px}
-.tab-on{background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff}
-.tab-off{background:#1e293b;color:#94a3b8}
-.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px}
+.tab-on{background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px}
+.tab-off{background:#1e293b;color:#94a3b8;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px}
+.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;margin-bottom:16px}
 </style>
 </head>
 <body>
 <div id="app"><!-- Vue рендерит сюда --></div>
-<script>/* ... твой Vue 3 код здесь ... */</script>
+<script>/* твой полный Vue 3 код */</script>
 </body>
 </html>
 \`\`\``
