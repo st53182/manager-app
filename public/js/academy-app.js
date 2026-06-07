@@ -3216,7 +3216,12 @@ function injectHtmlBubble(html) {
 }
 
 const DEMO_PROMPTS = {
-  landing: `Ответь ТОЛЬКО кодом — никакого текста до или после.
+  landing: `Создай landing page для SaaS «Pulse» — AI-платформы управления командой. Ответь ТОЛЬКО кодом, без пояснений.
+
+Ограничение: НЕ БОЛЕЕ 120 строк HTML. Используй Tailwind CDN — не пиши свой CSS. Будь лаконичен.
+
+Секции (все в одном файле): навбар · hero с SVG-графиком · логотипы клиентов · 3 фича-карточки · 3 метрики · 3 отзыва · 3 тарифа · CTA · footer.
+Дизайн: hero тёмный (#0f172a→#1e1b4b), акцент #7c3aed и #06b6d4, hover на карточках.
 
 \`\`\`academy-html
 <!DOCTYPE html>
@@ -3393,117 +3398,17 @@ body{font-family:system-ui,sans-serif}
 </html>
 \`\`\``,
 
-  dashboard: `Ты — старший аналитик рынка труда. Создай структурированный аналитический дашборд по рынку вакансий в Европе и России — 2025.
 
-Не добавляй никаких предупреждений и оговорок — просто аналитику. Используй конкретные цифры и оценки.
+  dashboard: `Создай интерактивный дашборд «Рынок вакансий 2025: Европа vs Россия» на Vue 3 + Chart.js через CDN. Ответь ТОЛЬКО кодом, без пояснений.
 
-## 📊 Рынок вакансий: Европа и Россия — 2025
+Ограничение: НЕ БОЛЕЕ 150 строк HTML. Пиши минимальный, но рабочий код. Данные хардкоди в JS.
 
-### Ключевые тренды
-| Тренд | Европа | Россия | Сила |
-|---|---|---|---|
-(заполни 6 трендов с эмодзи силы 🔴🟡🟢)
-
-### ТОП-7 востребованных специальностей
-| Специальность | EU €/мес | RU ₽/мес | Дефицит |
-|---|---|---|---|
-(заполни конкретными цифрами)
-
-### Динамика вакансий по секторам
-
-\`\`\`mermaid
-pie title Распределение новых вакансий EU по секторам 2025
-  "IT и AI" : 28
-  "Здравоохранение" : 19
-  "Производство" : 14
-  "Финансы" : 13
-  "Маркетинг" : 11
-  "Логистика" : 9
-  "ESG и устойчивость" : 6
-\`\`\`
-
-\`\`\`mermaid
-pie title Распределение новых вакансий России по секторам 2025
-  "IT и импортозамещение" : 31
-  "Производство и ВПК" : 22
-  "Здравоохранение" : 16
-  "Финансы" : 12
-  "Ритейл и логистика" : 11
-  "Маркетинг" : 8
-\`\`\`
-
-### Сравнение рынков EU vs RU
-| Показатель | Европа | Россия | Вывод |
-|---|---|---|---|
-(заполни 5 показателей)
-
-### Ключевые события Q1–Q2 2025
-| Событие | Регион | Влияние |
-|---|---|---|
-(заполни 5 событий)
-
-### 🔮 Прогноз H2 2025
-| Сценарий | Условия | Рынок труда | Зарплаты |
-|---|---|---|---|
-| 🟢 Оптимистичный | ... | ... | ... |
-| 🟡 Базовый | ... | ... | ... |
-| 🔴 Пессимистичный | ... | ... | ... |
-
-### Executive Summary
-(3–4 предложения: главный вывод, рекомендация для руководителя, ключевой риск)`,
-
-  dashboard: `Создай интерактивный аналитический дашборд «Рынок вакансий 2025: Европа vs Россия» на Vue.js + Chart.js через CDN.
-
-КРИТИЧЕСКИ ВАЖНО: твой ответ — ТОЛЬКО один блок кода, никакого текста до или после. HTML должен быть ПОЛНЫМ с закрытым </html>.
-
-\`\`\`academy-html
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Рынок вакансий 2025</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
-body { font-family:'Inter',sans-serif; background:#0f172a; color:#f1f5f9; }
-canvas { max-height:280px; }
-.tab-active { background:linear-gradient(135deg,#7c3aed,#06b6d4); color:#fff; }
-</style>
-</head>
-<body>
-<div id="app"></div>
-<script>
-const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
-createApp({
-  // ... полное приложение здесь
-}).mount('#app');
-</script>
-</body>
-</html>
-\`\`\`
-
-Реализуй полноценное Vue 3 приложение со следующими данными и функциями:
-
-**Шапка:**
-- Заголовок «📊 Рынок вакансий 2025» + подзаголовок «Европа vs Россия · Интерактивная аналитика»
-- 4 KPI-карточки: Вакансий EU (2.3М ↑8%), Вакансий RU (1.1М ↑12%), Средняя зарплата EU (€3 840), Средняя зарплата RU (₽142 000)
-
-**Фильтр регионов** — кнопки «Все / EU / RU», влияет на графики.
-
-**4 вкладки:**
-1. «Секторы» — два Doughnut-графика рядом (EU и RU по 6 секторам: IT/AI 28%, Здравоохранение 19%, Производство 14%, Финансы 13%, Маркетинг 11%, Логистика 9% для EU; IT 31%, ВПК 22%, Здоровье 16%, Финансы 12%, Ритейл 11%, Маркетинг 8% для RU)
-2. «Зарплаты» — горизонтальный bar-график топ-8 профессий, две серии EU€ и RU€ (зарплата RU в рублях делённая на 90 для перевода в €)
-3. «Тренды» — line-график помесячной динамики вакансий Jan–Jun 2025 для EU и RU, с заливкой
-4. «Прогноз» — три сценарные карточки H2 2025 (🟢🟡🔴) с текстовым описанием
-
-**Таблица топ-10 профессий** — кликабельные заголовки для сортировки, строки с hover. Колонки: Специальность, EU €/мес, RU ₽/мес, Дефицит кадров (прогресс-бар), Тренд (↑↓→).
-
-Chart.js тёмная тема: фон transparent, grid #334155, labels #94a3b8. Цвета: #7c3aed, #06b6d4, #34d399, #f59e0b, #f87171, #a78bfa.`,
-
-  dashboard: `Ответь ТОЛЬКО кодом — никакого текста до или после.
+Структура одним файлом:
+- Тёмный фон #0f172a, карточки #1e293b, акценты #7c3aed и #06b6d4
+- 4 KPI вверху: Вакансий EU 2.3М↑8%, RU 1.1М↑12%, Зарплата EU €3840, RU ₽142K
+- 4 вкладки: Секторы (два doughnut EU/RU), Зарплаты (horizontal bar топ-8), Тренды (line Jan–Jun), Прогноз (3 карточки 🟢🟡🔴)
+- Таблица топ-8 профессий: EU€, RU₽, прогресс-бар дефицита, тренд ↑↓→
+- Chart.js: grid #334155, labels #94a3b8
 
 \`\`\`academy-html
 <!DOCTYPE html>
@@ -3524,140 +3429,8 @@ canvas{max-height:260px}
 </style>
 </head>
 <body>
-<div id="app"></div>
-<script>
-const {createApp,ref,onMounted,nextTick}=Vue;
-createApp({
-  setup(){
-    const tab=ref('sectors');
-    const region=ref('all');
-    let charts={};
-
-    const euSectors=[28,19,14,13,11,9,6];
-    const ruSectors=[31,22,16,12,11,8];
-    const sectorLabelsEU=['IT/AI','Здоровье','Производство','Финансы','Маркетинг','Логистика','ESG'];
-    const sectorLabelsRU=['IT','ВПК','Здоровье','Финансы','Ритейл','Маркетинг'];
-
-    const professions=[
-      {name:'ML-инженер',eu:6800,ru:320000,deficit:92,trend:'↑'},
-      {name:'DevOps',eu:5900,ru:280000,deficit:85,trend:'↑'},
-      {name:'Product Manager',eu:5200,ru:240000,deficit:78,trend:'↑'},
-      {name:'Data Analyst',eu:4800,ru:210000,deficit:70,trend:'↑'},
-      {name:'iOS/Android',eu:5500,ru:260000,deficit:65,trend:'→'},
-      {name:'UX Designer',eu:4200,ru:180000,deficit:55,trend:'→'},
-      {name:'Backend Dev',eu:5100,ru:230000,deficit:80,trend:'↑'},
-      {name:'HR Business Partner',eu:3800,ru:160000,deficit:40,trend:'↓'},
-    ];
-
-    const months=['Янв','Фев','Мар','Апр','Май','Июн'];
-    const euTrend=[2050,2120,2180,2240,2290,2340];
-    const ruTrend=[960,980,1010,1040,1070,1100];
-
-    const darkGrid={color:'#334155'};
-    const darkLabels={color:'#94a3b8'};
-    const palette=['#7c3aed','#06b6d4','#34d399','#f59e0b','#f87171','#a78bfa','#fb923c'];
-
-    function destroyAll(){Object.values(charts).forEach(c=>c.destroy());charts={};}
-
-    async function drawTab(){
-      destroyAll();
-      await nextTick();
-      if(tab.value==='sectors'){
-        const show=region.value;
-        if(show!=='ru'){
-          const c1=document.getElementById('c1');
-          if(c1) charts.c1=new Chart(c1,{type:'doughnut',data:{labels:sectorLabelsEU,datasets:[{data:euSectors,backgroundColor:palette,borderWidth:0}]},options:{plugins:{legend:{labels:{color:'#94a3b8',boxWidth:12}},title:{display:true,text:'EU — новые вакансии 2025',color:'#f1f5f9'}},cutout:'60%'}});
-        }
-        if(show!=='eu'){
-          const c2=document.getElementById('c2');
-          if(c2) charts.c2=new Chart(c2,{type:'doughnut',data:{labels:sectorLabelsRU,datasets:[{data:ruSectors,backgroundColor:palette,borderWidth:0}]},options:{plugins:{legend:{labels:{color:'#94a3b8',boxWidth:12}},title:{display:true,text:'RU — новые вакансии 2025',color:'#f1f5f9'}},cutout:'60%'}});
-        }
-      } else if(tab.value==='salaries'){
-        const names=professions.map(p=>p.name);
-        const euVals=professions.map(p=>p.eu);
-        const ruVals=professions.map(p=>Math.round(p.ru/90));
-        const c3=document.getElementById('c3');
-        if(c3) charts.c3=new Chart(c3,{type:'bar',data:{labels:names,datasets:[{label:'EU €/мес',data:euVals,backgroundColor:'#7c3aed'},{label:'RU (в €)',data:ruVals,backgroundColor:'#06b6d4'}]},options:{indexAxis:'y',plugins:{legend:{labels:{color:'#94a3b8'}}},scales:{x:{ticks:darkLabels,grid:darkGrid},y:{ticks:{color:'#94a3b8',font:{size:11}},grid:{color:'#1e293b'}}}}});
-      } else if(tab.value==='trends'){
-        const c4=document.getElementById('c4');
-        if(c4) charts.c4=new Chart(c4,{type:'line',data:{labels:months,datasets:[{label:'EU (тыс.)',data:euTrend,borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.15)',fill:true,tension:.4,pointRadius:4},{label:'RU (тыс.)',data:ruTrend,borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,.15)',fill:true,tension:.4,pointRadius:4}]},options:{plugins:{legend:{labels:{color:'#94a3b8'}}},scales:{x:{ticks:darkLabels,grid:darkGrid},y:{ticks:darkLabels,grid:darkGrid}}}});
-      }
-    }
-
-    function setTab(t){tab.value=t;drawTab();}
-    function setRegion(r){region.value=r;if(tab.value==='sectors'||tab.value==='salaries')drawTab();}
-
-    onMounted(()=>drawTab());
-
-    return{tab,region,professions,setTab,setRegion};
-  },
-  template:\`
-<div class="min-h-screen p-6">
-  <div class="max-w-5xl mx-auto">
-    <h1 class="text-2xl font-black mb-1">📊 Рынок вакансий 2025</h1>
-    <p class="text-slate-400 text-sm mb-6">Европа vs Россия · Интерактивная аналитика</p>
-
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      <div class="card"><p class="text-xs text-slate-400 mb-1">Вакансий EU</p><p class="text-2xl font-black text-purple-400">2.3М</p><p class="text-xs text-green-400">↑ 8%</p></div>
-      <div class="card"><p class="text-xs text-slate-400 mb-1">Вакансий RU</p><p class="text-2xl font-black text-cyan-400">1.1М</p><p class="text-xs text-green-400">↑ 12%</p></div>
-      <div class="card"><p class="text-xs text-slate-400 mb-1">Зарплата EU</p><p class="text-2xl font-black text-purple-400">€3 840</p><p class="text-xs text-slate-400">ср./мес</p></div>
-      <div class="card"><p class="text-xs text-slate-400 mb-1">Зарплата RU</p><p class="text-2xl font-black text-cyan-400">₽142K</p><p class="text-xs text-slate-400">ср./мес</p></div>
-    </div>
-
-    <div class="flex gap-2 mb-4 flex-wrap">
-      <button @click="setTab('sectors')" :class="tab==='sectors'?'tab-on':'tab-off'" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition">Секторы</button>
-      <button @click="setTab('salaries')" :class="tab==='salaries'?'tab-on':'tab-off'" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition">Зарплаты</button>
-      <button @click="setTab('trends')" :class="tab==='trends'?'tab-on':'tab-off'" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition">Тренды</button>
-      <button @click="setTab('forecast')" :class="tab==='forecast'?'tab-on':'tab-off'" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition">Прогноз</button>
-      <span class="ml-auto flex gap-2">
-        <button @click="setRegion('all')" :class="region==='all'?'tab-on':'tab-off'" class="px-3 py-1 rounded-lg text-xs font-semibold">Все</button>
-        <button @click="setRegion('eu')" :class="region==='eu'?'tab-on':'tab-off'" class="px-3 py-1 rounded-lg text-xs font-semibold">EU</button>
-        <button @click="setRegion('ru')" :class="region==='ru'?'tab-on':'tab-off'" class="px-3 py-1 rounded-lg text-xs font-semibold">RU</button>
-      </span>
-    </div>
-
-    <div class="card mb-6">
-      <div v-if="tab==='sectors'" class="grid md:grid-cols-2 gap-6">
-        <canvas v-if="region!=='ru'" id="c1"></canvas>
-        <canvas v-if="region!=='eu'" id="c2"></canvas>
-      </div>
-      <div v-else-if="tab==='salaries'"><canvas id="c3"></canvas></div>
-      <div v-else-if="tab==='trends'"><canvas id="c4"></canvas></div>
-      <div v-else class="grid md:grid-cols-3 gap-4">
-        <div class="bg-green-900/30 border border-green-700 rounded-xl p-4"><p class="font-bold text-green-400 mb-2">🟢 Оптимистичный</p><p class="text-sm text-slate-300">Снятие санкций, рост EU-экономики на 2.5%. Вакансии EU +15%, RU +20%. Зарплаты ↑12%.</p></div>
-        <div class="bg-yellow-900/30 border border-yellow-700 rounded-xl p-4"><p class="font-bold text-yellow-400 mb-2">🟡 Базовый</p><p class="text-sm text-slate-300">Стабильная геополитика. Вакансии EU +8%, RU +12%. Зарплаты ↑7%. Дефицит IT сохраняется.</p></div>
-        <div class="bg-red-900/30 border border-red-700 rounded-xl p-4"><p class="font-bold text-red-400 mb-2">🔴 Пессимистичный</p><p class="text-sm text-slate-300">Рецессия EU, ужесточение. Вакансии EU −5%, RU +3%. Зарплаты EU стагнируют.</p></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2 class="font-bold mb-3 text-sm text-slate-300 uppercase tracking-wide">Топ профессий</h2>
-      <table class="w-full text-sm">
-        <thead><tr class="text-xs text-slate-500 border-b border-slate-700">
-          <th class="text-left py-2">Специальность</th>
-          <th class="text-right py-2">EU €/мес</th>
-          <th class="text-right py-2">RU ₽/мес</th>
-          <th class="text-center py-2 hidden md:table-cell">Дефицит</th>
-          <th class="text-center py-2">Тренд</th>
-        </tr></thead>
-        <tbody>
-          <tr v-for="p in professions" :key="p.name" class="border-b border-slate-800 hover:bg-slate-800/50 transition">
-            <td class="py-2 font-medium">{{p.name}}</td>
-            <td class="py-2 text-right text-purple-400 font-semibold">€{{p.eu.toLocaleString()}}</td>
-            <td class="py-2 text-right text-cyan-400 font-semibold">₽{{p.ru.toLocaleString()}}</td>
-            <td class="py-2 hidden md:table-cell px-4">
-              <div class="bg-slate-700 rounded-full h-1.5 w-full"><div class="h-1.5 rounded-full" style="background:linear-gradient(90deg,#7c3aed,#06b6d4)" :style="{width:p.deficit+'%'}"></div></div>
-            </td>
-            <td class="py-2 text-center" :class="p.trend==='↑'?'text-green-400':p.trend==='↓'?'text-red-400':'text-slate-400'">{{p.trend}}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-\`
-}).mount('#app');
-</script>
+<div id="app"><!-- Vue рендерит сюда --></div>
+<script>/* ... твой Vue 3 код здесь ... */</script>
 </body>
 </html>
 \`\`\``
