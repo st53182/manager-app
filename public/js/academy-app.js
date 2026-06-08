@@ -181,6 +181,48 @@ function suggestedHtmlDownloadName() {
  * Модель генерирует только const jobs=[...], euSec, ruSec, euTrend, ruTrend.
  * Мы вставляем их в готовый HTML и отдаём как полноценную страницу.
  */
+// Скрипт с дефолтными данными и логикой для дашборда вакансий.
+// Используется как фолбэк когда модель забыла добавить <script>.
+// Часть 1: дефолтные данные (используются если модель не предоставила своих)
+const DASHBOARD_DEFAULT_DATA = `
+if(typeof jobs==='undefined'||!Array.isArray(jobs)||!jobs.length){var jobs=[{n:'Backend Dev',eu:5200,ru:'250K',def:88,t:'↑'},{n:'Data Scientist',eu:5800,ru:'220K',def:92,t:'↑'},{n:'DevOps Engineer',eu:5500,ru:'240K',def:85,t:'↑'},{n:'Product Manager',eu:4800,ru:'180K',def:70,t:'↑'},{n:'UX Designer',eu:4200,ru:'150K',def:65,t:'→'},{n:'QA Engineer',eu:3800,ru:'130K',def:55,t:'→'},{n:'Project Manager',eu:4500,ru:'160K',def:60,t:'↓'},{n:'System Analyst',eu:4100,ru:'145K',def:58,t:'↑'}];}
+if(typeof euSec==='undefined'){var euSec={labels:['IT','Finance','Healthcare','Manufacturing','Retail','Logistics'],data:[28,18,16,14,13,11]};}
+if(typeof ruSec==='undefined'){var ruSec={labels:['IT','Manufacturing','Retail','Finance','Logistics','Healthcare'],data:[32,20,16,14,10,8]};}
+if(typeof euTrend==='undefined'){var euTrend=[165,178,190,205,218,232];}
+if(typeof ruTrend==='undefined'){var ruTrend=[78,84,91,98,107,115];}
+`;
+// Часть 2: логика (вкладки, таблица, графики) — всегда одинаковая
+const DASHBOARD_LOGIC_SCRIPT = `
+var PAL=['#7c3aed','#06b6d4','#a78bfa','#22d3ee','#f59e0b','#ef4444','#22c55e'];
+var G='#334155',L='#94a3b8';
+document.querySelectorAll('.tabs button').forEach(function(btn){btn.addEventListener('click',function(){document.querySelectorAll('.tabs button').forEach(function(b){b.className='tab-off';});document.querySelectorAll('.sec').forEach(function(s){s.classList.remove('show');});btn.className='tab-on';document.getElementById(btn.dataset.t).classList.add('show');});});
+document.getElementById('tb').innerHTML=jobs.map(function(j){return'<tr><td>'+j.n+'</td><td style="color:#a78bfa">€'+(typeof j.eu==='number'?j.eu.toLocaleString():j.eu)+'</td><td style="color:#22d3ee">₽'+j.ru+'</td><td><div class="bar"><i style="width:'+j.def+'%"></i></div></td><td style="color:'+(j.t==='↑'?'#22c55e':j.t==='↓'?'#ef4444':'#94a3b8')+'">'+j.t+'</td></tr>';}).join('');
+var opt=function(e){e=e||{};return Object.assign({responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:L}}}},e);};
+var sc={scales:{x:{ticks:{color:L},grid:{color:G}},y:{ticks:{color:L},grid:{color:G}}}};
+new Chart(document.getElementById('dEU'),{type:'doughnut',data:{labels:euSec.labels,datasets:[{data:euSec.data,backgroundColor:PAL,borderWidth:0}]},options:opt()});
+new Chart(document.getElementById('dRU'),{type:'doughnut',data:{labels:ruSec.labels,datasets:[{data:ruSec.data,backgroundColor:PAL,borderWidth:0}]},options:opt()});
+new Chart(document.getElementById('bSal'),{type:'bar',data:{labels:jobs.map(function(j){return j.n;}),datasets:[{label:'EU €',data:jobs.map(function(j){return typeof j.eu==='number'?j.eu:parseInt(j.eu);}),backgroundColor:'#7c3aed'},{label:'RU (в €)',data:jobs.map(function(j){return Math.round(parseInt(j.ru)*1000/90);}),backgroundColor:'#06b6d4'}]},options:opt(Object.assign({indexAxis:'y'},sc))});
+new Chart(document.getElementById('lTr'),{type:'line',data:{labels:['Янв','Фев','Мар','Апр','Май','Июн'],datasets:[{label:'EU (тыс.)',data:euTrend,borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.15)',fill:true,tension:.3},{label:'RU (тыс.)',data:ruTrend,borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,.15)',fill:true,tension:.3}]},options:opt(sc)});
+`;
+const DASHBOARD_DEFAULT_SCRIPT = DASHBOARD_DEFAULT_DATA + DASHBOARD_LOGIC_SCRIPT;
+
+/**
+ * Если HTML содержит наши dashboard-маркеры (id="tb", id="dEU") но НЕ содержит <script>,
+ * вставляем скрипт с дефолтными данными перед </body>.
+ * Это фолбэк когда модель генерирует правильную структуру но без JS.
+ */
+function patchDashboardHtmlIfNeeded(html) {
+  const hasDashboardIds = /id=["']tb["']/.test(html) && /id=["']dEU["']/.test(html);
+  const hasScript = /<script[\s>]/i.test(html);
+  if (!hasDashboardIds || hasScript) return html;
+  // Инжектируем Chart.js CDN + скрипт с дефолтными данными
+  const cdnTag = '<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"><\\/script>';
+  const dataScript = `<script>${DASHBOARD_DEFAULT_SCRIPT}<\\/script>`;
+  return html
+    .replace(/<\/head>/i, cdnTag + '</head>')
+    .replace(/<\/body>/i, dataScript + '</body>');
+}
+
 function buildDashboardHtml(dataCode) {
   // Экранируем потенциально опасные вещи в dataCode (оставляем только безопасные JS-литералы)
   // dataCode — это eval-опасная зона, но у нас allowScripts=true для демо, так что OK
@@ -237,39 +279,9 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid #334155}th{color:#94a3
 <table><thead><tr><th>Профессия</th><th>EU €/мес</th><th>RU ₽/мес</th><th>Дефицит</th><th>Тренд</th></tr></thead>
 <tbody id="tb"></tbody></table></div>
 <script>
-${dataCode}
-// Фолбэк если модель не сгенерировала данные
-if(typeof jobs==='undefined'||!jobs.length){var jobs=[{n:'Backend Dev',eu:5200,ru:'250K',def:88,t:'↑'},{n:'Data Scientist',eu:5800,ru:'220K',def:92,t:'↑'},{n:'DevOps',eu:5500,ru:'240K',def:85,t:'↑'},{n:'Product Manager',eu:4800,ru:'180K',def:70,t:'→'},{n:'UX Designer',eu:4200,ru:'150K',def:65,t:'→'},{n:'QA Engineer',eu:3800,ru:'130K',def:55,t:'↓'},{n:'PM',eu:4500,ru:'160K',def:60,t:'→'},{n:'Analyst',eu:4100,ru:'145K',def:58,t:'↑'}];}
-if(typeof euSec==='undefined'){var euSec={labels:['IT','Finance','Healthcare','Manufacturing','Retail','Logistics'],data:[28,18,16,14,13,11]};}
-if(typeof ruSec==='undefined'){var ruSec={labels:['IT','Manufacturing','Retail','Finance','Logistics','Healthcare'],data:[32,20,16,14,10,8]};}
-if(typeof euTrend==='undefined'){var euTrend=[165,178,190,205,218,232];}
-if(typeof ruTrend==='undefined'){var ruTrend=[78,84,91,98,107,115];}
-const PAL=['#7c3aed','#06b6d4','#a78bfa','#22d3ee','#f59e0b','#ef4444','#22c55e'];
-const G='#334155',L='#94a3b8';
-// Вкладки
-document.querySelectorAll('.tabs button').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('.tabs button').forEach(b=>b.className='tab-off');
-    document.querySelectorAll('.sec').forEach(s=>s.classList.remove('show'));
-    btn.className='tab-on';
-    document.getElementById(btn.dataset.t).classList.add('show');
-  });
-});
-// Таблица
-document.getElementById('tb').innerHTML=jobs.map(j=>\`<tr>
-  <td>\${j.n}</td>
-  <td style="color:#a78bfa">\${typeof j.eu==='number'?'€'+j.eu.toLocaleString():j.eu}</td>
-  <td style="color:#22d3ee">₽\${j.ru}</td>
-  <td><div class="bar"><i style="width:\${j.def}%"></i></div></td>
-  <td style="color:\${j.t==='↑'?'#22c55e':j.t==='↓'?'#ef4444':'#94a3b8'}">\${j.t}</td>
-</tr>\`).join('');
-// Графики
-const opt=(e={})=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:L}}},...e});
-const sc={scales:{x:{ticks:{color:L},grid:{color:G}},y:{ticks:{color:L},grid:{color:G}}}};
-new Chart(document.getElementById('dEU'),{type:'doughnut',data:{labels:euSec.labels,datasets:[{data:euSec.data,backgroundColor:PAL,borderWidth:0}]},options:opt()});
-new Chart(document.getElementById('dRU'),{type:'doughnut',data:{labels:ruSec.labels,datasets:[{data:ruSec.data,backgroundColor:PAL,borderWidth:0}]},options:opt()});
-new Chart(document.getElementById('bSal'),{type:'bar',data:{labels:jobs.map(j=>j.n),datasets:[{label:'EU €',data:jobs.map(j=>typeof j.eu==='number'?j.eu:parseInt(j.eu)),backgroundColor:'#7c3aed'},{label:'RU (в €)',data:jobs.map(j=>Math.round(parseInt(j.ru)*1000/90)),backgroundColor:'#06b6d4'}]},options:opt({indexAxis:'y',...sc})});
-new Chart(document.getElementById('lTr'),{type:'line',data:{labels:['Янв','Фев','Мар','Апр','Май','Июн'],datasets:[{label:'EU (тыс.)',data:euTrend,borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.15)',fill:true,tension:.3},{label:'RU (тыс.)',data:ruTrend,borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,.15)',fill:true,tension:.3}]},options:opt(sc)});
+${dataCode || ''}
+${DASHBOARD_DEFAULT_DATA}
+${DASHBOARD_LOGIC_SCRIPT}
 <\/script>
 </body></html>`;
 }
@@ -302,12 +314,12 @@ function parseAssistantContent(text) {
     const body = s.slice(bodyStart, close);
     const afterFence = close + 4;
     if (lang === 'academy-html') {
-      segments.push({ type: 'html', html: body });
+      segments.push({ type: 'html', html: patchDashboardHtmlIfNeeded(body) });
     } else if (lang === 'academy-dashboard-data') {
       segments.push({ type: 'html', html: buildDashboardHtml(body) });
     } else if (/^html$/i.test(lang) || /^htm$/i.test(lang)) {
       if (looksLikeRenderableHtmlArtifact(body)) {
-        segments.push({ type: 'html', html: body });
+        segments.push({ type: 'html', html: patchDashboardHtmlIfNeeded(body) });
       } else {
         segments.push({ type: 'markdown', text: s.slice(fenceStart, afterFence) });
       }
