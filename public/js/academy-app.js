@@ -4427,8 +4427,8 @@ async function openLessonPanel(lesson) {
   document.getElementById('lessonEmpty')?.classList.add('hidden');
   document.getElementById('demoPanelSection')?.classList.add('hidden');
   const lc = document.getElementById('lessonContent');
-  // For block1-practice-prompt the content is in the assignment block — hide the separate description
-  if (lesson.scenario_key === 'block1-practice-prompt') {
+  // For these scenarios the content is in the assignment block — hide the separate description
+  if (['block1-practice-prompt', 'block1-practice-scenario'].includes(lesson.scenario_key)) {
     lc?.classList.add('hidden');
     if (lc) lc.innerHTML = '';
   } else {
