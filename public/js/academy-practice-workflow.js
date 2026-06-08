@@ -188,14 +188,9 @@
       p1: {
         prompt_v1: val('practicePromptV1'),
         ai_v1: val('aiResultV1Preview') || el('aiResultV1Preview')?.textContent?.trim() || '',
-        eval: {
-          concrete: !!el('evalConcrete')?.checked,
-          tone: !!el('evalTone')?.checked,
-          no_hype: !!el('evalNoHype')?.checked
-        },
-        improve_notes: val('practiceImproveNotes'),
         prompt_v2: val('practicePromptV2'),
         ai_v2: val('aiResultV2Preview') || el('aiResultV2Preview')?.textContent?.trim() || '',
+        ai_eval: el('aiEvalPreview')?.textContent?.trim() || '',
         main_insight: val('practiceMainInsight')
       },
       p2: {
@@ -234,15 +229,13 @@
     set('practicePromptV1', p1.prompt_v1);
     setText('aiResultV1Preview', p1.ai_v1);
     if (p1.ai_v1) el('aiResultBlockV1')?.classList.remove('hidden');
-    if (p1.eval) {
-      if (el('evalConcrete')) el('evalConcrete').checked = !!p1.eval.concrete;
-      if (el('evalTone')) el('evalTone').checked = !!p1.eval.tone;
-      if (el('evalNoHype')) el('evalNoHype').checked = !!p1.eval.no_hype;
-    }
-    set('practiceImproveNotes', p1.improve_notes);
     set('practicePromptV2', p1.prompt_v2);
     setText('aiResultV2Preview', p1.ai_v2);
     if (p1.ai_v2) el('aiResultBlockV2')?.classList.remove('hidden');
+    if (p1.ai_eval) {
+      setText('aiEvalPreview', p1.ai_eval);
+      el('aiEvalBlock')?.classList.remove('hidden');
+    }
     set('practiceMainInsight', p1.main_insight);
 
     const p2 = wf.p2 || {};
@@ -314,19 +307,14 @@ ${p1.prompt_v1 || '—'}
 Ответ ИИ v1:
 ${p1.ai_v1 || '—'}
 
-Оценка ответа v1:
-1. Конкретность: ${yn(p1.eval?.concrete)}
-2. Подходящий тон: ${yn(p1.eval?.tone)}
-3. Нет лишних обещаний / воды / непроверенных фактов: ${yn(p1.eval?.no_hype)}
-
-Что я изменил в промпте:
-${p1.improve_notes || '—'}
-
 Промпт v2:
 ${p1.prompt_v2 || '—'}
 
 Ответ ИИ v2:
 ${p1.ai_v2 || '—'}
+
+Оценка ИИ (сравнение промптов):
+${p1.ai_eval || '—'}
 
 Главный вывод:
 ${p1.main_insight || '—'}

@@ -890,15 +890,14 @@ const RTCFSC_TIP = `<p class="font-medium text-slate-700 mb-1.5">Подсказ�
 
 const STEP_HINTS = {
   'block1-practice-prompt': {
-    initial: '<p>Выберите один из 5 кейсов ниже — реальные рабочие ситуации.</p>',
-    taskSelected: '<p>Прочитайте плохой промпт в карточке кейса — запомните ощущение. Затем нажмите <strong>«Начать задание»</strong>.</p>',
+    initial: `<h4 class="font-semibold text-slate-900 mb-3">Практика 1 · Промпт-инжиниринг</h4><div class="space-y-3 text-sm text-slate-700"><div><p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Что делаем</p><p>Берём плохой запрос из рабочей ситуации и улучшаем его по фреймворку RTCFSC — роль, задача, контекст, формат, стиль, критерии.</p></div><div><p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Зачем</p><p>Один структурированный промпт экономит 20–30 минут ручной правки. Навык формулировки задач для ИИ — ключевая менеджерская компетенция.</p></div><div><p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Как</p><p>Выбираете кейс → заполняете RTCFSC → тестируете v1 → видите реакцию клиента → пишете v2 → ИИ оценивает оба промпта.</p></div><div class="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2"><p class="text-xs font-semibold text-blue-800 mb-1">Что нужно сейчас</p><p class="text-blue-700">Выберите один из 5 кейсов ниже — реальные рабочие ситуации.</p></div></div>`,
+    taskSelected: `<h4 class="font-semibold text-slate-900 mb-2">Кейс выбран</h4><div class="text-sm text-slate-700 space-y-2"><p>Прочитайте описание кейса и пример <strong>плохого промпта</strong>. Обратите внимание на то, чего в нём не хватает.</p><div class="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 mt-2"><p class="text-xs font-semibold text-blue-800 mb-1">Что нужно сейчас</p><p class="text-blue-700">Нажмите <strong>«Начать задание»</strong> — откроются блоки RTCFSC для написания промпта.</p></div></div>`,
     steps: {
-      '1.1': `<p class="mb-2">Составьте промпт v1 — можно использовать блоки RTCFSC или написать свой.</p>${RTCFSC_TIP}`,
-      '1.2': '<p>Оцените ответ по 3 критериям: <strong>конкретность</strong>, <strong>тон</strong>, <strong>нет «воды» и непроверенных фактов</strong>.</p>',
-      '1.3': '<p>Запишите <strong>минимум 2 конкретных изменения</strong> — не просто «добавил подробностей», а что именно и зачем.</p>',
-      '2.1': '<p>Примените улучшения: напишите <strong>промпт v2</strong> и запустите нейросеть.</p>',
-      '2.2': '<p>Запишите главный вывод: <strong>что именно</strong> сильнее всего улучшило результат?</p>',
-      '3': '<p class="mb-2">Проверьте отчёт и нажмите <strong>«Отправить»</strong>. Убедитесь что заполнены все пункты:</p><ul class="text-xs space-y-0.5 text-slate-600"><li>Выбранный кейс</li><li>Промпт v1 и ответ ИИ v1</li><li>Оценка v1 и минимум 2 улучшения</li><li>Промпт v2 и ответ ИИ v2</li><li>Главный вывод</li></ul>'
+      '1.1': `<p class="mb-2">Заполните блоки RTCFSC или напишите промпт v1 напрямую. Затем нажмите <strong>«Протестировать промпт v1»</strong>.</p>${RTCFSC_TIP}`,
+      '1.2': '<p>Посмотрите на ответ нейросети и реакцию клиента. Что не получилось? Нажмите <strong>«Перейти к промпту v2»</strong> — увидите профиль клиента.</p>',
+      '2.1': '<p>Напишите <strong>промпт v2</strong> с учётом того, что вы узнали о клиенте. Нажмите <strong>«Протестировать промпт v2»</strong>.</p>',
+      '2.2': '<p>ИИ оценил оба промпта. Прочитайте рекомендации, запишите <strong>главный вывод</strong> — что именно изменило результат.</p>',
+      '3': '<p class="mb-2">Проверьте отчёт и нажмите <strong>«Отправить»</strong>. Убедитесь что заполнены все пункты:</p><ul class="text-xs space-y-0.5 text-slate-600"><li>Выбранный кейс</li><li>Промпт v1 и ответ ИИ v1</li><li>Промпт v2 и ответ ИИ v2</li><li>Оценка ИИ</li><li>Главный вывод</li></ul>'
     }
   },
   'block1-practice-scenario': {
@@ -2168,9 +2167,10 @@ function clearPracticeFormUi() {
   if (mode) mode.value = 'individual';
   syncPracticeModeUi();
   document.getElementById('taskOptionsList')?.querySelectorAll('.aa-task-card').forEach((btn) => {
-    btn.classList.remove('is-selected');
+    btn.classList.remove('is-selected', 'hidden');
     btn.setAttribute('aria-checked', 'false');
   });
+  document.getElementById('taskOptionsPickLabel')?.classList.remove('hidden');
   state.practiceStep = 1;
   state.practiceSubstep = 1;
   state.practiceWorkflow = null;
@@ -2182,9 +2182,14 @@ function clearPracticeFormUi() {
   document.getElementById('practiceSubmitBlock')?.classList.add('hidden');
   document.getElementById('practiceSelfCheckBlock')?.classList.add('hidden');
   document.getElementById('practiceSelfCheckList') && (document.getElementById('practiceSelfCheckList').innerHTML = '');
-  ['aiResultBlockV1', 'aiResultBlockV2', 'aiResultBlockDialogue', 'aiResultBlockAnalysis'].forEach((id) => {
+  ['aiResultBlockV1', 'aiResultBlockV2', 'aiResultBlockDialogue', 'aiResultBlockAnalysis',
+   'clientReactionV1Block', 'clientContextV2Block', 'aiEvalBlock'].forEach((id) => {
     document.getElementById(id)?.classList.add('hidden');
   });
+  const aiEvalPreview = document.getElementById('aiEvalPreview');
+  if (aiEvalPreview) aiEvalPreview.textContent = '';
+  const clientReactionV1 = document.getElementById('clientReactionV1');
+  if (clientReactionV1) clientReactionV1.innerHTML = '';
   document.getElementById('assignmentFeedback')?.classList.add('hidden');
   document.getElementById('messagesContainer').innerHTML = '';
   updateFragmentPreview();
@@ -2248,8 +2253,18 @@ function showPracticeAiResult(text, pass = 'v1') {
   if (block) block.classList.remove('hidden');
   if (preview) preview.textContent = state.lastPracticeAiResult;
   block?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  const skResult = state.currentLesson?.scenario_key;
   if (['v1', 'm2v1', 'dialogue', 'analysis', 'library', 'context'].includes(pass)) {
     tryAdvancePracticeSubstep();
+  }
+  // P1-specific post-run actions
+  if (skResult === 'block1-practice-prompt') {
+    if (pass === 'v1') {
+      showP1ClientReaction();
+    } else if (pass === 'v2') {
+      // Trigger eval asynchronously — don't await so UI is not blocked
+      runP1EvalInAi();
+    }
   }
   scheduleAutoSave();
 }
@@ -2343,7 +2358,10 @@ async function runPracticeInAi({ message, runKind, pass = 'v1' }) {
   try {
     scheduleAutoSave();
     await saveSubmission('draft');
-    openPracticeChat();
+    const skRun2 = state.currentLesson?.scenario_key;
+    if (skRun2 !== 'block1-practice-prompt') {
+      openPracticeChat();
+    }
     appendOptimisticUserMessage(text);
     const typingLabel = document.getElementById('typingLabel');
     if (typingLabel) {
@@ -2462,11 +2480,21 @@ function prefillContextType(task) {
 function selectTaskOption(taskId, { persist = true } = {}) {
   state.selectedTaskId = taskId || null;
   const list = document.getElementById('taskOptionsList');
+  const sk = state.currentLesson?.scenario_key;
   if (list) {
     list.querySelectorAll('.aa-task-card').forEach((btn) => {
-      btn.classList.toggle('is-selected', btn.dataset.taskId === state.selectedTaskId);
-      btn.setAttribute('aria-checked', btn.dataset.taskId === state.selectedTaskId ? 'true' : 'false');
+      const isSelected = btn.dataset.taskId === state.selectedTaskId;
+      btn.classList.toggle('is-selected', isSelected);
+      btn.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+      // Hide unselected cards for block1-practice-prompt once a case is chosen
+      if (sk === 'block1-practice-prompt' && state.selectedTaskId) {
+        btn.classList.toggle('hidden', !isSelected);
+      }
     });
+    // Show/hide the "Выберите вариант" label
+    if (sk === 'block1-practice-prompt') {
+      document.getElementById('taskOptionsPickLabel')?.classList.toggle('hidden', !!state.selectedTaskId);
+    }
   }
   renderTaskOptionDetail();
   if (persist && state.currentLessonId) scheduleAutoSave();
@@ -2511,6 +2539,105 @@ function renderPersonaCard(p) {
 function getP1RecipientData() {
   const taskId = state.selectedTaskId;
   return taskId ? (P1_RECIPIENT_DATA[taskId] || null) : null;
+}
+
+/* Show client reaction v1 inline inside the practice form (substep 2) */
+function showP1ClientReaction() {
+  const rd = getP1RecipientData();
+  if (!rd?.reactionV1) return;
+  const block = document.getElementById('clientReactionV1Block');
+  const container = document.getElementById('clientReactionV1');
+  if (!block || !container) return;
+  const r = rd.reactionV1;
+  container.innerHTML =
+    `<span class="aa-reaction-avatar">${escapeHtml(r.avatar || '👤')}</span>` +
+    `<div class="aa-reaction-body">` +
+    `<div class="aa-reaction-meta"><span class="aa-reaction-name">${escapeHtml(r.name || '')}</span><span class="aa-reaction-time">${escapeHtml(r.time || '')}</span></div>` +
+    `<p class="aa-reaction-text">${escapeHtml(r.text || '')}</p>` +
+    `</div>`;
+  block.classList.remove('hidden');
+}
+
+/* Show persona card in step 2 substep 1 (client context for v2) */
+function showP1ClientContext() {
+  const rd = getP1RecipientData();
+  if (!rd?.persona) return;
+  const block = document.getElementById('clientContextV2Block');
+  const container = document.getElementById('clientContextV2');
+  if (!block || !container) return;
+  const p = rd.persona;
+  const traitsHtml = Array.isArray(p.traits)
+    ? `<ul class="mt-2 space-y-1 list-disc pl-4">${p.traits.map(t => `<li class="text-xs text-slate-600">${escapeHtml(t)}</li>`).join('')}</ul>`
+    : '';
+  container.innerHTML =
+    `<div class="flex items-center gap-2 mb-2">` +
+    `<span class="text-2xl">${escapeHtml(p.avatar || '👤')}</span>` +
+    `<div><p class="font-semibold text-slate-900 text-sm">${escapeHtml(p.name || '')}</p>` +
+    `<p class="text-xs text-slate-500">${escapeHtml(p.role || '')}</p></div>` +
+    `</div>${traitsHtml}`;
+  block.classList.remove('hidden');
+}
+
+/* Ask AI to evaluate both prompts; show result in aiEvalBlock inside the form */
+async function runP1EvalInAi() {
+  const sk = state.currentLesson?.scenario_key;
+  if (sk !== 'block1-practice-prompt') return;
+  if (state.streaming) return;
+
+  const promptV1 = document.getElementById('practicePromptV1')?.value?.trim() || '—';
+  const aiV1 = document.getElementById('aiResultV1Preview')?.textContent?.trim() || '(не получен)';
+  const promptV2 = document.getElementById('practicePromptV2')?.value?.trim() || '—';
+  const aiV2 = document.getElementById('aiResultV2Preview')?.textContent?.trim() || '(не получен)';
+  const task = getSelectedTaskOption();
+
+  const evalBlock = document.getElementById('aiEvalBlock');
+  const evalPreview = document.getElementById('aiEvalPreview');
+  if (!evalBlock || !evalPreview) return;
+
+  evalPreview.textContent = 'ИИ анализирует оба промпта…';
+  evalBlock.classList.remove('hidden');
+  evalBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  const evalPrompt =
+    `Ты опытный наставник по промпт-инжинирингу. Оцени два промпта и сравни их результаты.\n\n` +
+    `Кейс: ${task?.title || ''}\n` +
+    `Контекст: ${task?.description || ''}\n\n` +
+    `ПРОМПТ V1:\n${promptV1}\n\nОТВЕТ ИИ V1:\n${aiV1}\n\n` +
+    `ПРОМПТ V2:\n${promptV2}\n\nОТВЕТ ИИ V2:\n${aiV2}\n\n` +
+    `Дай структурированную оценку на русском языке:\n` +
+    `**Ключевые улучшения** — что конкретно стало лучше в v2 (2–3 пункта)\n` +
+    `**Слабые места v2** — что ещё можно улучшить\n` +
+    `**Рекомендации** — 1–2 конкретных совета для следующих промптов\n` +
+    `**Executive Summary** — одна фраза: главный урок этой практики\n\n` +
+    `Отвечай кратко и по делу. Используй маркированные списки.`;
+
+  try {
+    const payload = {
+      conversationId: state.currentConversationId || undefined,
+      lessonId: state.currentLessonId || undefined,
+      courseId: state.currentLesson?.course_id || undefined,
+      message: evalPrompt,
+      model: document.getElementById('modelSelect').value,
+      chatMode: 'practice_run',
+      practiceRunContext: {
+        runKind: 'prompt_eval',
+        pass: null,
+        taskTitle: task?.title || '',
+        taskContext: task?.context || task?.description || ''
+      }
+    };
+    const { assistantText } = await streamChat(payload);
+    if (assistantText) {
+      evalPreview.textContent = assistantText.trim();
+      // Auto-save the evaluation result
+      scheduleAutoSave();
+    } else {
+      evalPreview.textContent = '(Оценка получена — откройте чат для полного текста)';
+    }
+  } catch (e) {
+    evalPreview.textContent = '(Не удалось получить оценку: ' + (e?.message || String(e)) + ')';
+    console.error('P1 eval error:', e);
+  }
 }
 
 function updateAssignmentHint() {
@@ -2561,21 +2688,17 @@ function buildP1StepHint(step, sub) {
     if (sub === 1) return hints['1.1'];
     if (sub === 2) {
       return renderReactionBubble(rd?.reactionV1, 'is-fail') +
-        '<p class="mt-3 text-sm text-slate-700">Получатель не понял письмо. Оцените ответ по 3 критериям: <strong>конкретность</strong>, <strong>тон</strong>, <strong>нет «воды»</strong>.</p>';
-    }
-    if (sub === 3) {
-      return renderPersonaCard(rd?.persona) +
-        '<p class="mt-3 text-sm text-slate-700">Теперь вы знаете получателя. Запишите <strong>минимум 2 конкретных изменения</strong> для промпта v2.</p>';
+        '<p class="mt-3 text-sm text-slate-700">Клиент не получил нужного ответа. Нажмите <strong>«Перейти к промпту v2»</strong> — вы увидите профиль клиента.</p>';
     }
   }
   if (step === 2) {
     if (sub === 1) {
       return renderPersonaCard(rd?.persona) +
-        '<p class="mt-3 text-sm text-slate-700">Напишите <strong>промпт v2</strong> с учётом получателя и ваших улучшений. Запустите нейросеть.</p>';
+        '<p class="mt-3 text-sm text-slate-700">Теперь вы знаете клиента. Напишите <strong>промпт v2</strong> с учётом его особенностей и нажмите <strong>«Протестировать промпт v2»</strong>.</p>';
     }
     if (sub === 2) {
       return renderReactionBubble(rd?.reactionV2, 'is-success') +
-        '<p class="mt-3 text-sm text-slate-700">Получатель среагировал иначе. Запишите главный вывод: <strong>что именно</strong> изменило результат?</p>';
+        '<p class="mt-3 text-sm text-slate-700">Результат улучшился. Прочитайте оценку ИИ и запишите <strong>главный вывод</strong>.</p>';
     }
   }
   if (step === 3) return hints['3'];
@@ -2800,7 +2923,12 @@ function setPracticeFocusMode(on, lesson = null) {
   if (on && lesson && isAcademyPractice(lesson)) {
     app.classList.add('practice-focus');
     document.getElementById('sidebarFreeChatBlock')?.classList.add('hidden');
-    document.getElementById('practiceActionsRow')?.classList.remove('hidden');
+    // For block1-practice-prompt everything is inline — no chat actions row needed
+    if (lesson.scenario_key === 'block1-practice-prompt') {
+      document.getElementById('practiceActionsRow')?.classList.add('hidden');
+    } else {
+      document.getElementById('practiceActionsRow')?.classList.remove('hidden');
+    }
     syncChatToolbarVisibility();
     document.getElementById('lessonPanelSubtitle').textContent = lesson.title || 'Практика';
     updateOpenPracticeChatLabel(lesson.scenario_key);
@@ -2808,7 +2936,11 @@ function setPracticeFocusMode(on, lesson = null) {
     // По умолчанию на широком экране чат наставника открыт рядом с заданием,
     // на мобильном — закрыт (открывается поверх). Учитываем выбор пользователя.
     const chatPref = localStorage.getItem(PRACTICE_CHAT_OPEN_KEY);
-    setPracticeChatOpen(window.innerWidth >= 1024 && chatPref !== '0');
+    if (lesson.scenario_key === 'block1-practice-prompt') {
+      setPracticeChatOpen(false);
+    } else {
+      setPracticeChatOpen(window.innerWidth >= 1024 && chatPref !== '0');
+    }
     refreshAcademyLayout();
   } else {
     app.classList.remove('practice-focus', 'practice-chat-open', 'practice-chat-mobile');
@@ -3525,6 +3657,12 @@ function bindPracticeHints(scenarioKey) {
   const row = document.getElementById('practiceHintsRow');
   const sel = document.getElementById('practiceHintSelect');
   if (!row || !sel) return;
+  // block1-practice-prompt uses fully inline flow — no chat hints needed
+  if (scenarioKey === 'block1-practice-prompt') {
+    row.classList.add('hidden');
+    sel.innerHTML = '';
+    return;
+  }
   const hints = scenarioKey ? (PRACTICE_HINTS[scenarioKey] || []) : [];
   if (!hints.length) {
     row.classList.add('hidden');
@@ -3859,7 +3997,6 @@ async function openLessonPanel(lesson) {
   } catch (e) {
     console.warn(e);
   }
-  document.getElementById('practiceFlowHint')?.classList.remove('hidden');
   updateNewLessonChatBtn();
   setMobilePane('lesson');
 }
@@ -4871,6 +5008,8 @@ function wireUi() {
     const v1 = document.getElementById('practicePromptV1')?.value?.trim();
     const v2El = document.getElementById('practicePromptV2');
     if (v1 && v2El && !v2El.value.trim()) v2El.value = v1;
+    // Show client context card in step 2 before advancing
+    showP1ClientContext();
     advancePracticeStepOrSubstep();
   });
   document.getElementById('practiceNextM2P1S1Btn')?.addEventListener('click', () => {
