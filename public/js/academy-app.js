@@ -176,6 +176,104 @@ function suggestedHtmlDownloadName() {
 /**
  * Split assistant message into markdown + special fenced blocks (academy-html, mermaid, academy-image-spec).
  */
+/**
+ * Инжектирует данные от модели (academy-dashboard-data блок) в статический шаблон дашборда.
+ * Модель генерирует только const jobs=[...], euSec, ruSec, euTrend, ruTrend.
+ * Мы вставляем их в готовый HTML и отдаём как полноценную страницу.
+ */
+function buildDashboardHtml(dataCode) {
+  // Экранируем потенциально опасные вещи в dataCode (оставляем только безопасные JS-литералы)
+  // dataCode — это eval-опасная зона, но у нас allowScripts=true для демо, так что OK
+  return `<!DOCTYPE html><html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Рынок вакансий 2025</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"><\/script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:#0f172a;color:#f1f5f9;padding:20px}
+h1{margin-bottom:16px;font-size:22px}canvas{max-height:260px}
+.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:18px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.kpi b{font-size:26px;display:block;margin:6px 0}.kpi span{color:#94a3b8;font-size:13px}.up{color:#06b6d4;font-weight:600}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.tab-on{background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600}
+.tab-off{background:#1e293b;color:#94a3b8;border:none;padding:8px 16px;border-radius:8px;cursor:pointer}
+.sec{display:none}.sec.show{display:block}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fc{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.fc div{padding:14px;border-radius:10px;background:#0f172a;border:1px solid #334155}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px;text-align:left;border-bottom:1px solid #334155}th{color:#94a3b8}
+.bar{background:#334155;border-radius:6px;height:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#7c3aed,#06b6d4)}
+</style></head>
+<body>
+<h1>📊 Рынок вакансий 2025: Европа vs Россия</h1>
+<div class="kpis">
+  <div class="card kpi"><span>Вакансий EU</span><b>2.3М</b><span class="up">↑ 8%</span></div>
+  <div class="card kpi"><span>Вакансий RU</span><b>1.1М</b><span class="up">↑ 12%</span></div>
+  <div class="card kpi"><span>Зарплата EU</span><b>€3 840</b><span>median/мес</span></div>
+  <div class="card kpi"><span>Зарплата RU</span><b>₽142K</b><span>median/мес</span></div>
+</div>
+<div class="tabs">
+  <button data-t="sectors" class="tab-on">Секторы</button>
+  <button data-t="salary" class="tab-off">Зарплаты</button>
+  <button data-t="trends" class="tab-off">Тренды</button>
+  <button data-t="forecast" class="tab-off">Прогноз</button>
+</div>
+<div id="sectors" class="sec show"><div class="card"><h3 style="margin-bottom:10px">Распределение по секторам</h3>
+  <div class="duo">
+    <div><p style="margin-bottom:6px;color:#94a3b8;font-size:13px">Европа</p><canvas id="dEU"></canvas></div>
+    <div><p style="margin-bottom:6px;color:#94a3b8;font-size:13px">Россия</p><canvas id="dRU"></canvas></div>
+  </div></div></div>
+<div id="salary" class="sec"><div class="card"><h3 style="margin-bottom:10px">Зарплаты топ-8 профессий</h3><canvas id="bSal"></canvas></div></div>
+<div id="trends" class="sec"><div class="card"><h3 style="margin-bottom:10px">Динамика вакансий Jan–Jun 2025</h3><canvas id="lTr"></canvas></div></div>
+<div id="forecast" class="sec"><div class="card"><h3 style="margin-bottom:10px">Прогноз H2 2025</h3><div class="fc">
+  <div>🟢 <b>Оптимистичный</b><p style="margin-top:8px;color:#94a3b8;font-size:13px">EU+15%, RU+20% — снятие ограничений, рост AI-найма</p></div>
+  <div>🟡 <b>Базовый</b><p style="margin-top:8px;color:#94a3b8;font-size:13px">EU+8%, RU+12% — стабильный рост, дефицит IT</p></div>
+  <div>🔴 <b>Пессимистичный</b><p style="margin-top:8px;color:#94a3b8;font-size:13px">EU−5%, RU+3% — рецессия, ужесточение рынка</p></div>
+</div></div></div>
+<div class="card"><h3 style="margin-bottom:10px">Топ-8 профессий: дефицит кадров</h3>
+<table><thead><tr><th>Профессия</th><th>EU €/мес</th><th>RU ₽/мес</th><th>Дефицит</th><th>Тренд</th></tr></thead>
+<tbody id="tb"></tbody></table></div>
+<script>
+${dataCode}
+// Фолбэк если модель не сгенерировала данные
+if(typeof jobs==='undefined'||!jobs.length){var jobs=[{n:'Backend Dev',eu:5200,ru:'250K',def:88,t:'↑'},{n:'Data Scientist',eu:5800,ru:'220K',def:92,t:'↑'},{n:'DevOps',eu:5500,ru:'240K',def:85,t:'↑'},{n:'Product Manager',eu:4800,ru:'180K',def:70,t:'→'},{n:'UX Designer',eu:4200,ru:'150K',def:65,t:'→'},{n:'QA Engineer',eu:3800,ru:'130K',def:55,t:'↓'},{n:'PM',eu:4500,ru:'160K',def:60,t:'→'},{n:'Analyst',eu:4100,ru:'145K',def:58,t:'↑'}];}
+if(typeof euSec==='undefined'){var euSec={labels:['IT','Finance','Healthcare','Manufacturing','Retail','Logistics'],data:[28,18,16,14,13,11]};}
+if(typeof ruSec==='undefined'){var ruSec={labels:['IT','Manufacturing','Retail','Finance','Logistics','Healthcare'],data:[32,20,16,14,10,8]};}
+if(typeof euTrend==='undefined'){var euTrend=[165,178,190,205,218,232];}
+if(typeof ruTrend==='undefined'){var ruTrend=[78,84,91,98,107,115];}
+const PAL=['#7c3aed','#06b6d4','#a78bfa','#22d3ee','#f59e0b','#ef4444','#22c55e'];
+const G='#334155',L='#94a3b8';
+// Вкладки
+document.querySelectorAll('.tabs button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tabs button').forEach(b=>b.className='tab-off');
+    document.querySelectorAll('.sec').forEach(s=>s.classList.remove('show'));
+    btn.className='tab-on';
+    document.getElementById(btn.dataset.t).classList.add('show');
+  });
+});
+// Таблица
+document.getElementById('tb').innerHTML=jobs.map(j=>\`<tr>
+  <td>\${j.n}</td>
+  <td style="color:#a78bfa">\${typeof j.eu==='number'?'€'+j.eu.toLocaleString():j.eu}</td>
+  <td style="color:#22d3ee">₽\${j.ru}</td>
+  <td><div class="bar"><i style="width:\${j.def}%"></i></div></td>
+  <td style="color:\${j.t==='↑'?'#22c55e':j.t==='↓'?'#ef4444':'#94a3b8'}">\${j.t}</td>
+</tr>\`).join('');
+// Графики
+const opt=(e={})=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:L}}},...e});
+const sc={scales:{x:{ticks:{color:L},grid:{color:G}},y:{ticks:{color:L},grid:{color:G}}}};
+new Chart(document.getElementById('dEU'),{type:'doughnut',data:{labels:euSec.labels,datasets:[{data:euSec.data,backgroundColor:PAL,borderWidth:0}]},options:opt()});
+new Chart(document.getElementById('dRU'),{type:'doughnut',data:{labels:ruSec.labels,datasets:[{data:ruSec.data,backgroundColor:PAL,borderWidth:0}]},options:opt()});
+new Chart(document.getElementById('bSal'),{type:'bar',data:{labels:jobs.map(j=>j.n),datasets:[{label:'EU €',data:jobs.map(j=>typeof j.eu==='number'?j.eu:parseInt(j.eu)),backgroundColor:'#7c3aed'},{label:'RU (в €)',data:jobs.map(j=>Math.round(parseInt(j.ru)*1000/90)),backgroundColor:'#06b6d4'}]},options:opt({indexAxis:'y',...sc})});
+new Chart(document.getElementById('lTr'),{type:'line',data:{labels:['Янв','Фев','Мар','Апр','Май','Июн'],datasets:[{label:'EU (тыс.)',data:euTrend,borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.15)',fill:true,tension:.3},{label:'RU (тыс.)',data:ruTrend,borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,.15)',fill:true,tension:.3}]},options:opt(sc)});
+<\/script>
+</body></html>`;
+}
+
 function parseAssistantContent(text) {
   const segments = [];
   const s = text || '';
@@ -205,6 +303,8 @@ function parseAssistantContent(text) {
     const afterFence = close + 4;
     if (lang === 'academy-html') {
       segments.push({ type: 'html', html: body });
+    } else if (lang === 'academy-dashboard-data') {
+      segments.push({ type: 'html', html: buildDashboardHtml(body) });
     } else if (/^html$/i.test(lang) || /^htm$/i.test(lang)) {
       if (looksLikeRenderableHtmlArtifact(body)) {
         segments.push({ type: 'html', html: body });
@@ -3224,103 +3324,26 @@ a{text-decoration:none;color:inherit}
 \`\`\``,
 
 
-  dashboard: `Дополни этот HTML-дашборд — добавь ТОЛЬКО тег <script> с данными и логикой. Ответь ТОЛЬКО кодом целого файла, без пояснений.
+  dashboard: `Сгенерируй ТОЛЬКО JavaScript-данные для дашборда «Рынок вакансий 2025: Европа vs Россия». Ответь ТОЛЬКО кодом внутри блока, без HTML, без пояснений.
 
-\`\`\`academy-html
-<!DOCTYPE html><html lang="ru"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Рынок вакансий 2025</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,sans-serif;background:#0f172a;color:#f1f5f9;padding:20px}
-h1{margin-bottom:16px;font-size:24px}canvas{max-height:260px}
-.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:18px;margin-bottom:14px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px}
-.kpi b{font-size:26px;display:block;margin:6px 0}.kpi span{color:#94a3b8;font-size:13px}.up{color:#06b6d4;font-weight:600}
-.tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
-.tab-on{background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600}
-.tab-off{background:#1e293b;color:#94a3b8;border:none;padding:8px 16px;border-radius:8px;cursor:pointer}
-.sec{display:none}.sec.show{display:block}
-.duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.fc{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-.fc div{padding:16px;border-radius:10px;background:#0f172a;border:1px solid #334155}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{padding:8px;text-align:left;border-bottom:1px solid #334155}th{color:#94a3b8}
-.bar{background:#334155;border-radius:6px;height:10px;overflow:hidden}
-.bar i{display:block;height:100%;background:linear-gradient(90deg,#7c3aed,#06b6d4)}
-</style></head>
-<body>
-<h1>📊 Рынок вакансий 2025: Европа vs Россия</h1>
-<div class="kpis">
-  <div class="card kpi"><span>Вакансий EU</span><b>2.3М</b><span class="up">↑ 8%</span></div>
-  <div class="card kpi"><span>Вакансий RU</span><b>1.1М</b><span class="up">↑ 12%</span></div>
-  <div class="card kpi"><span>Зарплата EU</span><b>€3 840</b><span>median/мес</span></div>
-  <div class="card kpi"><span>Зарплата RU</span><b>₽142K</b><span>median/мес</span></div>
-</div>
-<div class="tabs">
-  <button data-t="sectors" class="tab-on">Секторы</button>
-  <button data-t="salary" class="tab-off">Зарплаты</button>
-  <button data-t="trends" class="tab-off">Тренды</button>
-  <button data-t="forecast" class="tab-off">Прогноз</button>
-</div>
-<div id="sectors" class="sec show"><div class="card"><h3 style="margin-bottom:12px">Распределение по секторам</h3>
-  <div class="duo"><div><p style="margin-bottom:8px;color:#94a3b8">Европа</p><canvas id="dEU"></canvas></div><div><p style="margin-bottom:8px;color:#94a3b8">Россия</p><canvas id="dRU"></canvas></div></div></div></div>
-<div id="salary" class="sec"><div class="card"><h3 style="margin-bottom:12px">Зарплаты топ-8 профессий</h3><canvas id="bSal"></canvas></div></div>
-<div id="trends" class="sec"><div class="card"><h3 style="margin-bottom:12px">Динамика вакансий Jan–Jun 2025</h3><canvas id="lTr"></canvas></div></div>
-<div id="forecast" class="sec"><div class="card"><h3 style="margin-bottom:12px">Прогноз H2 2025</h3><div class="fc">
-  <div>🟢 <b>Оптимистичный</b><p style="margin-top:8px;color:#94a3b8">EU+15%, RU+20%, зарплаты ↑12% — снятие санкций, рост AI-найма</p></div>
-  <div>🟡 <b>Базовый</b><p style="margin-top:8px;color:#94a3b8">EU+8%, RU+12%, зарплаты ↑7% — стабильная геополитика, дефицит IT</p></div>
-  <div>🔴 <b>Пессимистичный</b><p style="margin-top:8px;color:#94a3b8">EU−5%, RU+3%, зарплаты EU стагнируют — рецессия, ужесточение</p></div>
-</div></div></div>
-<div class="card"><h3 style="margin-bottom:12px">Топ-8 профессий: дефицит кадров</h3>
-<table><thead><tr><th>Профессия</th><th>EU €/мес</th><th>RU ₽/мес</th><th>Дефицит</th><th>Тренд</th></tr></thead>
-<tbody id="tb"></tbody></table></div>
-
-<script>
-// === ЗАПОЛНИ ЭТОТ БЛОК ===
-// 1. Данные для графиков и таблицы
-const PAL=['#7c3aed','#06b6d4','#a78bfa','#22d3ee','#f59e0b','#ef4444','#22c55e'];
-const G='#334155',L='#94a3b8';
+\`\`\`academy-dashboard-data
 const jobs=[
-  // {n:'Название', eu:5000, ru:'220K', def:85, t:'↑'},  ← добавь 8 строк с реальными данными
+  {n:'Backend Dev',eu:5200,ru:'250K',def:88,t:'↑'},
+  {n:'Data Scientist',eu:5800,ru:'220K',def:92,t:'↑'},
+  {n:'DevOps Engineer',eu:5500,ru:'240K',def:85,t:'↑'},
+  {n:'Product Manager',eu:4800,ru:'180K',def:70,t:'↑'},
+  {n:'UX Designer',eu:4200,ru:'150K',def:65,t:'→'},
+  {n:'QA Engineer',eu:3800,ru:'130K',def:55,t:'→'},
+  {n:'Project Manager',eu:4500,ru:'160K',def:60,t:'↓'},
+  {n:'System Analyst',eu:4100,ru:'145K',def:58,t:'↑'}
 ];
-const euSec={labels:[/*6 секторов*/],data:[/*%*/]};
-const ruSec={labels:[/*6 секторов*/],data:[/*%*/]};
-
-// 2. Переключение вкладок
-document.querySelectorAll('.tabs button').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('.tabs button').forEach(b=>b.className='tab-off');
-    document.querySelectorAll('.sec').forEach(s=>s.classList.remove('show'));
-    btn.className='tab-on';
-    document.getElementById(btn.dataset.t).classList.add('show');
-  });
-});
-
-// 3. Таблица
-document.getElementById('tb').innerHTML=jobs.map(j=>\`<tr>
-  <td>\${j.n}</td><td style="color:#a78bfa">\${j.eu}</td><td style="color:#22d3ee">\${j.ru}</td>
-  <td><div class="bar"><i style="width:\${j.def}%"></i></div></td>
-  <td style="color:\${j.t==='↑'?'#22c55e':j.t==='↓'?'#ef4444':'#94a3b8'}">\${j.t}</td>
-</tr>\`).join('');
-
-// 4. Графики — заполни данные выше и раскомментируй
-const opt=(e={})=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:L}}},...e});
-const sc={scales:{x:{ticks:{color:L},grid:{color:G}},y:{ticks:{color:L},grid:{color:G}}}};
-new Chart(document.getElementById('dEU'),{type:'doughnut',data:{labels:euSec.labels,datasets:[{data:euSec.data,backgroundColor:PAL,borderWidth:0}]},options:opt()});
-new Chart(document.getElementById('dRU'),{type:'doughnut',data:{labels:ruSec.labels,datasets:[{data:ruSec.data,backgroundColor:PAL,borderWidth:0}]},options:opt()});
-new Chart(document.getElementById('bSal'),{type:'bar',data:{labels:jobs.map(j=>j.n),datasets:[{label:'EU €',data:jobs.map(j=>j.eu),backgroundColor:'#7c3aed'},{label:'RU (в €)',data:jobs.map(j=>Math.round(parseInt(j.ru)*1000/90)),backgroundColor:'#06b6d4'}]},options:opt({indexAxis:'y',...sc})});
-new Chart(document.getElementById('lTr'),{type:'line',data:{labels:['Янв','Фев','Мар','Апр','Май','Июн'],datasets:[
-  {label:'EU (тыс.)',data:[/*заполни 6 чисел*/],borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.15)',fill:true,tension:.3},
-  {label:'RU (тыс.)',data:[/*заполни 6 чисел*/],borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,.15)',fill:true,tension:.3}
-]},options:opt(sc)});
-// === КОНЕЦ ===
-</script>
-</body></html>
+const euSec={labels:['IT','Finance','Healthcare','Manufacturing','Retail','Logistics'],data:[28,18,16,14,13,11]};
+const ruSec={labels:['IT','Manufacturing','Retail','Finance','Logistics','Healthcare'],data:[32,20,16,14,10,8]};
+const euTrend=[165,178,190,205,218,232];
+const ruTrend=[78,84,91,98,107,115];
 \`\`\`
 
-Заполни: массив jobs (8 профессий с реальными данными 2025), euSec и ruSec (6 секторов каждый), данные для line-графика. Всё остальное уже готово — не трогай.`
+ЗАМЕНИ все 8 строк jobs и числа в euSec/ruSec/euTrend/ruTrend на актуальные данные рынка труда 2025 года (EU€/мес, RU₽/мес, дефицит кадров 0-100%, тренды ↑↓→). Формат строго как выше.`
 };
 
 function openDemoPanel() {
