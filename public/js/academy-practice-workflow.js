@@ -199,9 +199,9 @@
     const wf = {
       p1: {
         prompt_v1: val('practicePromptV1'),
-        ai_v1: val('aiResultV1Preview') || el('aiResultV1Preview')?.textContent?.trim() || '',
+        ai_v1: el('aiResultV1Preview')?.dataset?.rawText || el('aiResultV1Preview')?.textContent?.trim() || '',
         prompt_v2: val('practicePromptV2'),
-        ai_v2: val('aiResultV2Preview') || el('aiResultV2Preview')?.textContent?.trim() || '',
+        ai_v2: el('aiResultV2Preview')?.dataset?.rawText || el('aiResultV2Preview')?.textContent?.trim() || '',
         ai_eval: '',
         main_insight: ''
       },
@@ -234,15 +234,19 @@
       const node = el(id);
       if (node && v != null) node.value = v;
     };
-    const setText = (id, v) => {
+    const setMd = (id, v) => {
       const node = el(id);
-      if (node && v != null) node.textContent = v;
+      if (!node || v == null) return;
+      node.dataset.rawText = v;
+      node.innerHTML = typeof renderMarkdown === 'function'
+        ? renderMarkdown(v)
+        : v.replace(/</g, '&lt;');
     };
     set('practicePromptV1', p1.prompt_v1);
-    setText('aiResultV1Preview', p1.ai_v1);
+    setMd('aiResultV1Preview', p1.ai_v1);
     if (p1.ai_v1) el('aiResultBlockV1')?.classList.remove('hidden');
     set('practicePromptV2', p1.prompt_v2);
-    setText('aiResultV2Preview', p1.ai_v2);
+    setMd('aiResultV2Preview', p1.ai_v2);
     if (p1.ai_v2) el('aiResultBlockV2')?.classList.remove('hidden');
     // ai_eval and main_insight removed from flow — no restore needed
 

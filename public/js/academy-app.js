@@ -2191,9 +2191,10 @@ function clearPracticeFormUi() {
   document.querySelectorAll('input[name="riskDecision"]').forEach((r) => {
     r.checked = false;
   });
-  ['aiResultV1Preview', 'aiResultV2Preview', 'aiResultDialoguePreview', 'aiResultAnalysisPreview'].forEach((id) => {
+  ['aiResultV1Preview', 'aiResultV2Preview', 'aiResultDialoguePreview', 'aiResultAnalysisPreview',
+   'm2AiResultV1Preview', 'm2AiResultV2Preview', 'libraryAiResultPreview', 'contextAiResultPreview'].forEach((id) => {
     const el = document.getElementById(id);
-    if (el) el.textContent = '';
+    if (el) { el.innerHTML = ''; delete el.dataset.rawText; }
   });
   const riskBody = document.getElementById('riskTableBody');
   if (riskBody) {
@@ -2296,7 +2297,11 @@ function showPracticeAiResult(text, pass = 'v1') {
   const block = document.getElementById(blockId);
   const preview = document.getElementById(previewId);
   if (block) block.classList.remove('hidden');
-  if (preview) preview.textContent = state.lastPracticeAiResult;
+  if (preview) {
+    const raw = state.lastPracticeAiResult;
+    preview.innerHTML = renderMarkdown(raw);
+    preview.dataset.rawText = raw;
+  }
   block?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   const skResult = state.currentLesson?.scenario_key;
   if (['v1', 'm2v1', 'dialogue', 'analysis', 'library', 'context'].includes(pass)) {

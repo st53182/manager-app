@@ -306,7 +306,7 @@
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
                       <div id="aiResultBlockV1" class="hidden">
                         <p class="text-xs font-semibold text-slate-600 mb-1.5">Ответ нейросети v1</p>
-                        <div id="aiResultV1Preview" class="aa-task-detail max-h-48 overflow-y-auto whitespace-pre-wrap"></div>
+                        <div id="aiResultV1Preview" class="aa-task-detail max-h-48 overflow-y-auto prose prose-sm max-w-none"></div>
                       </div>
                       <div id="clientReactionV1Block" class="hidden">
                         <p class="text-xs font-semibold text-slate-600 mb-1.5">Реакция адресата</p>
@@ -337,7 +337,7 @@
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
                       <div id="aiResultBlockV2" class="hidden">
                         <p class="text-xs font-semibold text-slate-600 mb-1.5">Ответ нейросети v2</p>
-                        <div id="aiResultV2Preview" class="aa-task-detail max-h-48 overflow-y-auto whitespace-pre-wrap"></div>
+                        <div id="aiResultV2Preview" class="aa-task-detail max-h-48 overflow-y-auto prose prose-sm max-w-none"></div>
                       </div>
                       <div id="clientReactionV2Block" class="hidden">
                         <p class="text-xs font-semibold text-slate-600 mb-1.5">Реакция адресата</p>
@@ -367,7 +367,7 @@
                       <button type="button" id="assembleDialogueBtn" class="aa-btn aa-btn-ghost text-sm">Собрать первое сообщение автоматически</button>
                       <label class="block"><span class="aa-label">Первое сообщение</span><textarea id="practiceDialogueStart" rows="4" class="aa-textarea mt-1"></textarea></label>
                       <button type="button" id="runDialogueInAiBtn" class="aa-btn aa-btn-primary w-full">Отправить первую реплику в нейросеть</button>
-                      <div id="aiResultBlockDialogue" class="hidden"><p class="text-xs font-medium mb-1">Ответ нейросети (1-я реплика)</p><div id="aiResultDialoguePreview" class="aa-task-detail max-h-36 overflow-y-auto whitespace-pre-wrap"></div></div>
+                      <div id="aiResultBlockDialogue" class="hidden"><p class="text-xs font-medium mb-1">Ответ нейросети (1-я реплика)</p><div id="aiResultDialoguePreview" class="aa-task-detail max-h-36 overflow-y-auto prose prose-sm max-w-none"></div></div>
                       <button type="button" class="aa-btn aa-btn-ghost w-full text-sm js-practice-substep-next">Перейти к диалогу в чате →</button>
                     </div>
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="3">
@@ -444,7 +444,7 @@
                       </label>
                       <!-- скрытые поля для совместимости с autosave -->
                       <input type="hidden" id="checklistItem1" /><input type="hidden" id="checklistItem2" /><input type="hidden" id="checklistItem3" /><input type="hidden" id="checklistItem4" /><input type="hidden" id="checklistItem5" />
-                      <div id="aiResultBlockAnalysis" class="hidden"><div id="aiResultAnalysisPreview" class="aa-task-detail max-h-36 overflow-y-auto whitespace-pre-wrap text-sm"></div></div>
+                      <div id="aiResultBlockAnalysis" class="hidden"><div id="aiResultAnalysisPreview" class="aa-task-detail max-h-36 overflow-y-auto prose prose-sm max-w-none"></div></div>
                       <button type="button" id="buildReportP3Btn" class="aa-btn aa-btn-primary w-full">
                         Собрать отчёт и перейти к отправке →
                       </button>
@@ -490,7 +490,7 @@
                       <button type="button" class="aa-btn aa-btn-ghost w-full text-sm js-practice-substep-next">Уже есть ответ — оценить →</button>
                     </div>
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="4">
-                      <div id="m2AiResultBlockV1" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ нейросети v1</p><div id="m2AiResultV1Preview" class="aa-task-detail max-h-48 overflow-y-auto whitespace-pre-wrap"></div></div>
+                      <div id="m2AiResultBlockV1" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ нейросети v1</p><div id="m2AiResultV1Preview" class="aa-task-detail max-h-48 overflow-y-auto prose prose-sm max-w-none"></div></div>
                       <div class="aa-eval-box">
                         <p class="aa-label text-sm mb-2">Оцените ответ v1</p>
                         <label class="flex items-start gap-2 text-sm"><input type="checkbox" id="aimEvalSolves" class="mt-0.5" /> <span>Результат решает задачу</span></label>
@@ -512,7 +512,7 @@
                       <button type="button" class="aa-btn aa-btn-ghost w-full text-sm js-practice-substep-next">Перейти к выводу →</button>
                     </div>
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
-                      <div id="m2AiResultBlockV2" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ нейросети v2</p><div id="m2AiResultV2Preview" class="aa-task-detail max-h-48 overflow-y-auto whitespace-pre-wrap"></div></div>
+                      <div id="m2AiResultBlockV2" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ нейросети v2</p><div id="m2AiResultV2Preview" class="aa-task-detail max-h-48 overflow-y-auto prose prose-sm max-w-none"></div></div>
                       <label class="block"><span class="aa-label">Главный вывод: что изменилось после AIM</span><textarea id="m2PracticeMainInsight" rows="2" class="aa-textarea mt-1"></textarea></label>
                       <button type="button" id="buildReportM2P1Btn" class="aa-btn aa-btn-primary w-full">Вставить в отчёт и перейти к отправке →</button>
                     </div>
@@ -535,7 +535,7 @@
                       <label class="block"><span class="aa-label">Какой промпт тестирую</span><select id="libraryTestPromptSelect" class="aa-select mt-1 w-full"></select></label>
                       <label class="block"><span class="aa-label">Пример входных данных для теста</span><textarea id="libraryTestInput" rows="4" class="aa-textarea mt-1"></textarea></label>
                       <button type="button" id="runLibraryTestBtn" class="aa-btn aa-btn-primary w-full">Протестировать промпт</button>
-                      <div id="libraryAiResultBlock" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ ИИ</p><div id="libraryAiResultPreview" class="aa-task-detail max-h-48 overflow-y-auto whitespace-pre-wrap"></div></div>
+                      <div id="libraryAiResultBlock" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ ИИ</p><div id="libraryAiResultPreview" class="aa-task-detail max-h-48 overflow-y-auto prose prose-sm max-w-none"></div></div>
                       <button type="button" class="aa-btn aa-btn-ghost w-full text-sm js-practice-substep-next">Перейти к улучшению →</button>
                     </div>
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
@@ -586,7 +586,7 @@
                     <div class="aa-practice-substep space-y-3" data-practice-substep="1">
                       <label class="block"><span class="aa-label">Тестовая задача для ассистента</span><textarea id="passportTestTask" rows="3" class="aa-textarea mt-1"></textarea></label>
                       <button type="button" id="runAssistantTestBtn" class="aa-btn aa-btn-primary w-full">Протестировать ассистента</button>
-                      <div id="contextAiResultBlock" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ ассистента</p><div id="contextAiResultPreview" class="aa-task-detail max-h-48 overflow-y-auto whitespace-pre-wrap"></div></div>
+                      <div id="contextAiResultBlock" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ ассистента</p><div id="contextAiResultPreview" class="aa-task-detail max-h-48 overflow-y-auto prose prose-sm max-w-none"></div></div>
                       <button type="button" class="aa-btn aa-btn-ghost w-full text-sm js-practice-substep-next">Перейти к оценке →</button>
                     </div>
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
