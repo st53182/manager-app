@@ -2523,6 +2523,7 @@ function prefillContextType(task) {
 }
 
 function selectTaskOption(taskId, { persist = true } = {}) {
+  const prevTaskId = state.selectedTaskId;
   state.selectedTaskId = taskId || null;
   const list = document.getElementById('taskOptionsList');
   if (list) {
@@ -2531,6 +2532,22 @@ function selectTaskOption(taskId, { persist = true } = {}) {
       btn.classList.toggle('is-selected', isSelected);
       btn.setAttribute('aria-checked', isSelected ? 'true' : 'false');
     });
+  }
+  // When user explicitly switches to a different task before starting,
+  // clear RTCFSC/prompt fields so new task's data can prefill cleanly.
+  // Skip during restore (persist = false) — fields already restored from saved draft.
+  if (persist && taskId !== prevTaskId) {
+    const sk = state.currentLesson?.scenario_key;
+    if (sk === 'block1-practice-prompt') {
+      const wfBlock = document.getElementById('practiceWorkflowBlock');
+      if (!wfBlock || wfBlock.classList.contains('hidden')) {
+        ['promptFieldR', 'promptFieldT', 'promptFieldC', 'promptFieldF',
+         'promptFieldS', 'promptFieldCriteria', 'practicePromptV1'].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        });
+      }
+    }
   }
   renderTaskOptionDetail();
   if (persist && state.currentLessonId) scheduleAutoSave();
