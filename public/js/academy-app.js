@@ -5077,7 +5077,8 @@ function wireUi() {
   document.getElementById('practiceNextS1Btn')?.addEventListener('click', () => {
     const v1 = document.getElementById('practicePromptV1')?.value?.trim();
     const v2El = document.getElementById('practicePromptV2');
-    if (v1 && v2El && !v2El.value.trim()) v2El.value = v1;
+    // Always prefill v2 with v1 so user edits rather than rewrites from scratch
+    if (v1 && v2El) v2El.value = v1;
     // Show client context card in step 2 before advancing
     showP1ClientContext();
     advancePracticeStepOrSubstep();
