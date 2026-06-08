@@ -4029,9 +4029,15 @@ async function openLessonPanel(lesson) {
   document.getElementById('lessonPanel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   document.getElementById('lessonEmpty')?.classList.add('hidden');
   document.getElementById('demoPanelSection')?.classList.add('hidden');
-  document.getElementById('lessonContent')?.classList.remove('hidden');
   const lc = document.getElementById('lessonContent');
-  if (lc) lc.innerHTML = `<details class="aa-lesson-details"><summary class="aa-lesson-summary">📖 Описание задания</summary><div class="aa-lesson-details-body">${renderMarkdown(lesson.content_md || '')}</div></details>`;
+  // For block1-practice-prompt the content is in the assignment block — hide the separate description
+  if (lesson.scenario_key === 'block1-practice-prompt') {
+    lc?.classList.add('hidden');
+    if (lc) lc.innerHTML = '';
+  } else {
+    lc?.classList.remove('hidden');
+    if (lc) lc.innerHTML = `<details class="aa-lesson-details"><summary class="aa-lesson-summary">📖 Описание задания</summary><div class="aa-lesson-details-body">${renderMarkdown(lesson.content_md || '')}</div></details>`;
+  }
   document.getElementById('lessonHint').textContent = (lesson.course_title || '') + ' · ' + lesson.title;
   const ab = document.getElementById('assignmentBlock');
   const at = document.getElementById('assignmentText');
