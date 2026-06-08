@@ -3,6 +3,18 @@
  * Подключается до academy-app.js; API: window.AcademyPracticeWorkflow
  */
 (function (global) {
+  /* Convert markdown to readable plain text for reports */
+  function stripMd(text) {
+    if (!text) return '';
+    return text
+      .replace(/\*\*(.+?)\*\*/g, '$1')          // **bold** → bold
+      .replace(/\*(.+?)\*/g, '$1')               // *italic* → italic
+      .replace(/^#{1,6}\s+(.+)$/gm, '$1')        // ### Header → Header
+      .replace(/^[\-\*]\s+/gm, '• ')             // - item → • item
+      .replace(/^\d+\.\s+/gm, (m) => m)          // 1. keep numbered lists
+      .replace(/\[(.+?)\]\(.+?\)/g, '$1')        // [link](url) → link
+      .trim();
+  }
   const RISK_TYPES = [
     { value: 'fabricated', label: 'Выдуманный факт' },
     { value: 'number', label: 'Неверная / непроверяемая цифра' },
@@ -302,28 +314,40 @@
   function buildReportP1(task, wf, taskNum) {
     const p1 = wf.p1 || {};
     const bad = task?.bad_prompt || '';
-    return `Выбранный кейс (${taskNum || '?'}): ${task?.title || ''}
+    const div = '─'.repeat(48);
+    const evalText = stripMd(p1.ai_eval || '');
+    return `ПРАКТИКА 1 · ПРОМПТ-ИНЖИНИРИНГ
+${div}
+Кейс ${taskNum || '?'}: ${task?.title || ''}
+${div}
 
-Что было не так с плохим промптом:
-${bad}
-(Слишком общий запрос, нет роли, контекста, формата, стиля и критериев.)
+ЧТО БЫЛО НЕ ТАК С ПЛОХИМ ПРОМПТОМ
+${bad || '—'}
+(Слишком общий запрос — нет роли, контекста, формата, стиля и критериев.)
 
-Промпт v1 (RTCFSC):
+${div}
+ПРОМПТ v1 (RTCFSC)
+${div}
 ${p1.prompt_v1 || '—'}
 
-Ответ ИИ v1:
+ОТВЕТ ИИ v1
 ${p1.ai_v1 || '—'}
 
-Промпт v2:
+${div}
+ПРОМПТ v2
+${div}
 ${p1.prompt_v2 || '—'}
 
-Ответ ИИ v2:
+ОТВЕТ ИИ v2
 ${p1.ai_v2 || '—'}
 
-Оценка ИИ (сравнение промптов):
-${p1.ai_eval || '—'}
+${div}
+ОЦЕНКА ИИ: СРАВНЕНИЕ ПРОМПТОВ
+${div}
+${evalText || '—'}
 
-Главный вывод:
+${div}
+ГЛАВНЫЙ ВЫВОД
 ${p1.main_insight || '—'}
 `;
   }

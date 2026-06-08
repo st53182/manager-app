@@ -2228,9 +2228,11 @@ function clearPracticeFormUi() {
   document.getElementById('practiceSelfCheckBlock')?.classList.add('hidden');
   document.getElementById('practiceSelfCheckList') && (document.getElementById('practiceSelfCheckList').innerHTML = '');
   ['aiResultBlockV1', 'aiResultBlockV2', 'aiResultBlockDialogue', 'aiResultBlockAnalysis',
-   'clientReactionV1Block', 'clientContextV2Block', 'aiEvalBlock'].forEach((id) => {
+   'clientReactionV1Block', 'clientContextV2Block', 'aiEvalBlock', 'p1SelfCheckBlock'].forEach((id) => {
     document.getElementById(id)?.classList.add('hidden');
   });
+  const p1SelfCheckList = document.getElementById('p1SelfCheckList');
+  if (p1SelfCheckList) p1SelfCheckList.innerHTML = '';
   const aiEvalPreview = document.getElementById('aiEvalPreview');
   if (aiEvalPreview) aiEvalPreview.textContent = '';
   const clientReactionV1 = document.getElementById('clientReactionV1');
@@ -2630,6 +2632,26 @@ function showP1ClientContext() {
     `<div><p class="font-semibold text-slate-900 text-sm">${escapeHtml(p.name || '')}</p>` +
     `<p class="text-xs text-slate-500">${escapeHtml(p.role || '')}</p></div>` +
     `</div>${traitsHtml}`;
+  block.classList.remove('hidden');
+  renderP1InlineSelfCheck();
+}
+
+/* Render inline self-assessment checklist for v2 step */
+function renderP1InlineSelfCheck() {
+  const block = document.getElementById('p1SelfCheckBlock');
+  const list = document.getElementById('p1SelfCheckList');
+  if (!block || !list) return;
+  const items = window.AcademyPracticeWorkflow?.SELF_CHECK?.['block1-practice-prompt'] || [];
+  if (!items.length) return;
+  if (list.children.length > 0) { block.classList.remove('hidden'); return; } // already rendered
+  list.innerHTML = '';
+  items.forEach((label, idx) => {
+    const id = `p1Check_${idx}`;
+    const li = document.createElement('label');
+    li.className = 'flex items-start gap-2 text-sm text-slate-700 cursor-pointer select-none';
+    li.innerHTML = `<input type="checkbox" id="${id}" data-p1-check="${idx}" class="mt-0.5 shrink-0" /><span>${escapeHtml(label)}</span>`;
+    list.appendChild(li);
+  });
   block.classList.remove('hidden');
 }
 

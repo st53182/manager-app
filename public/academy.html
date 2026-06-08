@@ -327,6 +327,11 @@
                         <span class="aa-label">Промпт v2 <span class="text-slate-400 font-normal">(с учётом клиента)</span></span>
                         <textarea id="practicePromptV2" rows="6" class="aa-textarea mt-1"></textarea>
                       </label>
+                      <!-- Самооценка перед тестированием v2 -->
+                      <div id="p1SelfCheckBlock" class="hidden rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                        <p class="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2.5">Самооценка перед отправкой</p>
+                        <ul id="p1SelfCheckList" class="space-y-2"></ul>
+                      </div>
                       <button type="button" id="runPromptV2Btn" class="aa-btn aa-btn-primary w-full">Протестировать промпт v2 →</button>
                     </div>
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
