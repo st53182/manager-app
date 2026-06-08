@@ -2171,6 +2171,8 @@ function clearPracticeFormUi() {
     btn.setAttribute('aria-checked', 'false');
   });
   document.getElementById('taskOptionsPickLabel')?.classList.remove('hidden');
+  // Restore lesson description block (hidden during practice for block1-practice-prompt)
+  document.getElementById('lessonContent')?.classList.remove('hidden');
   state.practiceStep = 1;
   state.practiceSubstep = 1;
   state.practiceWorkflow = null;
@@ -2480,21 +2482,12 @@ function prefillContextType(task) {
 function selectTaskOption(taskId, { persist = true } = {}) {
   state.selectedTaskId = taskId || null;
   const list = document.getElementById('taskOptionsList');
-  const sk = state.currentLesson?.scenario_key;
   if (list) {
     list.querySelectorAll('.aa-task-card').forEach((btn) => {
       const isSelected = btn.dataset.taskId === state.selectedTaskId;
       btn.classList.toggle('is-selected', isSelected);
       btn.setAttribute('aria-checked', isSelected ? 'true' : 'false');
-      // Hide unselected cards for block1-practice-prompt once a case is chosen
-      if (sk === 'block1-practice-prompt' && state.selectedTaskId) {
-        btn.classList.toggle('hidden', !isSelected);
-      }
     });
-    // Show/hide the "Выберите вариант" label
-    if (sk === 'block1-practice-prompt') {
-      document.getElementById('taskOptionsPickLabel')?.classList.toggle('hidden', !!state.selectedTaskId);
-    }
   }
   renderTaskOptionDetail();
   if (persist && state.currentLessonId) scheduleAutoSave();
@@ -2785,6 +2778,16 @@ function startPractice() {
   const wf = document.getElementById('practiceWorkflowBlock');
   wf?.classList.remove('hidden');
   document.getElementById('startPracticeBtn')?.classList.add('hidden');
+  // For block1-practice-prompt: hide unselected cases and lesson description after start
+  if (sk === 'block1-practice-prompt') {
+    const list = document.getElementById('taskOptionsList');
+    list?.querySelectorAll('.aa-task-card').forEach((btn) => {
+      btn.classList.toggle('hidden', btn.dataset.taskId !== state.selectedTaskId);
+    });
+    document.getElementById('taskOptionsPickLabel')?.classList.add('hidden');
+    // Hide the "Описание задания" details block — content is in the task card
+    document.getElementById('lessonContent')?.classList.add('hidden');
+  }
   // initRiskTable removed — P3 redesigned to verification questions flow
   if (sk === 'block2-practice-library') {
     const task = getSelectedTaskOption();
