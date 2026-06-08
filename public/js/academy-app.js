@@ -2307,6 +2307,8 @@ function showPracticeAiResult(text, pass = 'v1') {
     if (pass === 'v1') {
       showP1ClientReaction();
     } else if (pass === 'v2') {
+      // Advance substep so v2 result + eval block become visible
+      tryAdvancePracticeSubstep();
       // Trigger eval asynchronously — don't await so UI is not blocked
       runP1EvalInAi();
     }
