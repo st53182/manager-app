@@ -905,7 +905,7 @@ const STEP_HINTS = {
     taskSelected: '<p>Прочитайте сценарий. Нажмите <strong>«Начать задание»</strong> — ИИ создаст вашего собеседника.</p>',
     steps: {
       '1.1': '<p class="mb-1">Проверьте <strong>карточку персонажа</strong> — это ваш собеседник. Уточните роли и укажите вашу цель.</p><p class="text-xs text-slate-500">Нажмите «Начать диалог» — чат откроется автоматически.</p>',
-      '1.2': '<p class="mb-1">Ведите диалог в чате. Следите за <strong>счётчиком пар</strong> — нужно минимум 4.</p><p class="text-xs text-slate-500">ИИ будет возражать и давить — это тренировка. Не сдавайтесь.</p>',
+      '1.2': '<p class="mb-1">Ведите диалог. Следите за <strong>счётчиком пар</strong> — нужно минимум 12.</p><p class="text-xs text-slate-500">Собеседник будет жёстко возражать, особенно в начале. Не сдавайтесь — это и есть тренировка.</p>',
       '2.1': '<p class="mb-1">ИИ-тренер проанализировал ваш диалог. Ознакомьтесь с оценкой, отметьте самооценку и заполните 2 поля.</p>',
       '3': '<p>Проверьте отчёт и нажмите <strong>«Завершить задание»</strong>.</p>'
     }
@@ -3235,9 +3235,16 @@ async function streamP2Message(userText, isKickoff = false) {
   const roleMe = document.getElementById('practiceRoleMe')?.value?.trim() || 'Менеджер';
   const goal = document.getElementById('practiceStudentGoal')?.value?.trim() || '';
 
+  const dialogueTurn = (state.p2DialogueMessages || []).filter((m) => m.role === 'assistant').length;
+  const resistanceLevel = dialogueTurn < 4
+    ? 'Ты в самом начале разговора — веди себя максимально жёстко: отрицай, перебивай, давай короткие категоричные отказы, показывай раздражение. Не иди на уступки ни при каких аргументах.'
+    : dialogueTurn < 8
+    ? 'Ты чуть смягчился, но по-прежнему скептичен: задавай каверзные вопросы, указывай на слабые места аргументов, требуй конкретики.'
+    : 'Ты начинаешь слышать аргументы, но всё ещё сомневаешься: можешь частично согласиться, но сразу добавляй новое возражение.';
+
   const personaInstructions = persona
-    ? `Ты играешь роль: ${persona.name}, ${persona.role}. Цель персонажа: ${persona.goal}. Характер: ${(persona.traits || []).join(', ')}. Настроение: ${persona.mood}. Сложность: ${persona.difficulty}. Студент играет роль: ${roleMe}, его цель: ${goal}. Держи роль, веди себя реалистично, возражай и реагируй по ситуации. Отвечай коротко (2-4 предложения). Не выходи из роли.`
-    : `Ты играешь роль: ${roleAi}. Студент играет роль: ${roleMe}, его цель: ${goal}. Держи роль, веди себя реалистично. Отвечай коротко (2-4 предложения).`;
+    ? `Ты играешь роль: ${persona.name}, ${persona.role}. Цель персонажа: ${persona.goal}. Характер: ${(persona.traits || []).join(', ')}. Настроение: ${persona.mood}. Студент играет роль: ${roleMe}, его цель: ${goal}. ${resistanceLevel} Отвечай коротко — 1-3 предложения. Только реплика, без пояснений и ремарок.`
+    : `Ты играешь роль: ${roleAi}. Студент играет роль: ${roleMe}, его цель: ${goal}. ${resistanceLevel} Отвечай коротко — 1-3 предложения. Только реплика, без пояснений.`;
 
   const msgBox = document.getElementById('p2InlineChatMessages');
   if (!msgBox) return;
@@ -3334,8 +3341,8 @@ function updateP2PairCounter() {
   const finishBtn = document.getElementById('practiceNextP2S1Btn');
   if (!counterEl) return;
   const pairCount = (state.p2DialogueMessages || []).filter((m) => m.role === 'assistant').length;
-  counterEl.textContent = `${pairCount} / 4`;
-  if (pairCount >= 4) {
+  counterEl.textContent = `${pairCount} / 12`;
+  if (pairCount >= 12) {
     if (hintEl) hintEl.textContent = '✓ Достаточно для анализа';
     finishBtn?.classList.remove('hidden');
   } else {
