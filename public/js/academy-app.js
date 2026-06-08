@@ -2740,18 +2740,18 @@ function buildP1StepHint(step, sub) {
   if (step === 1) {
     if (sub === 1) return hints['1.1'];
     if (sub === 2) {
-      return renderReactionBubble(rd?.reactionV1, 'is-fail') +
-        '<p class="mt-3 text-sm text-slate-700">Клиент не получил нужного ответа. Нажмите <strong>«Перейти к промпту v2»</strong> — вы увидите профиль клиента.</p>';
+      // Reaction is already shown inline in the form — just show instructional text here
+      return '<p class="text-sm text-slate-700">Посмотрите на ответ нейросети и реакцию адресата в форме ниже. Нажмите <strong>«Перейти к промпту v2»</strong> — откроется профиль адресата.</p>';
     }
   }
   if (step === 2) {
     if (sub === 1) {
-      return renderPersonaCard(rd?.persona) +
-        '<p class="mt-3 text-sm text-slate-700">Теперь вы знаете клиента. Напишите <strong>промпт v2</strong> с учётом его особенностей и нажмите <strong>«Протестировать промпт v2»</strong>.</p>';
+      // Persona card already shown inline in the form
+      return '<p class="text-sm text-slate-700">Профиль адресата показан в форме ниже. Напишите <strong>промпт v2</strong> с учётом его особенностей и нажмите <strong>«Протестировать промпт v2»</strong>.</p>';
     }
     if (sub === 2) {
-      return renderReactionBubble(rd?.reactionV2, 'is-success') +
-        '<p class="mt-3 text-sm text-slate-700">Результат улучшился. Прочитайте оценку ИИ и запишите <strong>главный вывод</strong>.</p>';
+      // Reaction v2 and eval already shown inline in the form
+      return '<p class="text-sm text-slate-700">ИИ оценил оба промпта — читайте оценку в форме ниже. Запишите <strong>главный вывод</strong> и нажмите <strong>«Собрать отчёт»</strong>.</p>';
     }
   }
   if (step === 3) return hints['3'];
