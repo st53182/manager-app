@@ -1948,12 +1948,54 @@ function tryAdvancePracticeSubstep() {
   });
   scheduleAutoSave();
   updateAssignmentHint();
+  updatePracticeBackBtn();
   return true;
 }
 
 function advancePracticeStepOrSubstep() {
   if (tryAdvancePracticeSubstep()) return;
   advancePracticeStep();
+}
+
+function updatePracticeBackBtn() {
+  const btn = document.getElementById('practiceBackBtn');
+  if (!btn) return;
+  const step = state.practiceStep || 1;
+  const sub = state.practiceSubstep || 1;
+  const visible = step > 1 || sub > 1;
+  btn.classList.toggle('hidden', !visible);
+}
+
+function goBackPractice() {
+  const sk = state.currentLesson?.scenario_key;
+  if (!sk) return;
+  const step = state.practiceStep || 1;
+  const sub = state.practiceSubstep || 1;
+  const total = PRACTICE_STEP_LABELS[sk]?.length || 3;
+
+  if (sub > 1) {
+    // Go back one substep within same step
+    state.practiceSubstep = sub - 1;
+    applyPracticeSubsteps();
+    const pane = getPracticeStepPane();
+    const max = getPracticeSubstepCount(pane);
+    updatePracticeStepBarSubstep(max);
+    pane?.querySelector(`[data-practice-substep="${state.practiceSubstep}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } else if (step > 1) {
+    // Go back to previous step at its last substep
+    const prevStep = step - 1;
+    const sectionId = PRACTICE_SECTION_IDS[sk] || 'practiceAnalysisSection';
+    const prevPane = document.getElementById(sectionId)
+      ?.querySelector(`[data-practice-step="${prevStep}"]`);
+    const prevMax = getPracticeSubstepCount(prevPane) || 1;
+    state.practiceSubstep = prevMax;
+    showPracticeStep(prevStep, { restoreSubstep: true });
+  }
+
+  updatePracticeBackBtn();
+  scheduleAutoSave();
+  updateAssignmentHint();
 }
 
 function showPracticeStep(n, { restoreSubstep } = {}) {
@@ -2009,6 +2051,7 @@ function showPracticeStep(n, { restoreSubstep } = {}) {
 
   scheduleAutoSave();
   updateAssignmentHint();
+  updatePracticeBackBtn();
 }
 
 function advancePracticeStep() {
@@ -5004,6 +5047,7 @@ function wireUi() {
     );
   });
   document.getElementById('startPracticeBtn')?.addEventListener('click', () => startPractice());
+  document.getElementById('practiceBackBtn')?.addEventListener('click', () => goBackPractice());
   document.getElementById('practiceWorkflowBlock')?.addEventListener('click', (e) => {
     if (e.target.closest('.js-practice-substep-next')) advancePracticeStepOrSubstep();
   });
