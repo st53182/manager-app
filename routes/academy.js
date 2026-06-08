@@ -7,7 +7,7 @@ const path = require('path');
 const db = require('../database');
 const { getMentorSystemPrompt, getPracticeRunSystemPrompt, MENTOR_PROMPT_VERSION } = require('../prompts/mentorPrompt');
 const { createOpenRouterClient, getDefaultModel } = require('../services/ai/openRouterClient');
-const { streamChatCompletion, estimateTokensFromText, estimateCostUsd } = require('../services/ai/streamChat');
+const { streamChatCompletion, fetchPerplexityWithCitations, estimateTokensFromText, estimateCostUsd } = require('../services/ai/streamChat');
 const {
   persistMulterFiles,
   buildUserContentForApi,
@@ -1726,22 +1726,36 @@ function createRouter({ JWT_SECRET }) {
         let perplexityCitations = [];
 
         try {
-          const gen = streamChatCompletion(openai, {
-            model,
-            messages: apiMessages,
-            maxTokens: 4096
-          });
+          if (chatMode === 'verification') {
+            // Non-streaming for Perplexity/sonar so citations are captured reliably
+            const result = await fetchPerplexityWithCitations(openai, {
+              model,
+              messages: apiMessages,
+              maxTokens: 4096
+            });
+            fullAssistant = result.text;
+            perplexityCitations = result.citations;
+            finalUsage = result.usage;
+            // Send text as a single chunk so the client renders it
+            send({ type: 'chunk', text: fullAssistant });
+          } else {
+            const gen = streamChatCompletion(openai, {
+              model,
+              messages: apiMessages,
+              maxTokens: 4096
+            });
 
-          for await (const part of gen) {
-            if (part.type === 'chunk') {
-              fullAssistant += part.text;
-              send({ type: 'chunk', text: part.text });
-            }
-            if (part.type === 'done') {
-              finalUsage = part.usage;
-              if (part.fullText) fullAssistant = part.fullText;
-              if (Array.isArray(part.citations) && part.citations.length) {
-                perplexityCitations = part.citations;
+            for await (const part of gen) {
+              if (part.type === 'chunk') {
+                fullAssistant += part.text;
+                send({ type: 'chunk', text: part.text });
+              }
+              if (part.type === 'done') {
+                finalUsage = part.usage;
+                if (part.fullText) fullAssistant = part.fullText;
+                if (Array.isArray(part.citations) && part.citations.length) {
+                  perplexityCitations = part.citations;
+                }
               }
             }
           }

@@ -68,8 +68,28 @@ function estimateCostUsd(promptTokens, completionTokens, model) {
   return p * 0.0000002 + c * 0.0000008;
 }
 
+/**
+ * Non-streaming call to Perplexity/sonar via OpenRouter.
+ * Returns the full response text + citations array.
+ * Used for verification chatMode where citations must be captured.
+ */
+async function fetchPerplexityWithCitations(openai, { model, messages, maxTokens = 4096 }) {
+  const resp = await openai.chat.completions.create({
+    model,
+    messages,
+    stream: false,
+    max_tokens: maxTokens
+  });
+  const text = resp.choices?.[0]?.message?.content || '';
+  // citations is a non-standard top-level field Perplexity adds
+  const citations = Array.isArray(resp.citations) ? resp.citations : [];
+  const usage = resp.usage || null;
+  return { text, citations, usage };
+}
+
 module.exports = {
   streamChatCompletion,
+  fetchPerplexityWithCitations,
   estimateTokensFromText,
   estimateCostUsd
 };
