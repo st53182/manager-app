@@ -2986,7 +2986,7 @@ function startPractice() {
   wf?.classList.remove('hidden');
   document.getElementById('startPracticeBtn')?.classList.add('hidden');
   // Hide unselected cases and lesson description after start (P1 and P2)
-  if (sk === 'block1-practice-prompt' || sk === 'block1-practice-scenario') {
+  if (['block1-practice-prompt', 'block1-practice-scenario', 'block1-practice-hallucination'].includes(sk)) {
     const list = document.getElementById('taskOptionsList');
     list?.querySelectorAll('.aa-task-card').forEach((btn) => {
       btn.classList.toggle('hidden', btn.dataset.taskId !== state.selectedTaskId);
