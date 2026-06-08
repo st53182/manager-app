@@ -191,18 +191,27 @@ if(typeof ruSec==='undefined'){var ruSec={labels:['IT','Manufacturing','Retail',
 if(typeof euTrend==='undefined'){var euTrend=[165,178,190,205,218,232];}
 if(typeof ruTrend==='undefined'){var ruTrend=[78,84,91,98,107,115];}
 `;
-// Часть 2: логика (вкладки, таблица, графики) — всегда одинаковая
+// Часть 2: логика (вкладки, таблица, графики) — ленивая инициализация по вкладкам
 const DASHBOARD_LOGIC_SCRIPT = `
 var PAL=['#7c3aed','#06b6d4','#a78bfa','#22d3ee','#f59e0b','#ef4444','#22c55e'];
 var G='#334155',L='#94a3b8';
-document.querySelectorAll('.tabs button').forEach(function(btn){btn.addEventListener('click',function(){document.querySelectorAll('.tabs button').forEach(function(b){b.className='tab-off';});document.querySelectorAll('.sec').forEach(function(s){s.classList.remove('show');});btn.className='tab-on';document.getElementById(btn.dataset.t).classList.add('show');});});
-document.getElementById('tb').innerHTML=jobs.map(function(j){return'<tr><td>'+j.n+'</td><td style="color:#a78bfa">€'+(typeof j.eu==='number'?j.eu.toLocaleString():j.eu)+'</td><td style="color:#22d3ee">₽'+j.ru+'</td><td><div class="bar"><i style="width:'+j.def+'%"></i></div></td><td style="color:'+(j.t==='↑'?'#22c55e':j.t==='↓'?'#ef4444':'#94a3b8')+'">'+j.t+'</td></tr>';}).join('');
-var opt=function(e){e=e||{};return Object.assign({responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:L}}}},e);};
+var _charts={};
+var opt=function(e){e=e||{};return Object.assign({responsive:true,maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{labels:{color:L}}}},e);};
 var sc={scales:{x:{ticks:{color:L},grid:{color:G}},y:{ticks:{color:L},grid:{color:G}}}};
-new Chart(document.getElementById('dEU'),{type:'doughnut',data:{labels:euSec.labels,datasets:[{data:euSec.data,backgroundColor:PAL,borderWidth:0}]},options:opt()});
-new Chart(document.getElementById('dRU'),{type:'doughnut',data:{labels:ruSec.labels,datasets:[{data:ruSec.data,backgroundColor:PAL,borderWidth:0}]},options:opt()});
-new Chart(document.getElementById('bSal'),{type:'bar',data:{labels:jobs.map(function(j){return j.n;}),datasets:[{label:'EU €',data:jobs.map(function(j){return typeof j.eu==='number'?j.eu:parseInt(j.eu);}),backgroundColor:'#7c3aed'},{label:'RU (в €)',data:jobs.map(function(j){return Math.round(parseInt(j.ru)*1000/90);}),backgroundColor:'#06b6d4'}]},options:opt(Object.assign({indexAxis:'y'},sc))});
-new Chart(document.getElementById('lTr'),{type:'line',data:{labels:['Янв','Фев','Мар','Апр','Май','Июн'],datasets:[{label:'EU (тыс.)',data:euTrend,borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.15)',fill:true,tension:.3},{label:'RU (тыс.)',data:ruTrend,borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,.15)',fill:true,tension:.3}]},options:opt(sc)});
+function initChart(tab){
+  if(_charts[tab])return; _charts[tab]=1;
+  if(tab==='sectors'){
+    new Chart(document.getElementById('dEU'),{type:'doughnut',data:{labels:euSec.labels,datasets:[{data:euSec.data,backgroundColor:PAL,borderWidth:0}]},options:opt()});
+    new Chart(document.getElementById('dRU'),{type:'doughnut',data:{labels:ruSec.labels,datasets:[{data:ruSec.data,backgroundColor:PAL,borderWidth:0}]},options:opt()});
+  }else if(tab==='salary'){
+    new Chart(document.getElementById('bSal'),{type:'bar',data:{labels:jobs.map(function(j){return j.n;}),datasets:[{label:'EU €',data:jobs.map(function(j){return typeof j.eu==='number'?j.eu:parseInt(j.eu);}),backgroundColor:'#7c3aed'},{label:'RU (в €)',data:jobs.map(function(j){return Math.round(parseInt(j.ru)*1000/90);}),backgroundColor:'#06b6d4'}]},options:opt(Object.assign({indexAxis:'y'},sc))});
+  }else if(tab==='trends'){
+    new Chart(document.getElementById('lTr'),{type:'line',data:{labels:['Янв','Фев','Мар','Апр','Май','Июн'],datasets:[{label:'EU (тыс.)',data:euTrend,borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.15)',fill:true,tension:.3},{label:'RU (тыс.)',data:ruTrend,borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,.15)',fill:true,tension:.3}]},options:opt(sc)});
+  }
+}
+document.getElementById('tb').innerHTML=jobs.map(function(j){return'<tr><td>'+j.n+'</td><td style="color:#a78bfa">€'+(typeof j.eu==='number'?j.eu.toLocaleString():j.eu)+'</td><td style="color:#22d3ee">₽'+j.ru+'</td><td><div class="bar"><i style="width:'+j.def+'%"></i></div></td><td style="color:'+(j.t==='↑'?'#22c55e':j.t==='↓'?'#ef4444':'#94a3b8')+'">'+j.t+'</td></tr>';}).join('');
+document.querySelectorAll('.tabs button').forEach(function(btn){btn.addEventListener('click',function(){document.querySelectorAll('.tabs button').forEach(function(b){b.className='tab-off';});document.querySelectorAll('.sec').forEach(function(s){s.classList.remove('show');});btn.className='tab-on';var t=btn.dataset.t;document.getElementById(t).classList.add('show');initChart(t);});});
+setTimeout(function(){initChart('sectors');},50);
 `;
 const DASHBOARD_DEFAULT_SCRIPT = DASHBOARD_DEFAULT_DATA + DASHBOARD_LOGIC_SCRIPT;
 
