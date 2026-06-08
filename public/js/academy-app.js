@@ -2041,9 +2041,12 @@ function showPracticeStep(n, { restoreSubstep } = {}) {
 
   if (isLastStep) {
     const wfApi = getPracticeWorkflowApi();
-    if (isBlock2Scenario(sk)) wfApi?.renderSelfCheckM2(sk, state.practiceWorkflow?.self_check);
-    else wfApi?.renderSelfCheck(sk, state.practiceWorkflow?.self_check);
-    document.getElementById('practiceSelfCheckBlock')?.classList.remove('hidden');
+    // P1 has inline self-check at step 2.1 — skip the submit-step block
+    if (sk !== 'block1-practice-prompt') {
+      if (isBlock2Scenario(sk)) wfApi?.renderSelfCheckM2(sk, state.practiceWorkflow?.self_check);
+      else wfApi?.renderSelfCheck(sk, state.practiceWorkflow?.self_check);
+      document.getElementById('practiceSelfCheckBlock')?.classList.remove('hidden');
+    }
     submitBlock?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } else {
     bar?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
