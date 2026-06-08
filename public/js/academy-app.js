@@ -3446,7 +3446,8 @@ function renderP3InlineBubble(text, role) {
 }
 
 async function streamP3Message(userText) {
-  const model = document.getElementById('modelSelect')?.value;
+  // Force Perplexity sonar for web search with citations
+  const model = 'perplexity/sonar';
   const msgBox = document.getElementById('p3InlineChatMessages');
   if (!msgBox) return;
 
@@ -3470,17 +3471,15 @@ async function streamP3Message(userText) {
   const studentClaims = document.getElementById('p3SuspiciousClaims')?.value?.trim() || '';
 
   const systemPrompt =
-    'Ты — эксперт по верификации фактов. Студент проверяет утверждения из текста, сгенерированного нейросетью.\n\n' +
-    'ТВОЯ ЗАДАЧА — использовать свои знания из обучения чтобы проверить каждое утверждение:\n' +
-    '— Если знаешь реальный источник (конкретный отчёт, исследование, автора) — назови его.\n' +
-    '— Если такого конкретного исследования в твоих знаниях нет — прямо скажи: "Такого конкретного исследования я не встречал. Это утверждение выглядит как обобщение без верифицированного источника."\n' +
-    '— Если цифра явно завышена или нереалистична — укажи это.\n' +
-    '— НЕ говори "я не могу искать в интернете" — используй то что знаешь из обучения.\n' +
-    '— НЕ придумывай источники. Если не знаешь — так и скажи.\n' +
-    '— Если студент просит переформулировать утверждение с реальными данными — сделай это: дай корректную версию с тем что реально известно, или объясни почему точную цифру назвать нельзя и где её искать.\n\n' +
+    'Ты — эксперт по верификации фактов с доступом к интернету. Студент проверяет утверждения из текста, сгенерированного нейросетью.\n\n' +
+    'ТВОЯ ЗАДАЧА:\n' +
+    '— Найди в интернете реальные источники для проверяемого утверждения.\n' +
+    '— Если реального источника нет или цифра не подтверждается — прямо скажи об этом.\n' +
+    '— Если студент просит дать достоверную версию — найди реальные данные и дай корректную формулировку со ссылкой.\n' +
+    '— Не придумывай источники — только то что реально нашёл.\n\n' +
     (fragment ? `АНАЛИЗИРУЕМЫЙ ФРАГМЕНТ (сгенерирован нейросетью):\n"""\n${fragment.slice(0, 1500)}\n"""\n\n` : '') +
     (studentClaims ? `Студент уже отметил как подозрительные:\n${studentClaims}\n\n` : '') +
-    'Отвечай коротко — 2-3 предложения. Конкретно по утверждению, без общих рассуждений об ИИ.';
+    'Отвечай коротко — 2-4 предложения. Конкретно по утверждению.';
 
   try {
     const res = await fetch(`${apiBase}/api/academy/chat`, {
@@ -3502,7 +3501,7 @@ async function streamP3Message(userText) {
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
-    let buf = '', assembled = '';
+    let buf = '', assembled = '', citations = [];
 
     while (true) {
       const { done, value } = await reader.read();
@@ -3514,11 +3513,13 @@ async function streamP3Message(userText) {
         const line = block.trim();
         if (!line.startsWith('data:')) continue;
         const json = JSON.parse(line.slice(5).trim());
-        if (json.type === 'start' && json.conversationId) state.p3ConversationId = json.conversationId;
         if (json.type === 'chunk') {
           assembled += json.text || '';
           aiBubble.innerHTML = renderMarkdown(assembled);
           msgBox.scrollTop = msgBox.scrollHeight;
+        }
+        if (json.type === 'done' && Array.isArray(json.citations) && json.citations.length) {
+          citations = json.citations;
         }
       }
     }
@@ -3526,6 +3527,24 @@ async function streamP3Message(userText) {
     const assistantText = assembled.trim();
     if (assistantText) {
       aiBubble.innerHTML = renderMarkdown(assistantText);
+      // Append citation links if Perplexity returned any
+      if (citations.length) {
+        const citDiv = document.createElement('div');
+        citDiv.className = 'mt-2 pt-2 border-t border-amber-200 space-y-0.5';
+        citations.slice(0, 5).forEach((c, i) => {
+          const url = c.url || c.document || '';
+          const title = c.title || c.document || url;
+          if (!url) return;
+          const a = document.createElement('a');
+          a.href = url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.className = 'block text-xs text-indigo-600 hover:underline truncate';
+          a.textContent = `[${i + 1}] ${title}`;
+          citDiv.appendChild(a);
+        });
+        aiBubble.appendChild(citDiv);
+      }
       state.p3VerificationMessages.push({ role: 'assistant', content: assistantText });
       updateP3VerifyCounter();
       scheduleAutoSave();
