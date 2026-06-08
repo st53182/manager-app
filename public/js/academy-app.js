@@ -2250,6 +2250,26 @@ function clearPracticeFormUi() {
   if (p1SelfCheckList) p1SelfCheckList.innerHTML = '';
   const aiEvalPreview = document.getElementById('aiEvalPreview');
   if (aiEvalPreview) aiEvalPreview.textContent = '';
+  // Clear inline chat areas for P2 and P3
+  ['p2InlineChatMessages', 'p3InlineChatMessages'].forEach((id) => {
+    const box = document.getElementById(id);
+    if (box) box.innerHTML = '';
+  });
+  // Re-add placeholders
+  const p2ph = document.getElementById('p2InlineChatMessages');
+  if (p2ph) p2ph.innerHTML = '<p id="p2InlineChatPlaceholder" class="text-xs text-slate-400 text-center py-6">Напишите первую реплику, чтобы начать разговор</p>';
+  const p3ph = document.getElementById('p3InlineChatMessages');
+  if (p3ph) p3ph.innerHTML = '<p id="p3InlineChatPlaceholder" class="text-xs text-slate-400 text-center py-6">Напишите вопрос о любом утверждении из фрагмента</p>';
+  // Reset P2/P3 eval and hint blocks
+  ['p2PersonaCard', 'p2EvalBlock', 'p2InlineSelfCheck', 'p3HintCard', 'p3EvalBlock', 'p3EvalFound', 'p3EvalMissed', 'p3EvalVerdict', 'p3InlineSelfCheck'].forEach((id) => {
+    document.getElementById(id)?.classList.add('hidden');
+  });
+  document.getElementById('p2PairCounter') && (document.getElementById('p2PairCounter').textContent = '0 / 12');
+  document.getElementById('p2PairCounterHint') && (document.getElementById('p2PairCounterHint').textContent = '(продолжайте диалог)');
+  document.getElementById('practiceNextP2S1Btn')?.classList.add('hidden');
+  document.getElementById('p3VerifyCounter') && (document.getElementById('p3VerifyCounter').textContent = '0 / 5');
+  document.getElementById('p3VerifyCounterHint') && (document.getElementById('p3VerifyCounterHint').textContent = '(продолжайте)');
+  document.getElementById('p3FinishVerifyBtn')?.classList.add('hidden');
   const clientReactionV1 = document.getElementById('clientReactionV1');
   if (clientReactionV1) clientReactionV1.innerHTML = '';
   document.getElementById('assignmentFeedback')?.classList.add('hidden');
