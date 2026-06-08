@@ -69,21 +69,36 @@ function estimateCostUsd(promptTokens, completionTokens, model) {
 }
 
 /**
- * Non-streaming call to Perplexity/sonar via OpenRouter.
+ * Non-streaming call to Perplexity/sonar via raw fetch (bypasses OpenAI SDK
+ * which strips non-standard fields like citations from the response).
  * Returns the full response text + citations array.
  * Used for verification chatMode where citations must be captured.
  */
 async function fetchPerplexityWithCitations(openai, { model, messages, maxTokens = 4096 }) {
-  const resp = await openai.chat.completions.create({
-    model,
-    messages,
-    stream: false,
-    max_tokens: maxTokens
+  // Extract apiKey and baseURL from the OpenAI client instance
+  const apiKey = openai.apiKey;
+  const baseURL = (openai.baseURL || 'https://openrouter.ai/api/v1').replace(/\/$/, '');
+
+  const res = await fetch(`${baseURL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      ...(openai.defaultHeaders || {})
+    },
+    body: JSON.stringify({ model, messages, stream: false, max_tokens: maxTokens })
   });
-  const text = resp.choices?.[0]?.message?.content || '';
-  // citations is a non-standard top-level field Perplexity adds
-  const citations = Array.isArray(resp.citations) ? resp.citations : [];
-  const usage = resp.usage || null;
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Perplexity API error ${res.status}: ${errText.slice(0, 200)}`);
+  }
+
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content || '';
+  // citations is a non-standard top-level field Perplexity returns
+  const citations = Array.isArray(data.citations) ? data.citations : [];
+  const usage = data.usage || null;
   return { text, citations, usage };
 }
 
