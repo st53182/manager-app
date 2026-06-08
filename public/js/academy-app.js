@@ -1680,9 +1680,11 @@ function renderAssignmentFeedback(fb) {
   box.innerHTML = '';
 
   if (fb.score != null) {
+    const sk = state.currentLesson?.scenario_key;
+    const maxScore = sk === 'block1-practice-prompt' ? 7 : 10;
     const score = document.createElement('p');
     score.className = 'text-sm font-semibold text-slate-900 mb-2';
-    score.textContent = `Оценка: ${fb.score}/10`;
+    score.textContent = `Оценка: ${fb.score}/${maxScore}`;
     box.appendChild(score);
   }
 
@@ -1704,20 +1706,6 @@ function renderAssignmentFeedback(fb) {
   addListSection('Сильные стороны', fb.strengths);
   addListSection('Что улучшить', fb.weaknesses);
   addListSection('Следующие шаги', fb.recommendations);
-
-  if (fb.criteria_scores && typeof fb.criteria_scores === 'object') {
-    const sec = document.createElement('div');
-    sec.className = 'aa-feedback-section';
-    sec.innerHTML = '<h4>Критерии</h4>';
-    const ul = document.createElement('ul');
-    for (const [k, v] of Object.entries(fb.criteria_scores)) {
-      const li = document.createElement('li');
-      li.textContent = `${k}: ${v}`;
-      ul.appendChild(li);
-    }
-    sec.appendChild(ul);
-    box.appendChild(sec);
-  }
 }
 function parseTaskOptions(assignment) {
   let opts = assignment?.task_options;
@@ -2986,6 +2974,8 @@ function validateBeforeSubmit() {
   const sk = state.currentLesson?.scenario_key;
   const wfApi = getPracticeWorkflowApi();
   if (!wfApi || !sk) return true;
+  // P1 self-check is inline at step 2.1 — skip validation here
+  if (sk === 'block1-practice-prompt') return true;
   const complete = isBlock2Scenario(sk) ? wfApi.selfCheckCompleteM2(sk) : wfApi.selfCheckComplete(sk);
   if (complete) return true;
   return confirm(

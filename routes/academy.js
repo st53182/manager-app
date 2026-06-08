@@ -211,12 +211,29 @@ function createRouter({ JWT_SECRET }) {
     if (!openai) return res.status(503).json({ error: 'AI service not configured' });
     try {
       const lessonId = req.params.lessonId;
-      const assignment = await db.getAssignmentByLessonId(lessonId);
+      const [assignment, lesson] = await Promise.all([
+        db.getAssignmentByLessonId(lessonId),
+        db.getLessonById(lessonId)
+      ]);
       const submission = await db.getLessonSubmission(req.dbUser.id, lessonId);
       const answerText = String(req.body?.answer_text || submission?.answer_text || '').trim();
       if (!answerText) return res.status(400).json({ error: 'answer_text required' });
       const model = pickModel(req.body?.model, req.dbUser);
-      const criteria = assignment?.rubric_json?.criteria ? assignment.rubric_json.criteria.join(', ') : 'general';
+      const scenarioKey = lesson?.scenario_key || '';
+      const isP1 = scenarioKey === 'block1-practice-prompt';
+      const p1Criteria = [
+        'Выбран кейс (1)',
+        'Промпт v1 содержит роль ИИ, задачу и контекст (1)',
+        'Указан формат или ограничения (0.5)',
+        'Получен результат v1 (1)',
+        'Оценены слабые места v1 (0.5)',
+        'Промпт v2 содержит минимум 2 конкретных улучшения (1)',
+        'Получен результат v2 (1)',
+        'Есть сравнение v1/v2 и главный вывод (1)'
+      ].join('; ');
+      const criteria = isP1
+        ? p1Criteria
+        : (assignment?.rubric_json?.criteria ? assignment.rubric_json.criteria.join(', ') : 'general');
       let taskLine = '';
       const gm = submission?.group_meta;
       const meta = typeof gm === 'string' ? (() => { try { return JSON.parse(gm); } catch { return {}; } })() : gm || {};
@@ -250,12 +267,14 @@ function createRouter({ JWT_SECRET }) {
           workflowLine = '';
         }
       }
+      const maxScore = isP1 ? 7 : 10;
       const graderPrompt =
-        'Grade assignment. JSON: score, criteria_scores, strengths, weaknesses, recommendations. Criteria: ' +
+        `Grade assignment. Respond with JSON only: { score, strengths, weaknesses, recommendations }.\n` +
+        `score = sum of earned points (max ${maxScore}). Criteria (each worth stated points): ` +
         criteria +
         taskLine +
         workflowLine +
-        '\nAnswer:\n' +
+        '\nStudent answer:\n' +
         answerText;
       await assertQuota(req, estimateTokensFromText(graderPrompt));
       let text = '', usage = null;
