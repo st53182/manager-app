@@ -190,7 +190,7 @@
         ai_v1: val('aiResultV1Preview') || el('aiResultV1Preview')?.textContent?.trim() || '',
         prompt_v2: val('practicePromptV2'),
         ai_v2: val('aiResultV2Preview') || el('aiResultV2Preview')?.textContent?.trim() || '',
-        ai_eval: el('aiEvalPreview')?.textContent?.trim() || '',
+        ai_eval: el('aiEvalPreview')?.dataset?.rawText || el('aiEvalPreview')?.textContent?.trim() || '',
         main_insight: val('practiceMainInsight')
       },
       p2: {
@@ -233,7 +233,14 @@
     setText('aiResultV2Preview', p1.ai_v2);
     if (p1.ai_v2) el('aiResultBlockV2')?.classList.remove('hidden');
     if (p1.ai_eval) {
-      setText('aiEvalPreview', p1.ai_eval);
+      const evalEl = el('aiEvalPreview');
+      if (evalEl) {
+        evalEl.dataset.rawText = p1.ai_eval;
+        // Render as markdown if renderMarkdown is available, else plain text
+        evalEl.innerHTML = typeof renderMarkdown === 'function'
+          ? renderMarkdown(p1.ai_eval)
+          : p1.ai_eval.replace(/</g, '&lt;');
+      }
       el('aiEvalBlock')?.classList.remove('hidden');
     }
     set('practiceMainInsight', p1.main_insight);

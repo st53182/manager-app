@@ -2649,7 +2649,7 @@ async function runP1EvalInAi() {
   const evalPreview = document.getElementById('aiEvalPreview');
   if (!evalBlock || !evalPreview) return;
 
-  evalPreview.textContent = 'ИИ анализирует оба промпта…';
+  evalPreview.innerHTML = '<p class="text-slate-400 text-xs">ИИ анализирует оба промпта…</p>';
   evalBlock.classList.remove('hidden');
   evalBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -2683,14 +2683,15 @@ async function runP1EvalInAi() {
     };
     const { assistantText } = await streamChat(payload);
     if (assistantText) {
-      evalPreview.textContent = assistantText.trim();
-      // Auto-save the evaluation result
+      evalPreview.innerHTML = renderMarkdown(assistantText.trim());
+      // Store plain text for auto-save / report
+      evalPreview.dataset.rawText = assistantText.trim();
       scheduleAutoSave();
     } else {
-      evalPreview.textContent = '(Оценка получена — откройте чат для полного текста)';
+      evalPreview.innerHTML = '<p class="text-slate-400 text-xs">(Оценка получена — откройте чат для полного текста)</p>';
     }
   } catch (e) {
-    evalPreview.textContent = '(Не удалось получить оценку: ' + (e?.message || String(e)) + ')';
+    evalPreview.innerHTML = '<p class="text-red-500 text-xs">(Не удалось получить оценку: ' + escapeHtml(e?.message || String(e)) + ')</p>';
     console.error('P1 eval error:', e);
   }
 }
