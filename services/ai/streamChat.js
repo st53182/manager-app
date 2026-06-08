@@ -99,7 +99,9 @@ async function fetchPerplexityWithCitations(openai, { model, messages, maxTokens
   // citations is a non-standard top-level field Perplexity returns
   const citations = Array.isArray(data.citations) ? data.citations : [];
   const usage = data.usage || null;
-  return { text, citations, usage };
+  // Temporary: expose all top-level keys for debugging
+  const _debugKeys = Object.keys(data).join(',');
+  return { text, citations, usage, _debugKeys };
 }
 
 module.exports = {
