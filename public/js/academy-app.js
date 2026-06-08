@@ -5989,6 +5989,8 @@ function wireUi() {
   document.getElementById('p3StartVerifyBtn')?.addEventListener('click', () => {
     const claims = document.getElementById('p3SuspiciousClaims')?.value?.trim();
     if (!claims) return alert('Запишите минимум одно подозрительное утверждение.');
+    const reminder = document.getElementById('p3ClaimsReminderText');
+    if (reminder) reminder.textContent = claims;
     tryAdvancePracticeSubstep();
     updateP3VerifyCounter();
   });
