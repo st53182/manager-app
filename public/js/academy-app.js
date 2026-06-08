@@ -287,8 +287,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid #334155}th{color:#94a3
 <div class="card"><h3 style="margin-bottom:10px">Топ-8 профессий: дефицит кадров</h3>
 <table><thead><tr><th>Профессия</th><th>EU €/мес</th><th>RU ₽/мес</th><th>Дефицит</th><th>Тренд</th></tr></thead>
 <tbody id="tb"></tbody></table></div>
-<script>${dataCode || ''}<\/script>
-<script>${DASHBOARD_DEFAULT_DATA}${DASHBOARD_LOGIC_SCRIPT}<\/script>
+<script>${dataCode ? dataCode + '\n' + DASHBOARD_LOGIC_SCRIPT : DASHBOARD_DEFAULT_DATA + DASHBOARD_LOGIC_SCRIPT}<\/script>
 </body></html>`;
 }
 
