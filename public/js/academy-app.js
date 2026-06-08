@@ -67,17 +67,30 @@ function sanitizeArtifactHtml(html, allowScripts) {
   if (!html || typeof DOMPurify === 'undefined') return '';
 
   if (allowScripts) {
-    // DOMPurify strips src from <script> even when tag is allowed — restore it via hook
+    // DOMPurify strips src from <script> even when tag is allowed — restore it via hook.
+    // It also strips inline script text content — we save it to data-inline-src (base64) and restore after.
     DOMPurify.addHook('afterSanitizeAttributes', function(node) {
       if (node.tagName === 'SCRIPT' && node.hasAttribute('data-src-saved')) {
         node.setAttribute('src', node.getAttribute('data-src-saved'));
         node.removeAttribute('data-src-saved');
       }
     });
-    // Pre-process: rename src → data-src-saved so DOMPurify doesn't strip it
-    const processed = html.trim().replace(
+    // Pre-process step 1: rename src → data-src-saved so DOMPurify doesn't strip it
+    let processed = html.trim().replace(
       /<script([^>]*)\ssrc=(["'])([^"']+)\2/gi,
       '<script$1 data-src-saved=$2$3$2'
+    );
+    // Pre-process step 2: encode inline script content into data-inline-src attribute (base64)
+    // so DOMPurify preserves it as an attribute even though it strips text nodes inside <script>
+    processed = processed.replace(
+      /<script([^>]*)>([\s\S]*?)<\/script>/gi,
+      function(match, attrs, content) {
+        if (!content.trim()) return match; // external script or empty — leave as-is
+        try {
+          const encoded = btoa(unescape(encodeURIComponent(content)));
+          return '<script' + attrs + ' data-inline-src="' + encoded + '"></script>';
+        } catch(e) { return match; }
+      }
     );
     const result = DOMPurify.sanitize(processed, {
       WHOLE_DOCUMENT: true,
@@ -113,12 +126,22 @@ function sanitizeArtifactHtml(html, allowScripts) {
         'class','id','src','type','crossorigin','integrity','defer','async','nomodule',
         'referrerpolicy','importance','loading','viewBox','xmlns','xmlns:xlink',
         'fill','stroke','d','x','y','width','height','rx','cx','cy','r','points',
-        'transform','aria-hidden','role','data-src-saved'
+        'transform','aria-hidden','role','data-src-saved','data-inline-src'
       ],
       FORBID_TAGS: ['iframe', 'object', 'embed', 'base']
     });
     DOMPurify.removeHook('afterSanitizeAttributes');
-    return result;
+    // Post-process: restore inline script content from data-inline-src attribute
+    const restored = result.replace(
+      /<script([^>]*)\sdata-inline-src="([^"]+)"([^>]*)><\/script>/gi,
+      function(match, before, encoded, after) {
+        try {
+          const content = decodeURIComponent(escape(atob(encoded)));
+          return '<script' + before + after + '>' + content + '<\/script>';
+        } catch(e) { return match; }
+      }
+    );
+    return restored;
   }
 
   function stripUnsafeLink(node) {
