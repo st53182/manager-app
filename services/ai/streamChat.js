@@ -33,6 +33,7 @@ async function* streamChatCompletion(openai, {
 
   let fullText = '';
   let usage = null;
+  let citations = [];
 
   for await (const chunk of stream) {
     const delta = chunk.choices?.[0]?.delta?.content;
@@ -43,9 +44,13 @@ async function* streamChatCompletion(openai, {
     if (chunk.usage) {
       usage = chunk.usage;
     }
+    // Perplexity/sonar returns citations as a top-level field on the last chunk
+    if (Array.isArray(chunk.citations) && chunk.citations.length) {
+      citations = chunk.citations;
+    }
   }
 
-  yield { type: 'done', fullText, usage };
+  yield { type: 'done', fullText, usage, citations };
 }
 
 function estimateTokensFromText(s) {

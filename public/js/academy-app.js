@@ -3488,6 +3488,7 @@ async function streamP3Message(userText) {
       body: JSON.stringify({
         message: userText,
         lessonId: state.currentLessonId,
+        conversationId: state.p3ConversationId || undefined,
         model,
         assistantInstructions: systemPrompt,
         chatMode: 'verification'
@@ -3513,13 +3514,18 @@ async function streamP3Message(userText) {
         const line = block.trim();
         if (!line.startsWith('data:')) continue;
         const json = JSON.parse(line.slice(5).trim());
+        if (json.type === 'start' && json.conversationId) {
+          state.p3ConversationId = json.conversationId;
+        }
         if (json.type === 'chunk') {
           assembled += json.text || '';
           aiBubble.innerHTML = renderMarkdown(assembled);
           msgBox.scrollTop = msgBox.scrollHeight;
         }
-        if (json.type === 'done' && Array.isArray(json.citations) && json.citations.length) {
-          citations = json.citations;
+        if (json.type === 'done') {
+          if (Array.isArray(json.citations) && json.citations.length) {
+            citations = json.citations;
+          }
         }
       }
     }
@@ -3528,12 +3534,13 @@ async function streamP3Message(userText) {
     if (assistantText) {
       aiBubble.innerHTML = renderMarkdown(assistantText);
       // Append citation links if Perplexity returned any
+      // Perplexity citations can be plain URL strings or objects with .url/.title
       if (citations.length) {
         const citDiv = document.createElement('div');
         citDiv.className = 'mt-2 pt-2 border-t border-amber-200 space-y-0.5';
         citations.slice(0, 5).forEach((c, i) => {
-          const url = c.url || c.document || '';
-          const title = c.title || c.document || url;
+          const url = typeof c === 'string' ? c : (c.url || c.document || '');
+          const title = typeof c === 'string' ? c : (c.title || c.document || url);
           if (!url) return;
           const a = document.createElement('a');
           a.href = url;

@@ -1593,7 +1593,10 @@ function createRouter({ JWT_SECRET }) {
           return res.status(404).json({ error: 'Conversation not found' });
         }
 
-        const model = pickModel(bodyModel || conv.model, req.dbUser);
+        // verification chatMode always uses Perplexity sonar for real web search
+        const model = chatMode === 'verification'
+          ? 'perplexity/sonar'
+          : pickModel(bodyModel || conv.model, req.dbUser);
 
         if (regenerate) {
           await db.deleteLastAssistantMessage(conversationId);
@@ -1720,6 +1723,7 @@ function createRouter({ JWT_SECRET }) {
 
         let finalUsage = null;
         let fullAssistant = '';
+        let perplexityCitations = [];
 
         try {
           const gen = streamChatCompletion(openai, {
@@ -1736,6 +1740,9 @@ function createRouter({ JWT_SECRET }) {
             if (part.type === 'done') {
               finalUsage = part.usage;
               if (part.fullText) fullAssistant = part.fullText;
+              if (Array.isArray(part.citations) && part.citations.length) {
+                perplexityCitations = part.citations;
+              }
             }
           }
         } catch (streamErr) {
@@ -1792,11 +1799,12 @@ function createRouter({ JWT_SECRET }) {
           model
         });
 
+        const outCitations = perplexityCitations.length ? perplexityCitations : retrievalCitations;
         send({
           type: 'done',
           conversationId,
-          citations: retrievalCitations,
-          confidence: retrievalCitations.length ? 'medium' : 'low',
+          citations: outCitations,
+          confidence: outCitations.length ? 'medium' : 'low',
           usage: {
             prompt_tokens: promptTokens,
             completion_tokens: completionTokens,
