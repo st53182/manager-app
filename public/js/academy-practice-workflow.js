@@ -202,8 +202,8 @@
         ai_v1: val('aiResultV1Preview') || el('aiResultV1Preview')?.textContent?.trim() || '',
         prompt_v2: val('practicePromptV2'),
         ai_v2: val('aiResultV2Preview') || el('aiResultV2Preview')?.textContent?.trim() || '',
-        ai_eval: el('aiEvalPreview')?.dataset?.rawText || el('aiEvalPreview')?.textContent?.trim() || '',
-        main_insight: val('practiceMainInsight')
+        ai_eval: '',
+        main_insight: ''
       },
       p2: {
         student_goal: val('practiceStudentGoal'),
@@ -244,18 +244,7 @@
     set('practicePromptV2', p1.prompt_v2);
     setText('aiResultV2Preview', p1.ai_v2);
     if (p1.ai_v2) el('aiResultBlockV2')?.classList.remove('hidden');
-    if (p1.ai_eval) {
-      const evalEl = el('aiEvalPreview');
-      if (evalEl) {
-        evalEl.dataset.rawText = p1.ai_eval;
-        // Render as markdown if renderMarkdown is available, else plain text
-        evalEl.innerHTML = typeof renderMarkdown === 'function'
-          ? renderMarkdown(p1.ai_eval)
-          : p1.ai_eval.replace(/</g, '&lt;');
-      }
-      el('aiEvalBlock')?.classList.remove('hidden');
-    }
-    set('practiceMainInsight', p1.main_insight);
+    // ai_eval and main_insight removed from flow — no restore needed
 
     const p2 = wf.p2 || {};
     set('practiceStudentGoal', p2.student_goal);
@@ -315,7 +304,6 @@
     const p1 = wf.p1 || {};
     const bad = task?.bad_prompt || '';
     const div = '─'.repeat(48);
-    const evalText = stripMd(p1.ai_eval || '');
     return `ПРАКТИКА 1 · ПРОМПТ-ИНЖИНИРИНГ
 ${div}
 Кейс ${taskNum || '?'}: ${task?.title || ''}
@@ -340,15 +328,6 @@ ${p1.prompt_v2 || '—'}
 
 ОТВЕТ ИИ v2
 ${p1.ai_v2 || '—'}
-
-${div}
-ОЦЕНКА ИИ: СРАВНЕНИЕ ПРОМПТОВ
-${div}
-${evalText || '—'}
-
-${div}
-ГЛАВНЫЙ ВЫВОД
-${p1.main_insight || '—'}
 `;
   }
 

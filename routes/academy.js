@@ -294,12 +294,12 @@ function createRouter({ JWT_SECRET }) {
       res.json({ feedback: parsed, submission: row });
     } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to generate feedback' }); }
   });
-  /* Generate recipient persona + v1 reaction via AI for Practice 1 */
+  /* Generate recipient persona + reaction via AI for Practice 1 (v1 and v2) */
   router.post('/lessons/:lessonId/recipient-preview', authenticateAcademy, async (req, res) => {
     const openai = createOpenRouterClient();
     if (!openai) return res.status(503).json({ error: 'AI service not configured' });
     try {
-      const { task_id, prompt_v1, ai_v1, model: reqModel } = req.body || {};
+      const { pass, task_id, prompt_v1, ai_v1, prompt_v2, ai_v2, model: reqModel } = req.body || {};
       const assignment = await db.getAssignmentByLessonId(req.params.lessonId);
       const model = pickModel(reqModel, req.dbUser);
       let task = null;
@@ -308,34 +308,58 @@ function createRouter({ JWT_SECRET }) {
         if (typeof opts === 'string') try { opts = JSON.parse(opts); } catch { opts = []; }
         task = Array.isArray(opts) ? opts.find((t) => t.id === task_id) : null;
       }
-      const userPrompt =
-        `Ты — симулятор учебной ситуации. На основе учебного кейса и результата промпта v1 создай карточку получателя и его реакцию.\n\n` +
-        `Кейс: ${task?.title || ''}\n` +
-        `Описание: ${task?.description || task?.context || ''}\n` +
-        `Плохой пример промпта: ${task?.bad_prompt || ''}\n\n` +
-        `Промпт v1 от студента:\n${(prompt_v1 || '').slice(0, 1000)}\n\n` +
-        `Ответ ИИ v1:\n${(ai_v1 || '').slice(0, 1500)}\n\n` +
-        `Верни JSON (без markdown, без блоков кода):\n` +
-        `{\n` +
-        `  "persona": {\n` +
-        `    "avatar": "<1 эмодзи>",\n` +
-        `    "name": "<Имя Фамилия>",\n` +
-        `    "role": "<Должность — кем является получатель>",\n` +
-        `    "traits": ["<подсказка для улучшения промпта 1>", "<подсказка 2>", "<подсказка 3>", "<подсказка 4>"]\n` +
-        `  },\n` +
-        `  "reactionV1": {\n` +
-        `    "avatar": "<то же эмодзи>",\n` +
-        `    "name": "<Имя, роль коротко>",\n` +
-        `    "text": "<1-2 предложения: реалистичная реакция получателя — что непонятно или чего не хватает в ответе ИИ v1>"\n` +
-        `  }\n` +
-        `}\n\n` +
-        `Язык: русский. Traits должны намекать что улучшить в промпте v2. Реакция должна отражать слабые места v1.`;
+
+      let userPrompt, maxTokens;
+      if (pass === 'v2') {
+        // Generate only reactionV2 based on v2 prompt + response
+        userPrompt =
+          `Ты — симулятор учебной ситуации. Получатель уже знаком с контекстом.\n\n` +
+          `Кейс: ${task?.title || ''}\n\n` +
+          `Промпт v2 от студента:\n${(prompt_v2 || '').slice(0, 1000)}\n\n` +
+          `Ответ ИИ v2:\n${(ai_v2 || '').slice(0, 1500)}\n\n` +
+          `Верни JSON (без markdown):\n` +
+          `{\n` +
+          `  "reactionV2": {\n` +
+          `    "avatar": "<1 эмодзи — тот же персонаж что и в v1>",\n` +
+          `    "name": "<Имя, роль коротко>",\n` +
+          `    "text": "<1-2 предложения: реакция получателя на улучшенный ответ ИИ — стало ли лучше и что осталось>"\n` +
+          `  }\n` +
+          `}\n\n` +
+          `Язык: русский. Реакция должна отражать прогресс по сравнению с v1 — отметить улучшения.`;
+        maxTokens = 300;
+      } else {
+        // Generate persona + reactionV1 based on v1 prompt + response
+        userPrompt =
+          `Ты — симулятор учебной ситуации. На основе учебного кейса и результата промпта v1 создай карточку получателя и его реакцию.\n\n` +
+          `Кейс: ${task?.title || ''}\n` +
+          `Описание: ${task?.description || task?.context || ''}\n` +
+          `Плохой пример промпта: ${task?.bad_prompt || ''}\n\n` +
+          `Промпт v1 от студента:\n${(prompt_v1 || '').slice(0, 1000)}\n\n` +
+          `Ответ ИИ v1:\n${(ai_v1 || '').slice(0, 1500)}\n\n` +
+          `Верни JSON (без markdown, без блоков кода):\n` +
+          `{\n` +
+          `  "persona": {\n` +
+          `    "avatar": "<1 эмодзи>",\n` +
+          `    "name": "<Имя Фамилия>",\n` +
+          `    "role": "<Должность — кем является получатель>",\n` +
+          `    "traits": ["<подсказка для улучшения промпта 1>", "<подсказка 2>", "<подсказка 3>", "<подсказка 4>"]\n` +
+          `  },\n` +
+          `  "reactionV1": {\n` +
+          `    "avatar": "<то же эмодзи>",\n` +
+          `    "name": "<Имя, роль коротко>",\n` +
+          `    "text": "<1-2 предложения: реалистичная реакция получателя — что непонятно или чего не хватает>"\n` +
+          `  }\n` +
+          `}\n\n` +
+          `Язык: русский. Traits должны намекать что улучшить в промпте v2. Реакция должна отражать слабые места v1.`;
+        maxTokens = 600;
+      }
+
       await assertQuota(req, estimateTokensFromText(userPrompt));
       let text = '', usage = null;
       for await (const part of streamChatCompletion(openai, {
         model,
         messages: [{ role: 'system', content: 'JSON only. No markdown.' }, { role: 'user', content: userPrompt }],
-        maxTokens: 600
+        maxTokens
       })) {
         if (part.type === 'chunk') text += part.text;
         if (part.type === 'done') usage = part.usage;

@@ -896,8 +896,8 @@ const STEP_HINTS = {
       '1.1': `<p class="mb-2">Заполните блоки RTCFSC или напишите промпт v1 напрямую. Затем нажмите <strong>«Протестировать промпт v1»</strong>.</p>${RTCFSC_TIP}`,
       '1.2': '<p>Посмотрите на ответ нейросети и реакцию клиента. Что не получилось? Нажмите <strong>«Перейти к промпту v2»</strong> — увидите профиль клиента.</p>',
       '2.1': '<p>Напишите <strong>промпт v2</strong> с учётом того, что вы узнали о клиенте. Нажмите <strong>«Протестировать промпт v2»</strong>.</p>',
-      '2.2': '<p>ИИ оценил оба промпта. Прочитайте рекомендации, запишите <strong>главный вывод</strong> — что именно изменило результат.</p>',
-      '3': '<p class="mb-2">Проверьте отчёт и нажмите <strong>«Отправить»</strong>. Убедитесь что заполнены все пункты:</p><ul class="text-xs space-y-0.5 text-slate-600"><li>Выбранный кейс</li><li>Промпт v1 и ответ ИИ v1</li><li>Промпт v2 и ответ ИИ v2</li><li>Оценка ИИ</li><li>Главный вывод</li></ul>'
+      '2.2': '<p>Посмотрите на реакцию адресата на v2. Если результат стал лучше — нажмите <strong>«Собрать отчёт»</strong>.</p>',
+      '3': '<p class="mb-2">Проверьте отчёт и нажмите <strong>«Отправить»</strong>. Убедитесь что заполнены все пункты:</p><ul class="text-xs space-y-0.5 text-slate-600"><li>Выбранный кейс</li><li>Промпт v1 и ответ ИИ v1</li><li>Промпт v2 и ответ ИИ v2</li></ul>'
     }
   },
   'block1-practice-scenario': {
@@ -2222,7 +2222,7 @@ function clearPracticeFormUi() {
   document.getElementById('practiceSelfCheckBlock')?.classList.add('hidden');
   document.getElementById('practiceSelfCheckList') && (document.getElementById('practiceSelfCheckList').innerHTML = '');
   ['aiResultBlockV1', 'aiResultBlockV2', 'aiResultBlockDialogue', 'aiResultBlockAnalysis',
-   'clientReactionV1Block', 'clientContextV2Block', 'aiEvalBlock', 'p1SelfCheckBlock'].forEach((id) => {
+   'clientReactionV1Block', 'clientContextV2Block', 'clientReactionV2Block', 'aiEvalBlock', 'p1SelfCheckBlock'].forEach((id) => {
     document.getElementById(id)?.classList.add('hidden');
   });
   const p1SelfCheckList = document.getElementById('p1SelfCheckList');
@@ -2307,10 +2307,8 @@ function showPracticeAiResult(text, pass = 'v1') {
     if (pass === 'v1') {
       showP1ClientReaction();
     } else if (pass === 'v2') {
-      // Advance substep so v2 result + eval block become visible
       tryAdvancePracticeSubstep();
-      // Trigger eval asynchronously — don't await so UI is not blocked
-      runP1EvalInAi();
+      showP1ClientReactionV2(); // async, fire-and-forget
     }
   }
   scheduleAutoSave();
@@ -2687,6 +2685,69 @@ async function showP1ClientContext() {
   renderP1InlineSelfCheck();
 }
 
+/* Generate reactionV2 via AI after v2 is tested */
+async function generateP1ReactionV2Ai() {
+  // Already generated this session
+  if (state.p1RecipientData?.reactionV2) return state.p1RecipientData;
+  // Restored from saved workflow
+  if (state.practiceWorkflow?.p1RecipientData?.reactionV2) {
+    if (!state.p1RecipientData) state.p1RecipientData = state.practiceWorkflow.p1RecipientData;
+    else state.p1RecipientData.reactionV2 = state.practiceWorkflow.p1RecipientData.reactionV2;
+    return state.p1RecipientData;
+  }
+  if (!state.currentLessonId) return null;
+  try {
+    const promptV2 = document.getElementById('practicePromptV2')?.value?.trim() || '';
+    const aiV2 = document.getElementById('aiResultV2Preview')?.textContent?.trim() || '';
+    const result = await api(`/api/academy/lessons/${state.currentLessonId}/recipient-preview`, {
+      method: 'POST',
+      body: JSON.stringify({
+        pass: 'v2',
+        task_id: state.selectedTaskId,
+        prompt_v2: promptV2,
+        ai_v2: aiV2,
+        model: document.getElementById('modelSelect')?.value
+      })
+    });
+    if (result?.data?.reactionV2) {
+      if (!state.p1RecipientData) state.p1RecipientData = {};
+      state.p1RecipientData.reactionV2 = result.data.reactionV2;
+      scheduleAutoSave();
+    }
+    return state.p1RecipientData;
+  } catch (e) {
+    console.error('P1 reaction v2 gen error:', e);
+    return null;
+  }
+}
+
+/* Show recipient reaction to v2 — loading first, then AI-generated */
+async function showP1ClientReactionV2() {
+  const block = document.getElementById('clientReactionV2Block');
+  const container = document.getElementById('clientReactionV2');
+  if (!block || !container) return;
+
+  container.innerHTML =
+    `<span class="aa-reaction-avatar">⏳</span>` +
+    `<div class="aa-reaction-body"><p class="aa-reaction-text text-slate-400 text-xs animate-pulse">Формируем реакцию адресата…</p></div>`;
+  block.classList.remove('hidden');
+
+  const rd = await generateP1ReactionV2Ai();
+  const r = rd?.reactionV2;
+  if (!r) {
+    container.innerHTML =
+      `<span class="aa-reaction-avatar">👤</span>` +
+      `<div class="aa-reaction-body"><p class="aa-reaction-text text-slate-400 italic text-xs">Не удалось получить реакцию адресата</p></div>`;
+    return;
+  }
+  container.innerHTML =
+    `<span class="aa-reaction-avatar">${escapeHtml(r.avatar || '👤')}</span>` +
+    `<div class="aa-reaction-body">` +
+    `<div class="aa-reaction-meta"><span class="aa-reaction-name">${escapeHtml(r.name || '')}</span></div>` +
+    `<p class="aa-reaction-text">${escapeHtml(r.text || '')}</p>` +
+    `</div>`;
+}
+
 /* Render inline self-assessment checklist for v2 step */
 function renderP1InlineSelfCheck() {
   const block = document.getElementById('p1SelfCheckBlock');
@@ -2826,8 +2887,7 @@ function buildP1StepHint(step, sub) {
       return '<p class="text-sm text-slate-700">Профиль адресата показан в форме ниже. Напишите <strong>промпт v2</strong> с учётом его особенностей и нажмите <strong>«Протестировать промпт v2»</strong>.</p>';
     }
     if (sub === 2) {
-      // Reaction v2 and eval already shown inline in the form
-      return '<p class="text-sm text-slate-700">ИИ оценил оба промпта — читайте оценку в форме ниже. Запишите <strong>главный вывод</strong> и нажмите <strong>«Собрать отчёт»</strong>.</p>';
+      return '<p class="text-sm text-slate-700">Посмотрите на реакцию адресата — стало ли лучше? Нажмите <strong>«Собрать отчёт»</strong>.</p>';
     }
   }
   if (step === 3) return hints['3'];
@@ -2974,13 +3034,7 @@ function buildReportP1Html(task, wf, num) {
   const pv2 = card('border-blue-200', 'bg-blue-50', 'text-blue-600', 'Промпт v2', preBox(p1.prompt_v2));
   const av2 = card('border-slate-100', 'bg-slate-50', 'text-slate-400', 'Ответ ИИ v2', mdBox(p1.ai_v2));
 
-  const evalCard = card('border-emerald-200', 'bg-emerald-50', 'text-emerald-700', 'Оценка ИИ: сравнение промптов',
-    mdBox(p1.ai_eval));
-
-  const insightCard = card('border-amber-200', 'bg-amber-50', 'text-amber-700', 'Главный вывод',
-    `<p class="text-sm font-medium text-slate-800">${esc(p1.main_insight || '—')}</p>`);
-
-  return [header, badPrompt, pv1, av1, pv2, av2, evalCard, insightCard].join('\n');
+  return [header, badPrompt, pv1, av1, pv2, av2].join('\n');
 }
 
 /* Inject HTML report and hide the plain textarea (keeps value for submission) */
