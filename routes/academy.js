@@ -376,6 +376,125 @@ function createRouter({ JWT_SECRET }) {
     } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to generate recipient data' }); }
   });
 
+  /* Generate AI persona card for Practice 2 (dialogue training) */
+  router.post('/lessons/:lessonId/dialogue-persona', authenticateAcademy, async (req, res) => {
+    const openai = createOpenRouterClient();
+    if (!openai) return res.status(503).json({ error: 'AI service not configured' });
+    try {
+      const { task_id, model: reqModel } = req.body || {};
+      const assignment = await db.getAssignmentByLessonId(req.params.lessonId);
+      const model = pickModel(reqModel, req.dbUser);
+      let task = null;
+      if (task_id && assignment?.task_options) {
+        let opts = assignment.task_options;
+        if (typeof opts === 'string') try { opts = JSON.parse(opts); } catch { opts = []; }
+        task = Array.isArray(opts) ? opts.find((t) => t.id === task_id) : null;
+      }
+      if (!task) return res.status(400).json({ error: 'task_id required' });
+
+      const userPrompt =
+        `Ты — генератор учебных персонажей для тренинга по сложным переговорам.\n\n` +
+        `Кейс: ${task.title || ''}\n` +
+        `Описание: ${task.description || task.context || ''}\n` +
+        `Роль ИИ в сценарии: ${task.ai_role || ''}\n\n` +
+        `Создай реалистичного персонажа — собеседника студента. Верни JSON (без markdown):\n` +
+        `{\n` +
+        `  "persona": {\n` +
+        `    "avatar": "<1 эмодзи, отражающий роль персонажа>",\n` +
+        `    "name": "<Имя Фамилия — реалистичное>",\n` +
+        `    "role": "<Должность, подразделение, опыт — 1 строка>",\n` +
+        `    "mood": "<defensive|skeptical|passive|aggressive — одно слово>",\n` +
+        `    "traits": ["<черта 1>", "<черта 2>", "<черта 3>"],\n` +
+        `    "goal": "<Чего хочет добиться персонаж в этом разговоре — 1 предложение>",\n` +
+        `    "difficulty": "<low|medium|high>"\n` +
+        `  }\n` +
+        `}\n\n` +
+        `Язык: русский. Черты должны намекать студенту как вести диалог.`;
+
+      await assertQuota(req, estimateTokensFromText(userPrompt));
+      let text = '', usage = null;
+      for await (const part of streamChatCompletion(openai, {
+        model,
+        messages: [{ role: 'system', content: 'JSON only. No markdown.' }, { role: 'user', content: userPrompt }],
+        maxTokens: 400
+      })) {
+        if (part.type === 'chunk') text += part.text;
+        if (part.type === 'done') usage = part.usage;
+      }
+      let parsed;
+      try {
+        const m = text.match(/\{[\s\S]*\}/);
+        parsed = JSON.parse(m ? m[0] : text);
+      } catch {
+        return res.status(422).json({ error: 'Failed to parse AI response', raw: text.slice(0, 200) });
+      }
+      await recordFeatureUsage(req, { model, promptTokens: usage?.prompt_tokens || 0, completionTokens: usage?.completion_tokens || 0, costUsd: estimateCostUsd(usage?.prompt_tokens || 0, usage?.completion_tokens || 0, model), featureMode: 'p2_persona' });
+      res.json({ data: parsed });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to generate persona' }); }
+  });
+
+  /* AI analysis of the P2 dialogue after student finishes */
+  router.post('/lessons/:lessonId/dialogue-eval', authenticateAcademy, aiChatLimiter, async (req, res) => {
+    const openai = createOpenRouterClient();
+    if (!openai) return res.status(503).json({ error: 'AI service not configured' });
+    try {
+      const { task_id, dialogue_messages, persona, model: reqModel } = req.body || {};
+      const assignment = await db.getAssignmentByLessonId(req.params.lessonId);
+      const model = pickModel(reqModel, req.dbUser);
+      let task = null;
+      if (task_id && assignment?.task_options) {
+        let opts = assignment.task_options;
+        if (typeof opts === 'string') try { opts = JSON.parse(opts); } catch { opts = []; }
+        task = Array.isArray(opts) ? opts.find((t) => t.id === task_id) : null;
+      }
+
+      const messages = Array.isArray(dialogue_messages) ? dialogue_messages : [];
+      const dialogueSummary = messages
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .slice(-20)
+        .map((m) => `${m.role === 'user' ? 'Студент' : 'ИИ (персонаж)'}: ${String(m.content || '').slice(0, 300)}`)
+        .join('\n');
+
+      const personaDesc = persona
+        ? `Персонаж: ${persona.name || ''} — ${persona.role || ''} (${persona.mood || ''}). Цель: ${persona.goal || ''}`
+        : '';
+
+      const userPrompt =
+        `Ты — тренер по переговорам. Оцени учебный диалог студента.\n\n` +
+        `Кейс: ${task?.title || ''}\n` +
+        `${personaDesc}\n\n` +
+        `Диалог (последние реплики):\n${dialogueSummary || '(диалог не предоставлен)'}\n\n` +
+        `Верни JSON (без markdown):\n` +
+        `{\n` +
+        `  "bestReply": { "text": "<лучшая реплика студента дословно>", "why": "<почему сработала — 1-2 предложения>" },\n` +
+        `  "weakReply": { "text": "<слабая реплика студента дословно>", "how_to_improve": "<как переписать — 1-2 предложения>" },\n` +
+        `  "personaFeedback": "<Как персонаж отреагировал на диалог в целом — 1-2 предложения>",\n` +
+        `  "recommendations": ["<совет 1>", "<совет 2>", "<совет 3>"]\n` +
+        `}\n\n` +
+        `Язык: русский. Будь конкретен — цитируй реплики дословно.`;
+
+      await assertQuota(req, estimateTokensFromText(userPrompt));
+      let text = '', usage = null;
+      for await (const part of streamChatCompletion(openai, {
+        model,
+        messages: [{ role: 'system', content: 'JSON only. No markdown.' }, { role: 'user', content: userPrompt }],
+        maxTokens: 700
+      })) {
+        if (part.type === 'chunk') text += part.text;
+        if (part.type === 'done') usage = part.usage;
+      }
+      let parsed;
+      try {
+        const m = text.match(/\{[\s\S]*\}/);
+        parsed = JSON.parse(m ? m[0] : text);
+      } catch {
+        return res.status(422).json({ error: 'Failed to parse AI response', raw: text.slice(0, 200) });
+      }
+      await recordFeatureUsage(req, { model, promptTokens: usage?.prompt_tokens || 0, completionTokens: usage?.completion_tokens || 0, costUsd: estimateCostUsd(usage?.prompt_tokens || 0, usage?.completion_tokens || 0, model), featureMode: 'p2_eval' });
+      res.json({ data: parsed });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to evaluate dialogue' }); }
+  });
+
   router.get('/knowledge-bases', authenticateAcademy, async (req, res) => {
     try {
       const bases = await db.listKnowledgeBases(req.dbUser.id);

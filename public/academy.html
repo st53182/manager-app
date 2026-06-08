@@ -353,50 +353,81 @@
                 <!-- ===== ПРАКТИКА 2: Диалог ===== -->
                 <div id="practiceDialogueSection" class="hidden space-y-3">
 
-                  <!-- Шаг 1: Провести диалог -->
+                  <!-- Шаг 1: Настройка ролей и диалог -->
                   <div class="aa-step-pane aa-practice-workflow-box space-y-3" data-practice-step="1">
+                    <!-- 1.1: Карточка персонажа + роли -->
                     <div class="aa-practice-substep space-y-3" data-practice-substep="1">
+                      <!-- AI-сгенерированная карточка персонажа -->
+                      <div id="p2PersonaCard" class="hidden rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
+                        <div class="flex items-start gap-3">
+                          <div id="p2PersonaAvatar" class="text-3xl shrink-0"></div>
+                          <div class="min-w-0">
+                            <p id="p2PersonaName" class="font-semibold text-slate-900 text-sm"></p>
+                            <p id="p2PersonaRole" class="text-xs text-slate-500 mb-2"></p>
+                            <p id="p2PersonaGoal" class="text-xs text-indigo-700 italic mb-1.5"></p>
+                            <div id="p2PersonaTraits" class="flex flex-wrap gap-1"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div id="p2PersonaLoading" class="hidden text-xs text-slate-500 text-center py-2">Генерируем персонажа…</div>
                       <div class="grid gap-2 sm:grid-cols-2">
                         <label class="block text-sm"><span class="font-medium">ИИ будет играть роль</span><input id="practiceRoleAi" type="text" class="aa-input mt-0.5" /></label>
                         <label class="block text-sm"><span class="font-medium">Вы — в роли</span><input id="practiceRoleMe" type="text" class="aa-input mt-0.5" /></label>
                       </div>
                       <label class="block"><span class="aa-label">Ваша цель в этом разговоре</span><textarea id="practiceStudentGoal" rows="2" class="aa-textarea mt-1" placeholder="Чего вы хотите добиться в итоге этого разговора?"></textarea></label>
-                      <button type="button" class="aa-btn aa-btn-primary w-full js-practice-substep-next">Роли и цель готовы →</button>
+                      <button type="button" id="p2StartDialogueBtn" class="aa-btn aa-btn-primary w-full">Начать диалог →</button>
                     </div>
+                    <!-- 1.2: Диалог в чате -->
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
-                      <button type="button" id="assembleDialogueBtn" class="aa-btn aa-btn-ghost text-sm">Собрать первое сообщение автоматически</button>
-                      <label class="block"><span class="aa-label">Первое сообщение</span><textarea id="practiceDialogueStart" rows="4" class="aa-textarea mt-1"></textarea></label>
-                      <button type="button" id="runDialogueInAiBtn" class="aa-btn aa-btn-primary w-full">Отправить первую реплику в нейросеть</button>
-                      <div id="aiResultBlockDialogue" class="hidden"><p class="text-xs font-medium mb-1">Ответ нейросети (1-я реплика)</p><div id="aiResultDialoguePreview" class="aa-task-detail max-h-36 overflow-y-auto prose prose-sm max-w-none"></div></div>
-                      <button type="button" class="aa-btn aa-btn-ghost w-full text-sm js-practice-substep-next">Перейти к диалогу в чате →</button>
-                    </div>
-                    <div class="aa-practice-substep hidden space-y-3" data-practice-substep="3">
-                      <button type="button" id="openPracticeChatBtn" class="aa-btn aa-btn-ghost w-full">Продолжить диалог в чате (мин. 4 пары) →</button>
+                      <button type="button" id="openPracticeChatBtn" class="aa-btn aa-btn-ghost w-full">Открыть диалог в чате →</button>
+                      <div id="p2PairCounterBlock" class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 flex items-center gap-2">
+                        <span class="text-xs text-slate-500">Пар реплик:</span>
+                        <span id="p2PairCounter" class="font-bold text-slate-800 text-sm">0 / 4</span>
+                        <span id="p2PairCounterHint" class="text-xs text-slate-400">(продолжайте диалог)</span>
+                      </div>
                       <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
                         Ожидайте сложную реакцию — ИИ намеренно будет возражать или давить. Это и есть тренировка.
                       </p>
-                      <button type="button" id="practiceNextP2S1Btn" class="aa-btn aa-btn-primary w-full mt-1">
-                        Диалог завершён, перехожу к анализу →
+                      <button type="button" id="practiceNextP2S1Btn" class="aa-btn aa-btn-primary w-full hidden">
+                        Я завершил диалог → перейти к анализу
                       </button>
                     </div>
                   </div>
 
                   <!-- Шаг 2: Анализ диалога -->
                   <div class="aa-step-pane hidden aa-practice-workflow-box space-y-3" data-practice-step="2">
-                    <p class="text-xs text-slate-500">Скопируйте из чата понравившиеся реплики, чтобы ответить на вопросы ниже.</p>
-                    <div class="aa-practice-substep space-y-3" data-practice-substep="1">
-                      <label class="block"><span class="aa-label">2 мои реплики, которые сработали — и почему</span><textarea id="p2GoodReplies" rows="3" class="aa-textarea mt-1" placeholder="Реплика: «…» — потому что признал позицию + предложил конкретный шаг"></textarea></label>
-                      <label class="block"><span class="aa-label">1 слабая реплика и как её переписать</span><textarea id="p2WeakReply" rows="2" class="aa-textarea mt-1" placeholder="Было: «…» → Лучше: «…»"></textarea></label>
-                      <button type="button" class="aa-btn aa-btn-primary w-full js-practice-substep-next">Далее →</button>
+                    <!-- AI-анализ диалога -->
+                    <div id="p2EvalBlock" class="hidden space-y-3">
+                      <p class="text-xs font-semibold uppercase tracking-widest text-indigo-600 mb-0.5">Анализ ИИ-тренера</p>
+                      <div id="p2EvalBestReply" class="rounded-lg border border-green-200 bg-green-50 px-3 py-2 hidden">
+                        <p class="text-xs font-semibold text-green-700 mb-1">Лучшая реплика</p>
+                        <p id="p2EvalBestText" class="text-sm text-slate-800 italic mb-1"></p>
+                        <p id="p2EvalBestWhy" class="text-xs text-slate-600"></p>
+                      </div>
+                      <div id="p2EvalWeakReply" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 hidden">
+                        <p class="text-xs font-semibold text-amber-700 mb-1">Слабая реплика</p>
+                        <p id="p2EvalWeakText" class="text-sm text-slate-800 italic mb-1"></p>
+                        <p id="p2EvalWeakHow" class="text-xs text-slate-600"></p>
+                      </div>
+                      <div id="p2EvalPersonaFb" class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 hidden">
+                        <p class="text-xs font-semibold text-slate-600 mb-1">Обратная связь персонажа</p>
+                        <p id="p2EvalPersonaText" class="text-xs text-slate-700"></p>
+                      </div>
                     </div>
-                    <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
-                      <label class="block"><span class="aa-label">Где ИИ вёл себя нереалистично</span><textarea id="p2AiIssues" rows="2" class="aa-textarea mt-1"></textarea></label>
-                      <label class="block"><span class="aa-label">Как усложнить инструкцию ИИ на следующий раз</span><textarea id="p2HarderInstruction" rows="2" class="aa-textarea mt-1"></textarea></label>
-                      <label class="block"><span class="aa-label">Как применю это в реальной работе</span><textarea id="p2ApplyWork" rows="2" class="aa-textarea mt-1"></textarea></label>
-                      <button type="button" id="buildReportP2Btn" class="aa-btn aa-btn-primary w-full">
-                        Собрать отчёт и перейти к отправке →
-                      </button>
+                    <div id="p2EvalLoading" class="hidden text-xs text-slate-500 text-center py-2">Анализируем диалог…</div>
+
+                    <!-- Самооценка inline -->
+                    <div id="p2InlineSelfCheck" class="hidden rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                      <p class="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2.5">Самооценка</p>
+                      <ul id="p2InlineSelfCheckList" class="space-y-2"></ul>
                     </div>
+
+                    <!-- 2 поля анализа -->
+                    <label class="block"><span class="aa-label">Лучший момент диалога и почему сработал</span><textarea id="p2BestReply" rows="3" class="aa-textarea mt-1" placeholder="Моя реплика: «…» — потому что …"></textarea></label>
+                    <label class="block"><span class="aa-label">Как применю это в реальной работе</span><textarea id="p2ApplyWork" rows="2" class="aa-textarea mt-1" placeholder="В следующий раз когда … — я буду …"></textarea></label>
+                    <button type="button" id="buildReportP2Btn" class="aa-btn aa-btn-primary w-full">
+                      Собрать отчёт и перейти к отправке →
+                    </button>
                   </div>
                 </div>
 

@@ -556,8 +556,8 @@ const PRACTICE_STEP_LABELS = {
     'Проверить отчёт и отправить'
   ],
   'block1-practice-scenario': [
-    'Провести диалог (минимум 4 пары реплик)',
-    'Разобрать свои реплики и поведение ИИ',
+    'Настроить роли и провести диалог',
+    'Анализ диалога и применение',
     'Проверить отчёт и отправить'
   ],
   'block1-practice-hallucination': [
@@ -590,7 +590,7 @@ const PRACTICE_STEP_CELEBRATIONS = {
   ],
   'block1-practice-scenario': [
     null,
-    '✓ Диалог завершён! Теперь разберите свои реплики — это самая важная часть тренировки.',
+    '✓ Диалог завершён! Проанализируем его с ИИ-тренером и запишем выводы.',
     '✓ Анализ готов! Отчёт собран. Проверьте его и нажмите «Отправить».'
   ],
   'block1-practice-hallucination': [
@@ -901,15 +901,13 @@ const STEP_HINTS = {
     }
   },
   'block1-practice-scenario': {
-    initial: '<p>Выберите один из 5 сценариев — сложные рабочие ситуации для тренировки диалога.</p>',
-    taskSelected: '<p>Прочитайте сценарий и определите роли. Нажмите <strong>«Начать задание»</strong>.</p>',
+    initial: '<p class="mb-1 font-semibold text-slate-700">Тренируем навык диалога с трудным собеседником</p><p class="text-slate-600 text-sm mb-1"><strong>Почему:</strong> в реальной работе придётся работать с возражениями и отказами.</p><p class="text-slate-600 text-sm mb-1"><strong>Как:</strong> выбери кейс → ИИ сгенерирует персонажа → минимум 4 пары реплик → анализ.</p><p class="text-slate-500 text-sm">Выберите кейс ниже.</p>',
+    taskSelected: '<p>Прочитайте сценарий. Нажмите <strong>«Начать задание»</strong> — ИИ создаст вашего собеседника.</p>',
     steps: {
-      '1.1': '<p>Опишите роли участников и вашу <strong>цель в разговоре</strong> — чего вы хотите добиться?</p>',
-      '1.2': '<p>Напишите первую реплику и отправьте её в нейросеть. Текст можно изменить перед отправкой.</p>',
-      '1.3': '<p>Продолжайте диалог в чате — минимум <strong>4 пары реплик</strong>. ИИ будет намеренно возражать — это тренировка.</p>',
-      '2.1': '<p>Скопируйте из чата <strong>2 реплики, которые сработали</strong>, и 1 слабую — запишите почему.</p>',
-      '2.2': '<p>Отметьте где ИИ был нереалистичен и как усложнить инструкцию в следующий раз.</p>',
-      '3': '<p>Проверьте отчёт и нажмите <strong>«Отправить»</strong>.</p>'
+      '1.1': '<p class="mb-1">Проверьте <strong>карточку персонажа</strong> — это ваш собеседник. Уточните роли и укажите вашу цель.</p><p class="text-xs text-slate-500">Нажмите «Начать диалог» — чат откроется автоматически.</p>',
+      '1.2': '<p class="mb-1">Ведите диалог в чате. Следите за <strong>счётчиком пар</strong> — нужно минимум 4.</p><p class="text-xs text-slate-500">ИИ будет возражать и давить — это тренировка. Не сдавайтесь.</p>',
+      '2.1': '<p class="mb-1">ИИ-тренер проанализировал ваш диалог. Ознакомьтесь с оценкой, отметьте самооценку и заполните 2 поля.</p>',
+      '3': '<p>Проверьте отчёт и нажмите <strong>«Завершить задание»</strong>.</p>'
     }
   },
   'block1-practice-hallucination': {
@@ -1041,7 +1039,9 @@ const state = {
   knowledgeDocuments: [],
   selectedTaskId: null,
   taskOptions: [],
-  lastPracticeAiResult: null
+  lastPracticeAiResult: null,
+  p2PersonaData: null,
+  p2EvalData: null
 };
 let kbStatusPollTimer = null;
 let kbStatusPollBusy = false;
@@ -1788,6 +1788,8 @@ function buildGroupMetaForSave() {
     wf.currentStep = state.practiceStep || 1;
     wf.currentSubstep = state.practiceSubstep || 1;
     if (state.p1RecipientData) wf.p1RecipientData = state.p1RecipientData;
+    if (state.p2PersonaData) wf.p2Persona = state.p2PersonaData;
+    if (state.p2EvalData) wf.p2Eval = state.p2EvalData;
     meta.workflow = wf;
   }
   return meta;
@@ -2144,6 +2146,8 @@ function clearPracticeFormUi() {
   state.currentConversationId = null;
   state.p1RecipientData = null;
   state._p1RecipientPromise = null;
+  state.p2PersonaData = null;
+  state.p2EvalData = null;
   const ids = [
     'assignmentAnswer',
     'practicePromptV1',
@@ -2438,8 +2442,13 @@ async function runPracticeInAi({ message, runKind, pass = 'v1' }) {
 
     const { assistantText } = await streamChat(payload);
     document.getElementById('typingRow')?.classList.add('hidden');
-    if (assistantText) showPracticeAiResult(assistantText, resultPass);
-    else alert('Ответ получен — откройте чат, чтобы прочитать полностью.');
+    if (assistantText) {
+      showPracticeAiResult(assistantText, resultPass);
+      // Immediately persist workflow so ai_v1/ai_v2 survive page refresh
+      saveSubmission('draft').catch(() => {});
+    } else {
+      alert('Ответ получен — откройте чат, чтобы прочитать полностью.');
+    }
     return assistantText;
   } catch (e) {
     document.getElementById('typingRow')?.classList.add('hidden');
@@ -2912,31 +2921,12 @@ function getP3FragmentData() {
 }
 
 function buildP2StepHint(step, sub) {
-  const sd = getP2ScenarioData();
   const hints = STEP_HINTS['block1-practice-scenario'].steps;
-
   if (step === 1) {
-    if (sub === 1) {
-      const task = getSelectedTaskOption();
-      const reqList = Array.isArray(task?.dialogue_requirements)
-        ? `<p class="mt-2 text-xs font-medium text-slate-500">Диалог должен включать:</p><ul class="mt-1 space-y-0.5 text-xs text-slate-600 list-disc list-inside">${task.dialogue_requirements.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul>`
-        : '';
-      const card = sd ? renderPersonaCard(sd.persona) : '';
-      return card + `<p class="mt-3 text-sm text-slate-700">Ваша цель: <strong>${escapeHtml(task?.student_goal || 'добиться результата через диалог')}</strong></p>${reqList}<p class="mt-3 text-sm text-slate-600">Заполните поля ролей ниже и запишите что именно хотите добиться в этом разговоре.</p>`;
-    }
-    if (sub === 2) {
-      const reaction = sd ? renderReactionBubble(sd.hardReaction, 'is-fail') : '';
-      const tip = sd?.dialogueTip ? `<p class="mt-2 text-xs text-amber-700 bg-amber-50 rounded p-2">💡 ${sd.dialogueTip}</p>` : '';
-      return reaction + tip + `<div class="mt-3">${PFVSH_TIP}</div>`;
-    }
-    if (sub === 3) {
-      return `${PFVSH_TIP}<p class="mt-3 text-sm text-slate-700">Продолжайте диалог в чате — минимум <strong>4 пары реплик</strong>. ИИ будет намеренно возражать — это тренировка.</p>`;
-    }
+    if (sub === 1) return hints['1.1'];
+    if (sub === 2) return hints['1.2'];
   }
-  if (step === 2) {
-    if (sub === 1) return hints['2.1'];
-    if (sub === 2) return hints['2.2'];
-  }
+  if (step === 2) return hints['2.1'];
   if (step === 3) return hints['3'];
   return hints[`${step}.${sub}`] || hints[String(step)] || '';
 }
@@ -2979,15 +2969,18 @@ function startPractice() {
   const wf = document.getElementById('practiceWorkflowBlock');
   wf?.classList.remove('hidden');
   document.getElementById('startPracticeBtn')?.classList.add('hidden');
-  // For block1-practice-prompt: hide unselected cases and lesson description after start
-  if (sk === 'block1-practice-prompt') {
+  // Hide unselected cases and lesson description after start (P1 and P2)
+  if (sk === 'block1-practice-prompt' || sk === 'block1-practice-scenario') {
     const list = document.getElementById('taskOptionsList');
     list?.querySelectorAll('.aa-task-card').forEach((btn) => {
       btn.classList.toggle('hidden', btn.dataset.taskId !== state.selectedTaskId);
     });
     document.getElementById('taskOptionsPickLabel')?.classList.add('hidden');
-    // Hide the "Описание задания" details block — content is in the task card
     document.getElementById('lessonContent')?.classList.add('hidden');
+  }
+  // P2: generate persona card on start
+  if (sk === 'block1-practice-scenario') {
+    generateP2Persona().catch(() => {});
   }
   // initRiskTable removed — P3 redesigned to verification questions flow
   if (sk === 'block2-practice-library') {
@@ -3052,6 +3045,192 @@ function showP1ReportHtml(task, wf, num) {
   if (label) label.classList.add('hidden');
 }
 
+/* ===== P2 FUNCTIONS ===== */
+
+async function generateP2Persona() {
+  if (!state.currentLessonId || !state.selectedTaskId) return;
+  const model = document.getElementById('modelSelect')?.value;
+  document.getElementById('p2PersonaLoading')?.classList.remove('hidden');
+  document.getElementById('p2PersonaCard')?.classList.add('hidden');
+  try {
+    const out = await api(`/api/academy/lessons/${state.currentLessonId}/dialogue-persona`, {
+      method: 'POST',
+      body: JSON.stringify({ task_id: state.selectedTaskId, model })
+    });
+    const persona = out.data?.persona;
+    if (persona) {
+      state.p2PersonaData = persona;
+      renderP2PersonaCard(persona);
+      prefillRolesFromPersona(persona);
+      saveSubmission('draft').catch(() => {});
+    }
+  } catch (e) {
+    console.warn('P2 persona generation failed:', e.message);
+  } finally {
+    document.getElementById('p2PersonaLoading')?.classList.add('hidden');
+  }
+}
+
+function renderP2PersonaCard(persona) {
+  if (!persona) return;
+  const card = document.getElementById('p2PersonaCard');
+  if (!card) return;
+  const avatar = document.getElementById('p2PersonaAvatar');
+  const name = document.getElementById('p2PersonaName');
+  const role = document.getElementById('p2PersonaRole');
+  const goal = document.getElementById('p2PersonaGoal');
+  const traits = document.getElementById('p2PersonaTraits');
+  if (avatar) avatar.textContent = persona.avatar || '👤';
+  if (name) name.textContent = persona.name || '';
+  if (role) role.textContent = persona.role || '';
+  if (goal) goal.textContent = persona.goal || '';
+  if (traits) {
+    traits.innerHTML = (persona.traits || []).map((t) =>
+      `<span class="text-xs bg-indigo-100 text-indigo-700 rounded-full px-2 py-0.5">${escapeHtml(t)}</span>`
+    ).join('');
+  }
+  card.classList.remove('hidden');
+}
+
+function prefillRolesFromPersona(persona) {
+  const task = getSelectedTaskOption();
+  const aiEl = document.getElementById('practiceRoleAi');
+  const meEl = document.getElementById('practiceRoleMe');
+  if (aiEl && !aiEl.value.trim()) {
+    aiEl.value = persona.name
+      ? `${persona.name} — ${persona.role || task?.ai_role || ''}`
+      : (task?.ai_role || '');
+  }
+  if (meEl && !meEl.value.trim()) {
+    meEl.value = task?.student_role || '';
+  }
+}
+
+async function runP2DialogueEval() {
+  if (!state.currentLessonId) return;
+  const model = document.getElementById('modelSelect')?.value;
+  const loadingEl = document.getElementById('p2EvalLoading');
+  const evalBlock = document.getElementById('p2EvalBlock');
+  loadingEl?.classList.remove('hidden');
+  if (evalBlock) evalBlock.classList.add('hidden');
+  try {
+    let messages = [];
+    if (state.currentConversationId) {
+      const data = await api(`/api/academy/conversations/${state.currentConversationId}`);
+      messages = data.messages || [];
+    }
+    const out = await api(`/api/academy/lessons/${state.currentLessonId}/dialogue-eval`, {
+      method: 'POST',
+      body: JSON.stringify({
+        task_id: state.selectedTaskId,
+        dialogue_messages: messages,
+        persona: state.p2PersonaData,
+        model
+      })
+    });
+    const evalData = out.data;
+    if (evalData) {
+      state.p2EvalData = evalData;
+      renderP2EvalBlock(evalData);
+      // Pre-fill best reply field from AI eval
+      const bestEl = document.getElementById('p2BestReply');
+      if (bestEl && !bestEl.value.trim() && evalData.bestReply?.text) {
+        bestEl.value = `«${evalData.bestReply.text}» — ${evalData.bestReply.why || ''}`;
+      }
+      saveSubmission('draft').catch(() => {});
+    }
+  } catch (e) {
+    console.warn('P2 eval failed:', e.message);
+  } finally {
+    loadingEl?.classList.add('hidden');
+  }
+}
+
+function renderP2EvalBlock(evalData) {
+  if (!evalData) return;
+  const evalBlock = document.getElementById('p2EvalBlock');
+  if (!evalBlock) return;
+
+  const bestBlock = document.getElementById('p2EvalBestReply');
+  const bestText = document.getElementById('p2EvalBestText');
+  const bestWhy = document.getElementById('p2EvalBestWhy');
+  if (bestBlock && evalData.bestReply?.text) {
+    if (bestText) bestText.textContent = `«${evalData.bestReply.text}»`;
+    if (bestWhy) bestWhy.textContent = evalData.bestReply.why || '';
+    bestBlock.classList.remove('hidden');
+  }
+
+  const weakBlock = document.getElementById('p2EvalWeakReply');
+  const weakText = document.getElementById('p2EvalWeakText');
+  const weakHow = document.getElementById('p2EvalWeakHow');
+  if (weakBlock && evalData.weakReply?.text) {
+    if (weakText) weakText.textContent = `«${evalData.weakReply.text}»`;
+    if (weakHow) weakHow.textContent = evalData.weakReply.how_to_improve || '';
+    weakBlock.classList.remove('hidden');
+  }
+
+  const fbBlock = document.getElementById('p2EvalPersonaFb');
+  const fbText = document.getElementById('p2EvalPersonaText');
+  if (fbBlock && evalData.personaFeedback) {
+    if (fbText) fbText.textContent = evalData.personaFeedback;
+    fbBlock.classList.remove('hidden');
+  }
+
+  evalBlock.classList.remove('hidden');
+}
+
+function renderP2InlineSelfCheck() {
+  const wfApi = getPracticeWorkflowApi();
+  const block = document.getElementById('p2InlineSelfCheck');
+  const list = document.getElementById('p2InlineSelfCheckList');
+  if (!block || !list || list.children.length > 0) {
+    block?.classList.remove('hidden');
+    return;
+  }
+  const items = wfApi?.SELF_CHECK?.['block1-practice-scenario'] || [];
+  if (!items.length) return;
+  list.innerHTML = '';
+  items.forEach((label, i) => {
+    const li = document.createElement('label');
+    li.className = 'flex items-start gap-2 text-sm text-slate-700 cursor-pointer';
+    li.innerHTML = `<input type="checkbox" data-p2-self-idx="${i}" class="mt-1" /><span>${escapeHtml(label)}</span>`;
+    list.appendChild(li);
+  });
+  block.classList.remove('hidden');
+}
+
+function showP2ReportHtml(task, wf, num) {
+  const wfApi = getPracticeWorkflowApi();
+  const block = document.getElementById('reportRenderBlock');
+  const label = document.getElementById('assignmentAnswerLabel');
+  if (!block || !wfApi?.buildReportP2Html) return;
+  block.innerHTML = wfApi.buildReportP2Html(task, wf, num);
+  block.classList.remove('hidden');
+  if (label) label.classList.add('hidden');
+}
+
+function updateP2PairCounter() {
+  if (state.currentLesson?.scenario_key !== 'block1-practice-scenario') return;
+  const counterEl = document.getElementById('p2PairCounter');
+  const hintEl = document.getElementById('p2PairCounterHint');
+  const finishBtn = document.getElementById('practiceNextP2S1Btn');
+  if (!counterEl) return;
+  // Count assistant messages in the current conversation as pair count
+  const sk = state.currentLesson?.scenario_key;
+  if (!sk) return;
+  const convMessages = document.querySelectorAll('#messagesContainer [data-role="assistant"]');
+  const pairCount = convMessages.length;
+  counterEl.textContent = `${pairCount} / 4`;
+  if (pairCount >= 4) {
+    if (hintEl) hintEl.textContent = '✓ Достаточно для анализа';
+    finishBtn?.classList.remove('hidden');
+  } else {
+    if (hintEl) hintEl.textContent = '(продолжайте диалог)';
+  }
+}
+
+/* ===== END P2 FUNCTIONS ===== */
+
 function buildPracticeReport() {
   const wfApi = getPracticeWorkflowApi();
   const task = getSelectedTaskOption();
@@ -3071,6 +3250,11 @@ function buildPracticeReport() {
     else if (sk === 'block2-practice-context') report = wfApi.buildReportM2P3(task, wf, num);
   } else {
     wf = wfApi.collectWorkflowFromUi(sk);
+    // Attach P2 in-memory data to workflow before building report
+    if (sk === 'block1-practice-scenario') {
+      if (state.p2PersonaData) wf.p2Persona = state.p2PersonaData;
+      if (state.p2EvalData) wf.p2Eval = state.p2EvalData;
+    }
     if (sk === 'block1-practice-prompt') report = wfApi.buildReportP1(task, wf, num);
     else if (sk === 'block1-practice-scenario') report = wfApi.buildReportP2(task, wf, num);
     else if (sk === 'block1-practice-hallucination') report = wfApi.buildReportP3(task, wf, num);
@@ -3079,8 +3263,8 @@ function buildPracticeReport() {
   if (ta && report) {
     ta.value = report;
     scheduleAutoSave();
-    // P1: show formatted HTML document; other practices: keep plain textarea
     if (sk === 'block1-practice-prompt') showP1ReportHtml(task, wf, num);
+    else if (sk === 'block1-practice-scenario') showP2ReportHtml(task, wf, num);
     advancePracticeStep();
   }
 }
@@ -3268,6 +3452,18 @@ async function loadSubmissionForLesson(lessonId) {
         const task = getSelectedTaskOption();
         const num = getSelectedTaskNumber();
         if (task) showP1ReportHtml(task, gm.workflow, num);
+      }
+      // P2: restore persona and eval data
+      if (sk === 'block1-practice-scenario') {
+        if (gm.workflow.p2Persona) {
+          state.p2PersonaData = gm.workflow.p2Persona;
+          renderP2PersonaCard(gm.workflow.p2Persona);
+        }
+        if (gm.workflow.p2Eval) {
+          state.p2EvalData = gm.workflow.p2Eval;
+          renderP2EvalBlock(gm.workflow.p2Eval);
+        }
+        if (savedStep >= 2) renderP2InlineSelfCheck();
       }
     }
   }
@@ -4331,6 +4527,7 @@ function renderMessages(messages) {
 function renderMessageEl(m) {
   const wrap = document.createElement('div');
   wrap.className = `flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`;
+  wrap.dataset.role = m.role;
   const bubble = document.createElement('div');
   bubble.className = `max-w-[85%] rounded-2xl px-4 py-2 text-sm ${m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-900'}`;
   if (m.role === 'assistant') {
@@ -4533,6 +4730,8 @@ async function streamChat(payload) {
     if (last?.content) assistantText = String(last.content).trim();
     state.conversations = (await api('/api/academy/conversations')).conversations;
     renderConversationList();
+    // Update P2 pair counter after every assistant reply in dialogue mode
+    updateP2PairCounter();
   }
   return { assistantText };
 }
@@ -5265,6 +5464,14 @@ function wireUi() {
       alert(e.message || 'Не удалось начать диалог')
     );
   });
+  document.getElementById('p2StartDialogueBtn')?.addEventListener('click', () => {
+    const goal = document.getElementById('practiceStudentGoal')?.value?.trim();
+    if (!goal) return alert('Укажите вашу цель в этом разговоре.');
+    // Open chat directly and advance to substep 2
+    openPracticeChat();
+    tryAdvancePracticeSubstep();
+    updateP2PairCounter();
+  });
   document.getElementById('runAnalysisInAiBtn')?.addEventListener('click', () => {
     runPracticeInAi({ runKind: 'analysis' }).catch((e) =>
       alert(e.message || 'Не удалось начать разбор')
@@ -5300,7 +5507,12 @@ function wireUi() {
     if (m2v1 && m2v2El && !m2v2El.value.trim()) m2v2El.value = m2v1;
     advancePracticeStepOrSubstep();
   });
-  document.getElementById('practiceNextP2S1Btn')?.addEventListener('click', () => advancePracticeStepOrSubstep());
+  document.getElementById('practiceNextP2S1Btn')?.addEventListener('click', async () => {
+    advancePracticeStepOrSubstep();
+    // Launch AI eval and inline self-check when dialogue is done
+    renderP2InlineSelfCheck();
+    runP2DialogueEval().catch(() => {});
+  });
   document.getElementById('practiceNextP3S1Btn')?.addEventListener('click', () => advancePracticeStepOrSubstep());
   document.getElementById('practiceNextM2P2S1Btn')?.addEventListener('click', () => {
     const wfApi = getPracticeWorkflowApi();
@@ -5384,6 +5596,7 @@ function wireUi() {
         body: JSON.stringify({ answer_text, model: document.getElementById('modelSelect').value })
       });
       renderAssignmentFeedback(out.feedback);
+      document.getElementById('assignmentFeedback')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       await markLessonCompleted();
       renderContinuePractice();
       showAutosaveStatus('Задание завершено · практика пройдена', { hideAfterMs: 4000 });

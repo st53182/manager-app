@@ -44,16 +44,11 @@
       'В v2 есть минимум 2 конкретных улучшения'
     ],
     'block1-practice-scenario': [
-      'Я задал роль ИИ',
-      'Я задал свою роль',
-      'Я указал цель диалога',
-      'Я провёл минимум 4 пары реплик',
-      'В диалоге было возражение или сложная реакция',
-      'Я использовал признание позиции собеседника',
-      'Я использовал конкретный факт',
-      'Я задал вопрос',
-      'Я предложил следующий шаг',
-      'Я проанализировал не только ИИ, но и свои ответы'
+      'Провёл минимум 4 пары реплик',
+      'Собеседник возражал — я не сдался',
+      'Использовал признание позиции («Понимаю, что…»)',
+      'Задал уточняющий вопрос',
+      'Предложил конкретный следующий шаг'
     ],
     'block1-practice-hallucination': [
       'Я нашёл минимум 4 риска',
@@ -207,13 +202,8 @@
       },
       p2: {
         student_goal: val('practiceStudentGoal'),
-        analysis: {
-          good_replies: val('p2GoodReplies'),
-          weak_reply: val('p2WeakReply'),
-          ai_issues: val('p2AiIssues'),
-          harder_instruction: val('p2HarderInstruction'),
-          apply_work: val('p2ApplyWork')
-        }
+        best_reply: val('p2BestReply'),
+        apply_work: val('p2ApplyWork')
       },
       p3: {
         suspicious_claims: val('p3SuspiciousClaims'),
@@ -252,12 +242,8 @@
 
     const p2 = wf.p2 || {};
     set('practiceStudentGoal', p2.student_goal);
-    const a = p2.analysis || {};
-    set('p2GoodReplies', a.good_replies);
-    set('p2WeakReply', a.weak_reply);
-    set('p2AiIssues', a.ai_issues);
-    set('p2HarderInstruction', a.harder_instruction);
-    set('p2ApplyWork', a.apply_work);
+    set('p2BestReply', p2.best_reply);
+    set('p2ApplyWork', p2.apply_work);
 
     const p3 = wf.p3 || {};
     set('p3SuspiciousClaims', p3.suspicious_claims);
@@ -337,8 +323,10 @@ ${p1.ai_v2 || '—'}
 
   function buildReportP2(task, wf, taskNum) {
     const p2 = wf.p2 || {};
-    const a = p2.analysis || {};
-    return `Выбранный сценарий (${taskNum || '?'}): ${task?.title || ''}
+    const eval_ = wf.p2Eval || {};
+    return `ПРАКТИКА 2 · ДИАЛОГ С ТРУДНЫМ СОБЕСЕДНИКОМ
+${'─'.repeat(48)}
+Сценарий ${taskNum || '?'}: ${task?.title || ''}
 
 Роли:
 ИИ = ${val('practiceRoleAi') || task?.ai_role?.slice(0, 80) || '…'}
@@ -347,26 +335,76 @@ ${p1.ai_v2 || '—'}
 Моя цель в диалоге:
 ${p2.student_goal || task?.student_goal || '—'}
 
-Диалог (скопируйте из чата, минимум 4 пары):
-Я: …
-ИИ: …
-…
+${'─'.repeat(48)}
+ЛУЧШИЙ МОМЕНТ ДИАЛОГА
+${'─'.repeat(48)}
+${p2.best_reply || eval_?.bestReply?.text || '—'}
 
-Какие 2 мои реплики сработали хорошо и почему:
-${a.good_replies || '—'}
-
-Какая 1 моя реплика была слабой и как переписать:
-${a.weak_reply || '—'}
-
-Где ИИ был нереалистичен / услужлив:
-${a.ai_issues || '—'}
-
-Как изменить инструкцию ИИ для более сложной тренировки:
-${a.harder_instruction || '—'}
-
-Применение на работе:
-${a.apply_work || '—'}
+${'─'.repeat(48)}
+ПРИМЕНЕНИЕ В РЕАЛЬНОЙ РАБОТЕ
+${'─'.repeat(48)}
+${p2.apply_work || '—'}
+${eval_?.personaFeedback ? `\nАнализ ИИ-тренера:\n${eval_.personaFeedback}` : ''}
 `;
+  }
+
+  function buildReportP2Html(task, wf, taskNum) {
+    const p2 = wf.p2 || {};
+    const eval_ = wf.p2Eval || {};
+    const persona = wf.p2Persona;
+
+    function esc(t) { return escapeHtml(t || ''); }
+    function card(borderCls, bgCls, labelCls, label, body) {
+      return `<div class="rounded-xl border ${borderCls} ${bgCls} px-4 py-3 space-y-2">
+        <p class="text-xs font-bold uppercase tracking-widest ${labelCls}">${label}</p>
+        ${body}
+      </div>`;
+    }
+    function preBox(text) {
+      return `<p class="text-sm text-slate-700 leading-relaxed">${esc(text || '—').replace(/\n/g, '<br>')}</p>`;
+    }
+
+    const header = `<div class="rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 text-white px-5 py-4">
+      <p class="text-xs font-semibold uppercase tracking-widest opacity-80 mb-0.5">Практика 2 · Диалог с трудным собеседником</p>
+      <p class="font-bold text-base">Сценарий ${taskNum || '?'}: ${esc(task?.title)}</p>
+    </div>`;
+
+    const rolesCard = card('border-slate-200', 'bg-white', 'text-slate-400', 'Роли',
+      `<div class="grid grid-cols-2 gap-2 text-sm">
+        <div><span class="text-xs text-slate-400 block">ИИ</span><span class="font-medium text-slate-800">${esc(val('practiceRoleAi') || task?.ai_role || '—')}</span></div>
+        <div><span class="text-xs text-slate-400 block">Я</span><span class="font-medium text-slate-800">${esc(val('practiceRoleMe') || task?.student_role || '—')}</span></div>
+      </div>
+      <p class="text-xs text-slate-500 mt-1"><strong>Цель:</strong> ${esc(p2.student_goal || task?.student_goal || '—')}</p>`);
+
+    const personaCard = persona ? card('border-indigo-200', 'bg-indigo-50', 'text-indigo-600', 'Персонаж',
+      `<div class="flex items-start gap-2">
+        <span class="text-2xl">${esc(persona.avatar)}</span>
+        <div>
+          <p class="font-semibold text-slate-900 text-sm">${esc(persona.name)}</p>
+          <p class="text-xs text-slate-500">${esc(persona.role)}</p>
+          <p class="text-xs text-indigo-700 italic mt-1">${esc(persona.goal)}</p>
+        </div>
+      </div>`) : '';
+
+    const bestCard = eval_?.bestReply ? card('border-green-200', 'bg-green-50', 'text-green-600', 'Лучшая реплика',
+      `<p class="text-sm text-slate-800 italic">«${esc(eval_.bestReply.text)}»</p>
+       <p class="text-xs text-slate-600">${esc(eval_.bestReply.why)}</p>`) : '';
+
+    const weakCard = eval_?.weakReply ? card('border-amber-200', 'bg-amber-50', 'text-amber-600', 'Слабая реплика',
+      `<p class="text-sm text-slate-800 italic">«${esc(eval_.weakReply.text)}»</p>
+       <p class="text-xs text-slate-600">${esc(eval_.weakReply.how_to_improve)}</p>`) : '';
+
+    const bestReplyCard = card('border-blue-200', 'bg-blue-50', 'text-blue-600', 'Лучший момент диалога',
+      preBox(p2.best_reply));
+
+    const applyCard = card('border-emerald-200', 'bg-emerald-50', 'text-emerald-600', 'Применение в реальной работе',
+      preBox(p2.apply_work));
+
+    const evalFbCard = eval_?.personaFeedback ? card('border-slate-200', 'bg-slate-50', 'text-slate-500', 'Оценка ИИ-тренера',
+      `<p class="text-sm text-slate-700">${esc(eval_.personaFeedback)}</p>`) : '';
+
+    return [header, rolesCard, personaCard, bestCard, weakCard, bestReplyCard, applyCard, evalFbCard]
+      .filter(Boolean).join('\n');
   }
 
   function buildReportP3(task, wf, taskNum) {
@@ -408,6 +446,7 @@ ${p3.main_insight || '—'}
     selfCheckComplete,
     buildReportP1,
     buildReportP2,
+    buildReportP2Html,
     buildReportP3
   };
 })(typeof window !== 'undefined' ? window : global);
