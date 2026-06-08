@@ -1041,7 +1041,9 @@ const state = {
   taskOptions: [],
   lastPracticeAiResult: null,
   p2PersonaData: null,
-  p2EvalData: null
+  p2EvalData: null,
+  p2DialogueMessages: [],
+  p2ConversationId: null
 };
 let kbStatusPollTimer = null;
 let kbStatusPollBusy = false;
@@ -1790,6 +1792,7 @@ function buildGroupMetaForSave() {
     if (state.p1RecipientData) wf.p1RecipientData = state.p1RecipientData;
     if (state.p2PersonaData) wf.p2Persona = state.p2PersonaData;
     if (state.p2EvalData) wf.p2Eval = state.p2EvalData;
+    if (state.p2DialogueMessages?.length) wf.p2DialogueMessages = state.p2DialogueMessages;
     meta.workflow = wf;
   }
   return meta;
@@ -2148,6 +2151,8 @@ function clearPracticeFormUi() {
   state._p1RecipientPromise = null;
   state.p2PersonaData = null;
   state.p2EvalData = null;
+  state.p2DialogueMessages = [];
+  state.p2ConversationId = null;
   const ids = [
     'assignmentAnswer',
     'practicePromptV1',
@@ -3114,11 +3119,7 @@ async function runP2DialogueEval() {
   loadingEl?.classList.remove('hidden');
   if (evalBlock) evalBlock.classList.add('hidden');
   try {
-    let messages = [];
-    if (state.currentConversationId) {
-      const data = await api(`/api/academy/conversations/${state.currentConversationId}`);
-      messages = data.messages || [];
-    }
+    const messages = state.p2DialogueMessages || [];
     const out = await api(`/api/academy/lessons/${state.currentLessonId}/dialogue-eval`, {
       method: 'POST',
       body: JSON.stringify({
@@ -3209,17 +3210,130 @@ function showP2ReportHtml(task, wf, num) {
   if (label) label.classList.add('hidden');
 }
 
+function renderP2InlineBubble(text, role) {
+  const msgBox = document.getElementById('p2InlineChatMessages');
+  if (!msgBox) return;
+  document.getElementById('p2InlineChatPlaceholder')?.remove();
+  const bubble = document.createElement('div');
+  bubble.dataset.role = role;
+  if (role === 'user') {
+    bubble.className = 'ml-auto rounded-xl bg-indigo-600 text-white px-3 py-2 text-sm max-w-[85%] whitespace-pre-wrap break-words';
+    bubble.textContent = text;
+  } else {
+    bubble.className = 'rounded-xl bg-slate-100 border border-slate-200 px-3 py-2 text-sm text-slate-900 max-w-[85%] prose prose-sm';
+    bubble.innerHTML = renderMarkdown(text);
+  }
+  msgBox.appendChild(bubble);
+  msgBox.scrollTop = msgBox.scrollHeight;
+  return bubble;
+}
+
+async function streamP2Message(userText, isKickoff = false) {
+  const model = document.getElementById('modelSelect')?.value;
+  const persona = state.p2PersonaData;
+  const roleAi = document.getElementById('practiceRoleAi')?.value?.trim() || persona?.role || 'Собеседник';
+  const roleMe = document.getElementById('practiceRoleMe')?.value?.trim() || 'Менеджер';
+  const goal = document.getElementById('practiceStudentGoal')?.value?.trim() || '';
+
+  const personaInstructions = persona
+    ? `Ты играешь роль: ${persona.name}, ${persona.role}. Цель персонажа: ${persona.goal}. Характер: ${(persona.traits || []).join(', ')}. Настроение: ${persona.mood}. Сложность: ${persona.difficulty}. Студент играет роль: ${roleMe}, его цель: ${goal}. Держи роль, веди себя реалистично, возражай и реагируй по ситуации. Отвечай коротко (2-4 предложения). Не выходи из роли.`
+    : `Ты играешь роль: ${roleAi}. Студент играет роль: ${roleMe}, его цель: ${goal}. Держи роль, веди себя реалистично. Отвечай коротко (2-4 предложения).`;
+
+  const msgBox = document.getElementById('p2InlineChatMessages');
+  if (!msgBox) return;
+
+  const sendBtn = document.getElementById('p2SendBtn');
+  const input = document.getElementById('p2InlineChatInput');
+  if (sendBtn) sendBtn.disabled = true;
+
+  if (!isKickoff && userText) {
+    state.p2DialogueMessages.push({ role: 'user', content: userText });
+    renderP2InlineBubble(userText, 'user');
+  }
+
+  // Streaming bubble for AI response
+  document.getElementById('p2InlineChatPlaceholder')?.remove();
+  const aiBubble = document.createElement('div');
+  aiBubble.dataset.role = 'assistant';
+  aiBubble.className = 'rounded-xl bg-slate-100 border border-slate-200 px-3 py-2 text-sm text-slate-900 max-w-[85%] prose prose-sm';
+  aiBubble.innerHTML = '<span class="text-slate-400 text-xs">…</span>';
+  msgBox.appendChild(aiBubble);
+  msgBox.scrollTop = msgBox.scrollHeight;
+
+  try {
+    const triggerText = isKickoff
+      ? 'Открой сцену — скажи первую реплику в своей роли, одним предложением.'
+      : userText;
+
+    const res = await fetch(`${apiBase}/api/academy/chat`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: triggerText,
+        lessonId: state.currentLessonId,
+        model,
+        assistantInstructions: personaInstructions,
+        conversationId: state.p2ConversationId || undefined,
+        chatMode: 'dialogue'
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Ошибка ИИ');
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    let assembled = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const chunks = buf.split('\n\n');
+      buf = chunks.pop() || '';
+      for (const block of chunks) {
+        const line = block.trim();
+        if (!line.startsWith('data:')) continue;
+        const json = JSON.parse(line.slice(5).trim());
+        if (json.type === 'start' && json.conversationId) {
+          state.p2ConversationId = json.conversationId;
+        }
+        if (json.type === 'chunk') {
+          assembled += json.text || '';
+          aiBubble.innerHTML = renderMarkdown(assembled);
+          msgBox.scrollTop = msgBox.scrollHeight;
+        }
+      }
+    }
+
+    const assistantText = assembled.trim();
+    if (assistantText) {
+      aiBubble.innerHTML = renderMarkdown(assistantText);
+      state.p2DialogueMessages.push({ role: 'assistant', content: assistantText });
+      updateP2PairCounter();
+      scheduleAutoSave();
+    } else {
+      aiBubble.remove();
+    }
+  } catch (e) {
+    aiBubble.remove();
+    throw e;
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
+    if (input) input.focus();
+  }
+}
+
 function updateP2PairCounter() {
   if (state.currentLesson?.scenario_key !== 'block1-practice-scenario') return;
   const counterEl = document.getElementById('p2PairCounter');
   const hintEl = document.getElementById('p2PairCounterHint');
   const finishBtn = document.getElementById('practiceNextP2S1Btn');
   if (!counterEl) return;
-  // Count assistant messages in the current conversation as pair count
-  const sk = state.currentLesson?.scenario_key;
-  if (!sk) return;
-  const convMessages = document.querySelectorAll('#messagesContainer [data-role="assistant"]');
-  const pairCount = convMessages.length;
+  const pairCount = (state.p2DialogueMessages || []).filter((m) => m.role === 'assistant').length;
   counterEl.textContent = `${pairCount} / 4`;
   if (pairCount >= 4) {
     if (hintEl) hintEl.textContent = '✓ Достаточно для анализа';
@@ -3462,6 +3576,11 @@ async function loadSubmissionForLesson(lessonId) {
         if (gm.workflow.p2Eval) {
           state.p2EvalData = gm.workflow.p2Eval;
           renderP2EvalBlock(gm.workflow.p2Eval);
+        }
+        if (gm.workflow.p2DialogueMessages?.length) {
+          state.p2DialogueMessages = gm.workflow.p2DialogueMessages;
+          gm.workflow.p2DialogueMessages.forEach((m) => renderP2InlineBubble(m.content, m.role));
+          updateP2PairCounter();
         }
         if (savedStep >= 2) renderP2InlineSelfCheck();
       }
@@ -4730,8 +4849,6 @@ async function streamChat(payload) {
     if (last?.content) assistantText = String(last.content).trim();
     state.conversations = (await api('/api/academy/conversations')).conversations;
     renderConversationList();
-    // Update P2 pair counter after every assistant reply in dialogue mode
-    updateP2PairCounter();
   }
   return { assistantText };
 }
@@ -5467,10 +5584,10 @@ function wireUi() {
   document.getElementById('p2StartDialogueBtn')?.addEventListener('click', () => {
     const goal = document.getElementById('practiceStudentGoal')?.value?.trim();
     if (!goal) return alert('Укажите вашу цель в этом разговоре.');
-    // Open chat directly and advance to substep 2
-    openPracticeChat();
     tryAdvancePracticeSubstep();
     updateP2PairCounter();
+    // AI persona opens the scene with a first line
+    streamP2Message(null, true).catch(() => {});
   });
   document.getElementById('runAnalysisInAiBtn')?.addEventListener('click', () => {
     runPracticeInAi({ runKind: 'analysis' }).catch((e) =>
@@ -5506,6 +5623,19 @@ function wireUi() {
     const m2v2El = document.getElementById('m2PracticePromptV2');
     if (m2v1 && m2v2El && !m2v2El.value.trim()) m2v2El.value = m2v1;
     advancePracticeStepOrSubstep();
+  });
+  document.getElementById('p2SendBtn')?.addEventListener('click', () => {
+    const input = document.getElementById('p2InlineChatInput');
+    const text = input?.value?.trim();
+    if (!text) return;
+    input.value = '';
+    streamP2Message(text).catch((e) => alert(e.message || 'Ошибка отправки'));
+  });
+  document.getElementById('p2InlineChatInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      document.getElementById('p2SendBtn')?.click();
+    }
   });
   document.getElementById('practiceNextP2S1Btn')?.addEventListener('click', async () => {
     advancePracticeStepOrSubstep();

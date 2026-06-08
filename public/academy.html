@@ -377,17 +377,23 @@
                       <label class="block"><span class="aa-label">Ваша цель в этом разговоре</span><textarea id="practiceStudentGoal" rows="2" class="aa-textarea mt-1" placeholder="Чего вы хотите добиться в итоге этого разговора?"></textarea></label>
                       <button type="button" id="p2StartDialogueBtn" class="aa-btn aa-btn-primary w-full">Начать диалог →</button>
                     </div>
-                    <!-- 1.2: Диалог в чате -->
+                    <!-- 1.2: Инлайн диалог -->
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
-                      <button type="button" id="openPracticeChatBtn" class="aa-btn aa-btn-ghost w-full">Открыть диалог в чате →</button>
+                      <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+                        ИИ держит роль и будет возражать или давить — это и есть тренировка. Минимум 4 обмена репликами.
+                      </p>
+                      <div id="p2InlineChatMessages" class="rounded-xl border border-slate-200 bg-white px-3 py-3 space-y-2 min-h-[160px] max-h-[400px] overflow-y-auto">
+                        <p id="p2InlineChatPlaceholder" class="text-xs text-slate-400 text-center py-6">Напишите первую реплику, чтобы начать разговор</p>
+                      </div>
+                      <div class="flex gap-2 items-end">
+                        <textarea id="p2InlineChatInput" rows="2" class="aa-textarea flex-1" placeholder="Ваша реплика…"></textarea>
+                        <button type="button" id="p2SendBtn" class="aa-btn aa-btn-primary shrink-0 self-end">Отправить →</button>
+                      </div>
                       <div id="p2PairCounterBlock" class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 flex items-center gap-2">
                         <span class="text-xs text-slate-500">Пар реплик:</span>
                         <span id="p2PairCounter" class="font-bold text-slate-800 text-sm">0 / 4</span>
                         <span id="p2PairCounterHint" class="text-xs text-slate-400">(продолжайте диалог)</span>
                       </div>
-                      <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
-                        Ожидайте сложную реакцию — ИИ намеренно будет возражать или давить. Это и есть тренировка.
-                      </p>
                       <button type="button" id="practiceNextP2S1Btn" class="aa-btn aa-btn-primary w-full hidden">
                         Я завершил диалог → перейти к анализу
                       </button>
