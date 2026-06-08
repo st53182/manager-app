@@ -495,6 +495,116 @@ function createRouter({ JWT_SECRET }) {
     } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to evaluate dialogue' }); }
   });
 
+  /* AI hint card for Practice 3 — returns risk categories without spoiling specific claims */
+  router.post('/lessons/:lessonId/hallucination-hint', authenticateAcademy, async (req, res) => {
+    const openai = createOpenRouterClient();
+    if (!openai) return res.status(503).json({ error: 'AI service not configured' });
+    try {
+      const { task_id, model: reqModel } = req.body || {};
+      const assignment = await db.getAssignmentByLessonId(req.params.lessonId);
+      const model = pickModel(reqModel, req.dbUser);
+      let task = null;
+      if (task_id && assignment?.task_options) {
+        let opts = assignment.task_options;
+        if (typeof opts === 'string') try { opts = JSON.parse(opts); } catch { opts = []; }
+        task = Array.isArray(opts) ? opts.find((t) => t.id === task_id) : null;
+      }
+      const fragment = task?.fragment_text || task?.context || '';
+
+      const userPrompt =
+        `Ты — методист по критическому мышлению. Проанализируй фрагмент текста от нейросети.\n\n` +
+        `Фрагмент:\n${fragment.slice(0, 2000)}\n\n` +
+        `Задача: дай студенту подсказку — КАКИЕ КАТЕГОРИИ рисков встречаются в тексте, не называя конкретных утверждений.\n` +
+        `Верни JSON (без markdown):\n` +
+        `{\n` +
+        `  "categories": ["<категория 1>", "<категория 2>", ...],\n` +
+        `  "risk_count": <общее количество подозрительных утверждений — число>,\n` +
+        `  "tip": "<1 предложение — на что обратить особое внимание в этом тексте>"\n` +
+        `}\n\n` +
+        `Категории выбирай из: "цифры и статистика", "ссылки на авторитетов", "универсальные советы", "причинно-следственные связи", "юридические/финансовые утверждения", "даты и события", "научные факты".\n` +
+        `Язык: русский.`;
+
+      await assertQuota(req, estimateTokensFromText(userPrompt));
+      let text = '', usage = null;
+      for await (const part of streamChatCompletion(openai, {
+        model,
+        messages: [{ role: 'system', content: 'JSON only. No markdown.' }, { role: 'user', content: userPrompt }],
+        maxTokens: 300
+      })) {
+        if (part.type === 'chunk') text += part.text;
+        if (part.type === 'done') usage = part.usage;
+      }
+      let parsed;
+      try {
+        const m = text.match(/\{[\s\S]*\}/);
+        parsed = JSON.parse(m ? m[0] : text);
+      } catch {
+        return res.status(422).json({ error: 'Failed to parse AI response', raw: text.slice(0, 200) });
+      }
+      await recordFeatureUsage(req, { model, promptTokens: usage?.prompt_tokens || 0, completionTokens: usage?.completion_tokens || 0, costUsd: estimateCostUsd(usage?.prompt_tokens || 0, usage?.completion_tokens || 0, model), featureMode: 'p3_hint' });
+      res.json({ data: parsed });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to generate hint' }); }
+  });
+
+  /* AI evaluation of student's found claims for Practice 3 */
+  router.post('/lessons/:lessonId/hallucination-eval', authenticateAcademy, aiChatLimiter, async (req, res) => {
+    const openai = createOpenRouterClient();
+    if (!openai) return res.status(503).json({ error: 'AI service not configured' });
+    try {
+      const { task_id, suspicious_claims, verification_messages, model: reqModel } = req.body || {};
+      const assignment = await db.getAssignmentByLessonId(req.params.lessonId);
+      const model = pickModel(reqModel, req.dbUser);
+      let task = null;
+      if (task_id && assignment?.task_options) {
+        let opts = assignment.task_options;
+        if (typeof opts === 'string') try { opts = JSON.parse(opts); } catch { opts = []; }
+        task = Array.isArray(opts) ? opts.find((t) => t.id === task_id) : null;
+      }
+      const fragment = task?.fragment_text || task?.context || '';
+
+      const messages = Array.isArray(verification_messages) ? verification_messages : [];
+      const verificationLog = messages
+        .slice(-20)
+        .map((m) => `${m.role === 'user' ? 'Студент' : 'ИИ'}: ${String(m.content || '').slice(0, 300)}`)
+        .join('\n');
+
+      const userPrompt =
+        `Ты — тренер по критическому мышлению. Оцени работу студента по обнаружению рисков в тексте ИИ.\n\n` +
+        `Исходный фрагмент:\n${fragment.slice(0, 1500)}\n\n` +
+        `Что студент отметил как подозрительное:\n${suspicious_claims || '(не указано)'}\n\n` +
+        `Лог проверки студента (вопросы к ИИ и ответы):\n${verificationLog || '(проверка не проводилась)'}\n\n` +
+        `Верни JSON (без markdown):\n` +
+        `{\n` +
+        `  "foundRisks": [{ "text": "<цитата из фрагмента>", "type": "<тип риска>" }],\n` +
+        `  "missedRisks": [{ "text": "<цитата из фрагмента>", "type": "<тип>", "hint": "<почему это риск — 1 предложение>" }],\n` +
+        `  "verdict": "<сильно|частично|слабо>",\n` +
+        `  "verdictText": "<1-2 предложения общей оценки>",\n` +
+        `  "recommendations": ["<совет 1>", "<совет 2>"]\n` +
+        `}\n\n` +
+        `Язык: русский. Будь конкретен — используй точные цитаты из фрагмента.`;
+
+      await assertQuota(req, estimateTokensFromText(userPrompt));
+      let text = '', usage = null;
+      for await (const part of streamChatCompletion(openai, {
+        model,
+        messages: [{ role: 'system', content: 'JSON only. No markdown.' }, { role: 'user', content: userPrompt }],
+        maxTokens: 800
+      })) {
+        if (part.type === 'chunk') text += part.text;
+        if (part.type === 'done') usage = part.usage;
+      }
+      let parsed;
+      try {
+        const m = text.match(/\{[\s\S]*\}/);
+        parsed = JSON.parse(m ? m[0] : text);
+      } catch {
+        return res.status(422).json({ error: 'Failed to parse AI response', raw: text.slice(0, 200) });
+      }
+      await recordFeatureUsage(req, { model, promptTokens: usage?.prompt_tokens || 0, completionTokens: usage?.completion_tokens || 0, costUsd: estimateCostUsd(usage?.prompt_tokens || 0, usage?.completion_tokens || 0, model), featureMode: 'p3_eval' });
+      res.json({ data: parsed });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to evaluate claims' }); }
+  });
+
   router.get('/knowledge-bases', authenticateAcademy, async (req, res) => {
     try {
       const bases = await db.listKnowledgeBases(req.dbUser.id);

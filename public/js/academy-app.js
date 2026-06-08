@@ -561,8 +561,8 @@ const PRACTICE_STEP_LABELS = {
     'Проверить отчёт и отправить'
   ],
   'block1-practice-hallucination': [
-    'Заметить утверждения и составить вопросы для проверки',
-    'Проверить в чате и принять решение',
+    'Найти утверждения и проверить в диалоге',
+    'Оценить находки и принять решение',
     'Проверить отчёт и отправить'
   ],
   'block2-practice-aim': [
@@ -595,8 +595,8 @@ const PRACTICE_STEP_CELEBRATIONS = {
   ],
   'block1-practice-hallucination': [
     null,
-    '✓ Вопросы готовы! Отправьте их в чат и оцените ответы ИИ — это самая важная часть.',
-    '✓ Готово! Отчёт собран. Проверьте его и нажмите «Завершить задание».'
+    '✓ Проверка завершена! ИИ-тренер оценит ваши находки — запишите решение и вывод.',
+    '✓ Отчёт собран. Проверьте его и нажмите «Завершить задание».'
   ],
   'block2-practice-aim': [
     null,
@@ -912,11 +912,11 @@ const STEP_HINTS = {
   },
   'block1-practice-hallucination': {
     initial: '<p>Выберите один из 5 фрагментов — реальные тексты от нейросети с непроверенными утверждениями.</p>',
-    taskSelected: '<p>Прочитайте фрагмент. Нажмите <strong>«Начать задание»</strong> — научимся задавать правильные вопросы, прежде чем верить ИИ.</p>',
+    taskSelected: '<p>Прочитайте фрагмент. Нажмите <strong>«Начать задание»</strong> — ИИ покажет на что обратить внимание.</p>',
     steps: {
-      '1': '<p>Найдите 3–5 утверждений которые стоит проверить. Составьте вопросы которые зададите нейросети.</p>',
-      '2.1': '<p>Отправьте вопросы в чат справа. Оцените: признал ли ИИ ограничения или остался уверен?</p>',
-      '2.2': '<p>Примите решение и запишите главный вывод: какой вопрос сработал лучше всего?</p>',
+      '1.1': '<p class="mb-1">ИИ-тренер обозначил категории рисков в тексте. <strong>Найдите минимум 3 утверждения</strong> — цитируйте дословно.</p>',
+      '1.2': '<p class="mb-1">Задавайте вопросы к каждому утверждению прямо здесь. <strong>Минимум 5 вопросов.</strong></p><p class="text-xs text-slate-500">ИИ признаёт неопределённость — наблюдайте как меняется уверенность его ответов.</p>',
+      '2': '<p class="mb-1">ИИ-тренер оценил ваши находки. Отметьте самооценку, примите решение и запишите главный вывод.</p>',
       '3': '<p>Проверьте отчёт и нажмите <strong>«Завершить задание»</strong>.</p>'
     }
   },
@@ -1043,7 +1043,11 @@ const state = {
   p2PersonaData: null,
   p2EvalData: null,
   p2DialogueMessages: [],
-  p2ConversationId: null
+  p2ConversationId: null,
+  p3HintData: null,
+  p3EvalData: null,
+  p3VerificationMessages: [],
+  p3ConversationId: null
 };
 let kbStatusPollTimer = null;
 let kbStatusPollBusy = false;
@@ -1793,6 +1797,9 @@ function buildGroupMetaForSave() {
     if (state.p2PersonaData) wf.p2Persona = state.p2PersonaData;
     if (state.p2EvalData) wf.p2Eval = state.p2EvalData;
     if (state.p2DialogueMessages?.length) wf.p2DialogueMessages = state.p2DialogueMessages;
+    if (state.p3HintData) wf.p3Hint = state.p3HintData;
+    if (state.p3EvalData) wf.p3Eval = state.p3EvalData;
+    if (state.p3VerificationMessages?.length) wf.p3VerificationMessages = state.p3VerificationMessages;
     meta.workflow = wf;
   }
   return meta;
@@ -2153,6 +2160,10 @@ function clearPracticeFormUi() {
   state.p2EvalData = null;
   state.p2DialogueMessages = [];
   state.p2ConversationId = null;
+  state.p3HintData = null;
+  state.p3EvalData = null;
+  state.p3VerificationMessages = [];
+  state.p3ConversationId = null;
   const ids = [
     'assignmentAnswer',
     'practicePromptV1',
@@ -2987,7 +2998,9 @@ function startPractice() {
   if (sk === 'block1-practice-scenario') {
     generateP2Persona().catch(() => {});
   }
-  // initRiskTable removed — P3 redesigned to verification questions flow
+  if (sk === 'block1-practice-hallucination') {
+    generateP3Hint().catch(() => {});
+  }
   if (sk === 'block2-practice-library') {
     const task = getSelectedTaskOption();
     getPracticeWorkflowApi()?.initLibraryCards([], task?.title);
@@ -3352,6 +3365,257 @@ function updateP2PairCounter() {
 
 /* ===== END P2 FUNCTIONS ===== */
 
+/* ===== P3 FUNCTIONS ===== */
+
+async function generateP3Hint() {
+  if (!state.currentLessonId || !state.selectedTaskId) return;
+  const model = document.getElementById('modelSelect')?.value;
+  document.getElementById('p3HintLoading')?.classList.remove('hidden');
+  document.getElementById('p3HintCard')?.classList.add('hidden');
+  try {
+    const out = await api(`/api/academy/lessons/${state.currentLessonId}/hallucination-hint`, {
+      method: 'POST',
+      body: JSON.stringify({ task_id: state.selectedTaskId, model })
+    });
+    const data = out.data;
+    if (data) {
+      state.p3HintData = data;
+      renderP3HintCard(data);
+    }
+  } catch (e) {
+    console.warn('P3 hint failed:', e.message);
+  } finally {
+    document.getElementById('p3HintLoading')?.classList.add('hidden');
+  }
+}
+
+function renderP3HintCard(data) {
+  if (!data) return;
+  const card = document.getElementById('p3HintCard');
+  if (!card) return;
+  const cats = document.getElementById('p3HintCategories');
+  const tip = document.getElementById('p3HintTip');
+  if (cats) {
+    cats.innerHTML = (data.categories || []).map((c) =>
+      `<span class="rounded-full bg-amber-200 text-amber-800 text-xs px-2 py-0.5">${c}</span>`
+    ).join('');
+    if (data.risk_count) {
+      cats.innerHTML += `<span class="rounded-full bg-red-100 text-red-700 text-xs px-2 py-0.5 font-semibold">~${data.risk_count} утверждений</span>`;
+    }
+  }
+  if (tip) tip.textContent = data.tip || '';
+  card.classList.remove('hidden');
+}
+
+function renderP3InlineBubble(text, role) {
+  const msgBox = document.getElementById('p3InlineChatMessages');
+  if (!msgBox) return;
+  document.getElementById('p3InlineChatPlaceholder')?.remove();
+  const bubble = document.createElement('div');
+  bubble.dataset.role = role;
+  if (role === 'user') {
+    bubble.className = 'ml-auto rounded-xl bg-indigo-600 text-white px-3 py-2 text-sm max-w-[85%] whitespace-pre-wrap break-words';
+    bubble.textContent = text;
+  } else {
+    bubble.className = 'rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-slate-900 max-w-[85%] prose prose-sm';
+    bubble.innerHTML = renderMarkdown(text);
+  }
+  msgBox.appendChild(bubble);
+  msgBox.scrollTop = msgBox.scrollHeight;
+  return bubble;
+}
+
+async function streamP3Message(userText) {
+  const model = document.getElementById('modelSelect')?.value;
+  const msgBox = document.getElementById('p3InlineChatMessages');
+  if (!msgBox) return;
+
+  const sendBtn = document.getElementById('p3SendBtn');
+  const input = document.getElementById('p3InlineChatInput');
+  if (sendBtn) sendBtn.disabled = true;
+
+  state.p3VerificationMessages.push({ role: 'user', content: userText });
+  renderP3InlineBubble(userText, 'user');
+
+  document.getElementById('p3InlineChatPlaceholder')?.remove();
+  const aiBubble = document.createElement('div');
+  aiBubble.dataset.role = 'assistant';
+  aiBubble.className = 'rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-slate-900 max-w-[85%] prose prose-sm';
+  aiBubble.innerHTML = '<span class="text-slate-400 text-xs">…</span>';
+  msgBox.appendChild(aiBubble);
+  msgBox.scrollTop = msgBox.scrollHeight;
+
+  const systemPrompt =
+    'Ты — честный ИИ-ассистент. Отвечай на вопросы о точности и источниках утверждений. ' +
+    'Если не знаешь источник — прямо скажи. Если утверждение неточное — признай это. ' +
+    'Не придумывай источники. Отвечай коротко, 2-3 предложения.';
+
+  try {
+    const res = await fetch(`${apiBase}/api/academy/chat`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: userText,
+        lessonId: state.currentLessonId,
+        model,
+        assistantInstructions: systemPrompt,
+        conversationId: state.p3ConversationId || undefined,
+        chatMode: 'verification'
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Ошибка ИИ');
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '', assembled = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const chunks = buf.split('\n\n');
+      buf = chunks.pop() || '';
+      for (const block of chunks) {
+        const line = block.trim();
+        if (!line.startsWith('data:')) continue;
+        const json = JSON.parse(line.slice(5).trim());
+        if (json.type === 'start' && json.conversationId) state.p3ConversationId = json.conversationId;
+        if (json.type === 'chunk') {
+          assembled += json.text || '';
+          aiBubble.innerHTML = renderMarkdown(assembled);
+          msgBox.scrollTop = msgBox.scrollHeight;
+        }
+      }
+    }
+
+    const assistantText = assembled.trim();
+    if (assistantText) {
+      aiBubble.innerHTML = renderMarkdown(assistantText);
+      state.p3VerificationMessages.push({ role: 'assistant', content: assistantText });
+      updateP3VerifyCounter();
+      scheduleAutoSave();
+    } else {
+      aiBubble.remove();
+    }
+  } catch (e) {
+    aiBubble.remove();
+    throw e;
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
+    if (input) input.focus();
+  }
+}
+
+function updateP3VerifyCounter() {
+  const counterEl = document.getElementById('p3VerifyCounter');
+  const hintEl = document.getElementById('p3VerifyCounterHint');
+  const finishBtn = document.getElementById('p3FinishVerifyBtn');
+  if (!counterEl) return;
+  const count = (state.p3VerificationMessages || []).filter((m) => m.role === 'user').length;
+  counterEl.textContent = `${count} / 5`;
+  if (count >= 5) {
+    if (hintEl) hintEl.textContent = '✓ Можно переходить к анализу';
+    finishBtn?.classList.remove('hidden');
+  } else {
+    if (hintEl) hintEl.textContent = '(продолжайте)';
+  }
+}
+
+async function runP3HallucinationEval() {
+  if (!state.currentLessonId) return;
+  const model = document.getElementById('modelSelect')?.value;
+  const loadingEl = document.getElementById('p3EvalLoading');
+  const evalBlock = document.getElementById('p3EvalBlock');
+  loadingEl?.classList.remove('hidden');
+  if (evalBlock) evalBlock.classList.add('hidden');
+  try {
+    const out = await api(`/api/academy/lessons/${state.currentLessonId}/hallucination-eval`, {
+      method: 'POST',
+      body: JSON.stringify({
+        task_id: state.selectedTaskId,
+        suspicious_claims: document.getElementById('p3SuspiciousClaims')?.value?.trim() || '',
+        verification_messages: state.p3VerificationMessages || [],
+        model
+      })
+    });
+    const evalData = out.data;
+    if (evalData) {
+      state.p3EvalData = evalData;
+      renderP3EvalBlock(evalData);
+      saveSubmission('draft').catch(() => {});
+    }
+  } catch (e) {
+    console.warn('P3 eval failed:', e.message);
+  } finally {
+    loadingEl?.classList.add('hidden');
+  }
+}
+
+function renderP3EvalBlock(evalData) {
+  if (!evalData) return;
+  const evalBlock = document.getElementById('p3EvalBlock');
+  if (!evalBlock) return;
+
+  const foundEl = document.getElementById('p3EvalFound');
+  const foundList = document.getElementById('p3EvalFoundList');
+  const missedEl = document.getElementById('p3EvalMissed');
+  const missedList = document.getElementById('p3EvalMissedList');
+  const verdictEl = document.getElementById('p3EvalVerdict');
+  const verdictText = document.getElementById('p3EvalVerdictText');
+
+  if (foundList && evalData.foundRisks?.length) {
+    foundList.innerHTML = evalData.foundRisks.map((r) =>
+      `<li class="text-xs text-slate-800">«${r.text}» <span class="text-green-600">(${r.type})</span></li>`
+    ).join('');
+    foundEl?.classList.remove('hidden');
+  }
+  if (missedList && evalData.missedRisks?.length) {
+    missedList.innerHTML = evalData.missedRisks.map((r) =>
+      `<li class="text-xs text-slate-800">«${r.text}» — <span class="text-red-600">${r.hint}</span></li>`
+    ).join('');
+    missedEl?.classList.remove('hidden');
+  }
+  if (verdictText && evalData.verdictText) {
+    const badge = evalData.verdict === 'сильно' ? '🟢' : evalData.verdict === 'частично' ? '🟡' : '🔴';
+    verdictText.textContent = `${badge} ${evalData.verdictText}`;
+    verdictEl?.classList.remove('hidden');
+  }
+  evalBlock.classList.remove('hidden');
+}
+
+function renderP3InlineSelfCheck() {
+  const wfApi = getPracticeWorkflowApi();
+  const block = document.getElementById('p3InlineSelfCheck');
+  const list = document.getElementById('p3InlineSelfCheckList');
+  if (!block || !list || !wfApi) return;
+  const items = wfApi.SELF_CHECK['block1-practice-hallucination'] || [];
+  list.innerHTML = '';
+  items.forEach((label, i) => {
+    const li = document.createElement('label');
+    li.className = 'flex items-start gap-2 text-sm text-slate-700 cursor-pointer';
+    li.innerHTML = `<input type="checkbox" data-p3-self-idx="${i}" class="mt-1" /><span>${label}</span>`;
+    list.appendChild(li);
+  });
+  block.classList.remove('hidden');
+}
+
+function showP3ReportHtml(task, wf, num) {
+  const wfApi = getPracticeWorkflowApi();
+  if (!wfApi?.buildReportP3Html) return;
+  const block = document.getElementById('reportRenderBlock');
+  const label = document.getElementById('assignmentAnswerLabel');
+  if (!block) return;
+  block.innerHTML = wfApi.buildReportP3Html(task, wf, num);
+  block.classList.remove('hidden');
+  if (label) label.classList.add('hidden');
+}
+
+/* ===== END P3 FUNCTIONS ===== */
+
 function buildPracticeReport() {
   const wfApi = getPracticeWorkflowApi();
   const task = getSelectedTaskOption();
@@ -3376,6 +3640,11 @@ function buildPracticeReport() {
       if (state.p2PersonaData) wf.p2Persona = state.p2PersonaData;
       if (state.p2EvalData) wf.p2Eval = state.p2EvalData;
     }
+    if (sk === 'block1-practice-hallucination') {
+      if (state.p3HintData) wf.p3Hint = state.p3HintData;
+      if (state.p3EvalData) wf.p3Eval = state.p3EvalData;
+      if (state.p3VerificationMessages?.length) wf.p3VerificationMessages = state.p3VerificationMessages;
+    }
     if (sk === 'block1-practice-prompt') report = wfApi.buildReportP1(task, wf, num);
     else if (sk === 'block1-practice-scenario') report = wfApi.buildReportP2(task, wf, num);
     else if (sk === 'block1-practice-hallucination') report = wfApi.buildReportP3(task, wf, num);
@@ -3386,6 +3655,7 @@ function buildPracticeReport() {
     scheduleAutoSave();
     if (sk === 'block1-practice-prompt') showP1ReportHtml(task, wf, num);
     else if (sk === 'block1-practice-scenario') showP2ReportHtml(task, wf, num);
+    else if (sk === 'block1-practice-hallucination') showP3ReportHtml(task, wf, num);
     advancePracticeStep();
   }
 }
@@ -3590,6 +3860,22 @@ async function loadSubmissionForLesson(lessonId) {
           updateP2PairCounter();
         }
         if (savedStep >= 2) renderP2InlineSelfCheck();
+      }
+      if (sk === 'block1-practice-hallucination') {
+        if (gm.workflow.p3Hint) {
+          state.p3HintData = gm.workflow.p3Hint;
+          renderP3HintCard(gm.workflow.p3Hint);
+        }
+        if (gm.workflow.p3Eval) {
+          state.p3EvalData = gm.workflow.p3Eval;
+          renderP3EvalBlock(gm.workflow.p3Eval);
+        }
+        if (gm.workflow.p3VerificationMessages?.length) {
+          state.p3VerificationMessages = gm.workflow.p3VerificationMessages;
+          gm.workflow.p3VerificationMessages.forEach((m) => renderP3InlineBubble(m.content, m.role));
+          updateP3VerifyCounter();
+        }
+        if (savedStep >= 2) renderP3InlineSelfCheck();
       }
     }
   }
@@ -4554,7 +4840,7 @@ async function openLessonPanel(lesson) {
   document.getElementById('demoPanelSection')?.classList.add('hidden');
   const lc = document.getElementById('lessonContent');
   // For these scenarios the content is in the assignment block — hide the separate description
-  if (['block1-practice-prompt', 'block1-practice-scenario'].includes(lesson.scenario_key)) {
+  if (['block1-practice-prompt', 'block1-practice-scenario', 'block1-practice-hallucination'].includes(lesson.scenario_key)) {
     lc?.classList.add('hidden');
     if (lc) lc.innerHTML = '';
   } else {
@@ -5649,6 +5935,30 @@ function wireUi() {
     // Launch AI eval and inline self-check when dialogue is done
     renderP2InlineSelfCheck();
     runP2DialogueEval().catch(() => {});
+  });
+  document.getElementById('p3StartVerifyBtn')?.addEventListener('click', () => {
+    const claims = document.getElementById('p3SuspiciousClaims')?.value?.trim();
+    if (!claims) return alert('Запишите минимум одно подозрительное утверждение.');
+    tryAdvancePracticeSubstep();
+    updateP3VerifyCounter();
+  });
+  document.getElementById('p3SendBtn')?.addEventListener('click', () => {
+    const input = document.getElementById('p3InlineChatInput');
+    const text = input?.value?.trim();
+    if (!text) return;
+    input.value = '';
+    streamP3Message(text).catch((e) => alert(e.message || 'Ошибка отправки'));
+  });
+  document.getElementById('p3InlineChatInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      document.getElementById('p3SendBtn')?.click();
+    }
+  });
+  document.getElementById('p3FinishVerifyBtn')?.addEventListener('click', () => {
+    advancePracticeStep();
+    renderP3InlineSelfCheck();
+    runP3HallucinationEval().catch(() => {});
   });
   document.getElementById('practiceNextP3S1Btn')?.addEventListener('click', () => advancePracticeStepOrSubstep());
   document.getElementById('practiceNextM2P2S1Btn')?.addEventListener('click', () => {

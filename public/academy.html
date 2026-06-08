@@ -440,52 +440,89 @@
                 <!-- ===== ПРАКТИКА 3: Проверяй прежде чем верить ===== -->
                 <div id="practiceAnalysisSection" class="hidden space-y-3">
 
-                  <!-- Шаг 1: Замечаю + формулирую вопросы -->
+                  <!-- Шаг 1: Замечаю + инлайн-проверка -->
                   <div class="aa-step-pane aa-practice-workflow-box space-y-3" data-practice-step="1">
+                    <!-- 1.1: Hint-карточка + поле находок -->
                     <div class="aa-practice-substep space-y-3" data-practice-substep="1">
-                      <p class="text-xs text-slate-600">Прочитайте фрагмент выше. Найдите 3–5 утверждений, которые стоит проверить: цифры, факты, советы, ссылки на авторитеты.</p>
+                      <!-- AI hint card -->
+                      <div id="p3HintCard" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                        <p class="text-xs font-semibold text-amber-700 mb-2">На что обратить внимание в этом тексте:</p>
+                        <div id="p3HintCategories" class="flex flex-wrap gap-1.5 mb-2"></div>
+                        <p id="p3HintTip" class="text-xs text-amber-800 italic"></p>
+                      </div>
+                      <div id="p3HintLoading" class="hidden text-xs text-slate-500 text-center py-2">Анализируем фрагмент…</div>
+                      <p class="text-xs text-slate-600">Прочитайте фрагмент выше. Найдите утверждения, которые стоит проверить: цифры, факты, советы, ссылки на авторитетов.</p>
                       <label class="block">
-                        <span class="aa-label">Подозрительные утверждения</span>
+                        <span class="aa-label">Подозрительные утверждения (минимум 3)</span>
                         <textarea id="p3SuspiciousClaims" rows="4" class="aa-textarea mt-1" placeholder="1. «ROI 340%» — нет источника&#10;2. «McKinsey рекомендует» — нет ссылки&#10;3. ..."></textarea>
                       </label>
-                      <label class="block">
-                        <span class="aa-label">Вопросы для проверки (задайте их нейросети в чате)</span>
-                        <textarea id="p3VerifyQuestions" rows="5" class="aa-textarea mt-1" placeholder="1. Назови источник этой статистики&#10;2. Эта рекомендация справедлива для всех случаев или только для конкретного контекста?&#10;3. ..."></textarea>
-                      </label>
-                      <button type="button" id="practiceNextP3S1Btn" class="aa-btn aa-btn-primary w-full mt-1">
-                        Вопросы готовы — иду в чат →
+                      <button type="button" id="p3StartVerifyBtn" class="aa-btn aa-btn-primary w-full">
+                        Нашёл утверждения — начать проверку →
+                      </button>
+                    </div>
+                    <!-- 1.2: Инлайн-проверка -->
+                    <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
+                      <p class="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded px-2 py-1.5">
+                        Задавайте вопросы к каждому утверждению прямо здесь. ИИ ответит честно — признает неопределённость и назовёт источник если знает.
+                      </p>
+                      <div id="p3InlineChatMessages" class="rounded-xl border border-slate-200 bg-white px-3 py-3 space-y-2 min-h-[160px] max-h-[400px] overflow-y-auto">
+                        <p id="p3InlineChatPlaceholder" class="text-xs text-slate-400 text-center py-6">Напишите вопрос о любом утверждении из фрагмента</p>
+                      </div>
+                      <div class="flex gap-2 items-end">
+                        <textarea id="p3InlineChatInput" rows="2" class="aa-textarea flex-1" placeholder="Например: назови источник статистики «ROI 340%»"></textarea>
+                        <button type="button" id="p3SendBtn" class="aa-btn aa-btn-primary shrink-0 self-end">Спросить →</button>
+                      </div>
+                      <div id="p3VerifyCounterBlock" class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 flex items-center gap-2">
+                        <span class="text-xs text-slate-500">Проверено вопросов:</span>
+                        <span id="p3VerifyCounter" class="font-bold text-slate-800 text-sm">0 / 5</span>
+                        <span id="p3VerifyCounterHint" class="text-xs text-slate-400">(продолжайте)</span>
+                      </div>
+                      <button type="button" id="p3FinishVerifyBtn" class="aa-btn aa-btn-primary w-full hidden">
+                        Завершил проверку → перейти к анализу
                       </button>
                     </div>
                   </div>
 
-                  <!-- Шаг 2: Проверяю + решение -->
+                  <!-- Шаг 2: AI-оценка + решение -->
                   <div class="aa-step-pane hidden aa-practice-workflow-box space-y-3" data-practice-step="2">
-                    <div class="aa-practice-substep space-y-3" data-practice-substep="1">
-                      <p class="text-xs text-slate-600">Отправьте вопросы из шага 1 в нейросеть через чат справа. Посмотрите как ИИ реагирует — признаёт ли ограничения или остаётся уверен.</p>
-                      <label class="block">
-                        <span class="aa-label">Как ИИ ответил на вопросы о источниках?</span>
-                        <textarea id="p3AiResponseEval" rows="4" class="aa-textarea mt-1" placeholder="Например: признал что ROI — примерная оценка, источник не назвал. По ссылке на McKinsey — сказал что это обобщение, точный отчёт не нашёл."></textarea>
-                      </label>
-                      <button type="button" class="aa-btn aa-btn-primary w-full js-practice-substep-next">Оценил ответы — принять решение →</button>
+                    <!-- AI eval block -->
+                    <div id="p3EvalBlock" class="hidden space-y-3">
+                      <p class="text-xs font-semibold uppercase tracking-widest text-amber-600 mb-0.5">Оценка тренера</p>
+                      <div id="p3EvalFound" class="hidden rounded-lg border border-green-200 bg-green-50 px-3 py-2">
+                        <p class="text-xs font-semibold text-green-700 mb-1.5">✅ Что нашли правильно</p>
+                        <ul id="p3EvalFoundList" class="space-y-1"></ul>
+                      </div>
+                      <div id="p3EvalMissed" class="hidden rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+                        <p class="text-xs font-semibold text-red-700 mb-1.5">⚠️ Что пропустили</p>
+                        <ul id="p3EvalMissedList" class="space-y-1"></ul>
+                      </div>
+                      <div id="p3EvalVerdict" class="hidden rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <p class="text-xs font-semibold text-slate-600 mb-1">Итог</p>
+                        <p id="p3EvalVerdictText" class="text-xs text-slate-700"></p>
+                      </div>
                     </div>
-                    <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
-                      <fieldset class="text-sm"><legend class="aa-label mb-2">Итоговое решение по фрагменту</legend>
-                        <label class="flex items-center gap-2 py-1"><input type="radio" name="riskDecision" value="usable" /> <span>Можно использовать</span></label>
-                        <label class="flex items-center gap-2 py-1"><input type="radio" name="riskDecision" value="after_check" /> <span>Можно использовать после проверки</span></label>
-                        <label class="flex items-center gap-2 py-1"><input type="radio" name="riskDecision" value="not_usable" /> <span>Нельзя использовать в текущем виде</span></label>
-                      </fieldset>
-                      <label class="block">
-                        <span class="aa-label">Главный вывод</span>
-                        <p class="text-xs text-slate-500 mb-1">Какой вопрос сработал лучше всего? Что будете спрашивать у ИИ в следующий раз?</p>
-                        <textarea id="p3MainInsight" rows="3" class="aa-textarea mt-1" placeholder="Например: вопрос «Назови источник» сразу показал что статистика выдуманная. Теперь буду задавать его к любой цифре от ИИ."></textarea>
-                      </label>
-                      <!-- скрытые поля для совместимости с autosave -->
-                      <input type="hidden" id="checklistItem1" /><input type="hidden" id="checklistItem2" /><input type="hidden" id="checklistItem3" /><input type="hidden" id="checklistItem4" /><input type="hidden" id="checklistItem5" />
-                      <div id="aiResultBlockAnalysis" class="hidden"><div id="aiResultAnalysisPreview" class="aa-task-detail max-h-36 overflow-y-auto prose prose-sm max-w-none"></div></div>
-                      <button type="button" id="buildReportP3Btn" class="aa-btn aa-btn-primary w-full">
-                        Собрать отчёт и перейти к отправке →
-                      </button>
+                    <div id="p3EvalLoading" class="hidden text-xs text-slate-500 text-center py-2">Оцениваем ваши находки…</div>
+
+                    <!-- Самооценка inline -->
+                    <div id="p3InlineSelfCheck" class="hidden rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                      <p class="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2.5">Самооценка</p>
+                      <ul id="p3InlineSelfCheckList" class="space-y-2"></ul>
                     </div>
+
+                    <!-- 2 поля -->
+                    <fieldset class="text-sm"><legend class="aa-label mb-2">Итоговое решение по фрагменту</legend>
+                      <label class="flex items-center gap-2 py-1"><input type="radio" name="riskDecision" value="usable" /> <span>Можно использовать</span></label>
+                      <label class="flex items-center gap-2 py-1"><input type="radio" name="riskDecision" value="after_check" /> <span>Можно использовать после проверки</span></label>
+                      <label class="flex items-center gap-2 py-1"><input type="radio" name="riskDecision" value="not_usable" /> <span>Нельзя использовать в текущем виде</span></label>
+                    </fieldset>
+                    <label class="block">
+                      <span class="aa-label">Главный вывод</span>
+                      <p class="text-xs text-slate-500 mb-1">Какой вопрос сработал лучше всего? Что будете проверять у ИИ в следующий раз?</p>
+                      <textarea id="p3MainInsight" rows="3" class="aa-textarea mt-1" placeholder="Например: вопрос «Назови источник» сразу показал что статистика выдуманная. Теперь буду задавать его к любой цифре от ИИ."></textarea>
+                    </label>
+                    <button type="button" id="buildReportP3Btn" class="aa-btn aa-btn-primary w-full">
+                      Собрать отчёт и перейти к отправке →
+                    </button>
                   </div>
                   <!-- скрытые поля для совместимости с autosave/restore -->
                   <textarea id="practiceSafeVersion" class="hidden" aria-hidden="true"></textarea>

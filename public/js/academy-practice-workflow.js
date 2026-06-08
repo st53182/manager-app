@@ -51,14 +51,11 @@
       'Предложил конкретный следующий шаг'
     ],
     'block1-practice-hallucination': [
-      'Я нашёл минимум 4 риска',
-      'У каждого риска есть цитата',
-      'У каждого риска есть тип проблемы',
-      'У каждого риска есть уровень риска',
-      'Я объяснил, что нужно проверить',
-      'Я написал безопасную версию',
-      'Я принял решение, можно ли использовать текст',
-      'Я составил чек-лист из 5 пунктов'
+      'Нашёл минимум 3 подозрительных утверждения',
+      'Задал минимум 5 проверочных вопросов',
+      'Проверил хотя бы одну цифру или статистику',
+      'Проверил хотя бы одну ссылку на авторитет или совет',
+      'Принял обоснованное решение по фрагменту'
     ]
   };
 
@@ -207,8 +204,6 @@
       },
       p3: {
         suspicious_claims: val('p3SuspiciousClaims'),
-        verify_questions: val('p3VerifyQuestions'),
-        ai_response_eval: val('p3AiResponseEval'),
         decision: document.querySelector('input[name="riskDecision"]:checked')?.value || '',
         main_insight: val('p3MainInsight')
       },
@@ -247,8 +242,6 @@
 
     const p3 = wf.p3 || {};
     set('p3SuspiciousClaims', p3.suspicious_claims);
-    set('p3VerifyQuestions', p3.verify_questions);
-    set('p3AiResponseEval', p3.ai_response_eval);
     set('p3MainInsight', p3.main_insight);
     if (p3.decision) {
       const radio = document.querySelector(`input[name="riskDecision"][value="${p3.decision}"]`);
@@ -409,27 +402,107 @@ ${eval_?.personaFeedback ? `\nАнализ ИИ-тренера:\n${eval_.persona
 
   function buildReportP3(task, wf, taskNum) {
     const p3 = wf.p3 || {};
-    const frag = task?.fragment_text || '';
     const dec = DECISION_LABELS[p3.decision] || p3.decision || '—';
-    return `Выбранный вариант (${taskNum || '?'}): ${task?.title || ''}
+    const eval3 = wf.p3Eval || {};
+    const foundRisks = (eval3.foundRisks || []).map((r) => `  • «${r.text}» (${r.type})`).join('\n') || '  —';
+    const missedRisks = (eval3.missedRisks || []).map((r) => `  • «${r.text}» — ${r.hint}`).join('\n') || '  —';
+    return `Выбранный фрагмент (${taskNum || '?'}): ${task?.title || ''}
 
-Исходный фрагмент:
-${frag}
-
-Подозрительные утверждения, которые я заметил:
+Что я заподозрил:
 ${p3.suspicious_claims || '—'}
 
-Вопросы, которые я задал нейросети для проверки:
-${p3.verify_questions || '—'}
+Оценка тренера — найдено:
+${foundRisks}
 
-Как ИИ ответил на вопросы о источниках:
-${p3.ai_response_eval || '—'}
+Оценка тренера — пропущено:
+${missedRisks}
+
+Вердикт: ${eval3.verdictText || '—'}
 
 Итоговое решение: ${dec}
 
 Главный вывод:
 ${p3.main_insight || '—'}
 `;
+  }
+
+  function buildReportP3Html(task, wf, taskNum) {
+    const p3 = wf.p3 || {};
+    const dec = DECISION_LABELS[p3.decision] || p3.decision || '—';
+    const eval3 = wf.p3Eval || {};
+    const hint = wf.p3Hint || {};
+
+    const decColor = p3.decision === 'usable' ? 'green' : p3.decision === 'after_check' ? 'amber' : 'red';
+
+    const fragmentSnippet = (task?.fragment_text || task?.context || '').slice(0, 300);
+
+    const hintCard = hint.categories?.length ? `
+      <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+        <p style="font-size:11px;font-weight:700;color:#92400e;margin:0 0 6px">Подсказка тренера</p>
+        <p style="font-size:12px;color:#78350f;margin:0">${escapeHtml(hint.tip || '')}</p>
+        <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">
+          ${(hint.categories || []).map((c) => `<span style="background:#fde68a;color:#92400e;font-size:11px;border-radius:20px;padding:2px 8px">${escapeHtml(c)}</span>`).join('')}
+        </div>
+      </div>` : '';
+
+    const foundCard = eval3.foundRisks?.length ? `
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+        <p style="font-size:11px;font-weight:700;color:#166534;margin:0 0 6px">✅ Что нашли правильно</p>
+        <ul style="margin:0;padding-left:16px;font-size:12px;color:#15803d">
+          ${eval3.foundRisks.map((r) => `<li>«${escapeHtml(r.text)}» <span style="color:#6b7280">(${escapeHtml(r.type)})</span></li>`).join('')}
+        </ul>
+      </div>` : '';
+
+    const missedCard = eval3.missedRisks?.length ? `
+      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+        <p style="font-size:11px;font-weight:700;color:#991b1b;margin:0 0 6px">⚠️ Что пропустили</p>
+        <ul style="margin:0;padding-left:16px;font-size:12px;color:#b91c1c">
+          ${eval3.missedRisks.map((r) => `<li>«${escapeHtml(r.text)}» — ${escapeHtml(r.hint)}</li>`).join('')}
+        </ul>
+      </div>` : '';
+
+    const verdictCard = eval3.verdictText ? `
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+        <p style="font-size:11px;font-weight:700;color:#475569;margin:0 0 4px">Итог тренера</p>
+        <p style="font-size:12px;color:#334155;margin:0">${escapeHtml(eval3.verdictText)}</p>
+      </div>` : '';
+
+    const decBg = decColor === 'green' ? '#f0fdf4' : decColor === 'amber' ? '#fffbeb' : '#fef2f2';
+    const decBorder = decColor === 'green' ? '#86efac' : decColor === 'amber' ? '#fcd34d' : '#fca5a5';
+    const decText = decColor === 'green' ? '#166534' : decColor === 'amber' ? '#92400e' : '#991b1b';
+
+    return `<div style="font-family:system-ui,sans-serif;max-width:680px;margin:0 auto;padding:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <p style="margin:0;font-size:13px;font-weight:700;color:#1e293b">Отчёт: задание 3 — вариант ${taskNum || '?'}</p>
+        <span style="font-size:11px;color:#64748b">${escapeHtml(task?.title || '')}</span>
+      </div>
+
+      ${fragmentSnippet ? `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+        <p style="font-size:11px;font-weight:700;color:#475569;margin:0 0 4px">Фрагмент</p>
+        <p style="font-size:12px;color:#334155;margin:0;white-space:pre-wrap">${escapeHtml(fragmentSnippet)}${(task?.fragment_text || '').length > 300 ? '…' : ''}</p>
+      </div>` : ''}
+
+      ${hintCard}
+
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+        <p style="font-size:11px;font-weight:700;color:#475569;margin:0 0 4px">Что я заподозрил</p>
+        <p style="font-size:12px;color:#334155;margin:0;white-space:pre-wrap">${escapeHtml(p3.suspicious_claims || '—')}</p>
+      </div>
+
+      ${foundCard}
+      ${missedCard}
+      ${verdictCard}
+
+      <div style="background:${decBg};border:1px solid ${decBorder};border-radius:10px;padding:12px 14px;margin-bottom:10px">
+        <p style="font-size:11px;font-weight:700;color:${decText};margin:0 0 4px">Моё решение</p>
+        <p style="font-size:13px;font-weight:600;color:${decText};margin:0">${escapeHtml(dec)}</p>
+      </div>
+
+      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:12px 14px">
+        <p style="font-size:11px;font-weight:700;color:#075985;margin:0 0 4px">Главный вывод</p>
+        <p style="font-size:12px;color:#0c4a6e;margin:0;white-space:pre-wrap">${escapeHtml(p3.main_insight || '—')}</p>
+      </div>
+    </div>`;
   }
 
   global.AcademyPracticeWorkflow = {
@@ -447,6 +520,7 @@ ${p3.main_insight || '—'}
     buildReportP1,
     buildReportP2,
     buildReportP2Html,
-    buildReportP3
+    buildReportP3,
+    buildReportP3Html
   };
 })(typeof window !== 'undefined' ? window : global);
