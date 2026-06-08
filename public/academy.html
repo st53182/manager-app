@@ -323,6 +323,16 @@
                         <p class="text-xs font-semibold text-slate-700 mb-1.5">Контекст об адресате</p>
                         <div id="clientContextV2" class="aa-persona-card p-3"></div>
                       </div>
+                      <!-- P1-3: подсказка что улучшить в v2 -->
+                      <div class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5">
+                        <p class="text-xs font-semibold text-blue-700 mb-1.5">Что добавить в промпт v2:</p>
+                        <ul class="text-xs text-blue-900 space-y-1 list-disc pl-4">
+                          <li>Добавьте то, чего не было в v1 — формат, ограничения или пример</li>
+                          <li>Уточните стиль или тон (например: «деловой, без клише, до 100 слов»)</li>
+                          <li>Пропишите критерий: что делает ответ хорошим?</li>
+                        </ul>
+                        <p class="text-xs text-blue-700 mt-1.5">Изменения должны быть конкретными — не «более подробно», а что именно добавлено.</p>
+                      </div>
                       <label class="block">
                         <span class="aa-label">Промпт v2 <span class="text-slate-400 font-normal">(с учётом клиента)</span></span>
                         <textarea id="practicePromptV2" rows="6" class="aa-textarea mt-1"></textarea>
@@ -379,8 +389,13 @@
                     </div>
                     <!-- 1.2: Инлайн диалог -->
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
+                      <!-- P2-3: напоминание о сложной реакции -->
+                      <div id="p2HardReactionReminder" class="hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                        <p class="text-xs font-semibold text-amber-700 mb-1">Ожидайте эту реакцию в диалоге:</p>
+                        <p id="p2HardReactionText" class="text-xs text-amber-900 italic"></p>
+                      </div>
                       <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
-                        Собеседник будет жёстко отказывать, особенно в начале — это и есть тренировка. Минимум 12 обменов репликами.
+                        Собеседник будет жёстко отказывать, особенно в начале — это и есть тренировка. Минимум 5 обменов репликами.
                       </p>
                       <div id="p2InlineChatMessages" class="rounded-xl border border-slate-200 bg-white px-3 py-3 space-y-2 min-h-[160px] max-h-[400px] overflow-y-auto">
                         <p id="p2InlineChatPlaceholder" class="text-xs text-slate-400 text-center py-6">Напишите первую реплику, чтобы начать разговор</p>
@@ -391,7 +406,7 @@
                       </div>
                       <div id="p2PairCounterBlock" class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 flex items-center gap-2">
                         <span class="text-xs text-slate-500">Пар реплик:</span>
-                        <span id="p2PairCounter" class="font-bold text-slate-800 text-sm">0 / 12</span>
+                        <span id="p2PairCounter" class="font-bold text-slate-800 text-sm">0 / 5</span>
                         <span id="p2PairCounterHint" class="text-xs text-slate-400">(продолжайте диалог)</span>
                       </div>
                       <button type="button" id="practiceNextP2S1Btn" class="aa-btn aa-btn-primary w-full hidden">
@@ -431,6 +446,7 @@
                     <!-- 2 поля анализа -->
                     <label class="block"><span class="aa-label">Лучший момент диалога и почему сработал</span><textarea id="p2BestReply" rows="3" class="aa-textarea mt-1" placeholder="Моя реплика: «…» — потому что …"></textarea></label>
                     <label class="block"><span class="aa-label">Как применю это в реальной работе</span><textarea id="p2ApplyWork" rows="2" class="aa-textarea mt-1" placeholder="В следующий раз когда … — я буду …"></textarea></label>
+                    <label class="block"><span class="aa-label">Где ИИ вёл себя нереалистично — и как усложнить инструкцию</span><textarea id="p2AiCritique" rows="2" class="aa-textarea mt-1" placeholder="Например: ИИ согласился слишком быстро. Добавлю в инструкцию: «не соглашайся без 3 конкретных аргументов»"></textarea></label>
                     <button type="button" id="buildReportP2Btn" class="aa-btn aa-btn-primary w-full">
                       Собрать отчёт и перейти к отправке →
                     </button>
@@ -454,7 +470,7 @@
                       <p class="text-xs text-slate-600">Прочитайте фрагмент выше. Найдите утверждения, которые стоит проверить: цифры, факты, советы, ссылки на авторитетов.</p>
                       <label class="block">
                         <span class="aa-label">Подозрительные утверждения (минимум 3)</span>
-                        <textarea id="p3SuspiciousClaims" rows="4" class="aa-textarea mt-1" placeholder="1. «ROI 340%» — нет источника&#10;2. «McKinsey рекомендует» — нет ссылки&#10;3. ..."></textarea>
+                        <textarea id="p3SuspiciousClaims" rows="4" class="aa-textarea mt-1" placeholder="1. «в 100 раз дешевле» — нет источника, не понятно что именно сравнивается&#10;2. «по всем бенчмаркам» — не указано каким именно&#10;3. «займут 70% рынка» — прогноз без методологии и оговорок"></textarea>
                       </label>
                       <button type="button" id="p3StartVerifyBtn" class="aa-btn aa-btn-primary w-full">
                         Нашёл утверждения — начать проверку →
@@ -462,6 +478,11 @@
                     </div>
                     <!-- 1.2: Инлайн-проверка -->
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
+                      <!-- P3-4: исходный текст фрагмента -->
+                      <details class="rounded-lg border border-slate-200 bg-slate-50">
+                        <summary class="px-3 py-2 text-xs font-semibold text-slate-600 cursor-pointer hover:text-slate-800">Исходный фрагмент (раскрыть)</summary>
+                        <p id="p3FragmentReminderText" class="px-3 pb-3 pt-1 text-xs text-slate-700 whitespace-pre-wrap leading-relaxed"></p>
+                      </details>
                       <!-- Напоминание: что студент заподозрил -->
                       <div id="p3ClaimsReminder" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
                         <p class="text-xs font-semibold text-amber-700 mb-1">Что вы заподозрили:</p>
@@ -520,6 +541,10 @@
                       <label class="flex items-center gap-2 py-1"><input type="radio" name="riskDecision" value="after_check" /> <span>Можно использовать после проверки</span></label>
                       <label class="flex items-center gap-2 py-1"><input type="radio" name="riskDecision" value="not_usable" /> <span>Нельзя использовать в текущем виде</span></label>
                     </fieldset>
+                    <label class="block">
+                      <span class="aa-label">Обоснование вердикта</span>
+                      <textarea id="p3VerdictReason" rows="2" class="aa-textarea mt-1" placeholder="Почему именно это решение — 1–2 предложения. Например: фрагмент содержит цифры без источников, прогнозы без методологии — доверять нельзя без независимой проверки."></textarea>
+                    </label>
                     <label class="block">
                       <span class="aa-label">Главный вывод</span>
                       <p class="text-xs text-slate-500 mb-1">Какой вопрос сработал лучше всего? Что будете проверять у ИИ в следующий раз?</p>
@@ -855,9 +880,9 @@
   <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script src="/js/translations.js?v=20260606-5"></script>
-  <script src="/js/academy-practice-workflow.js?v=20260606-5"></script>
+  <script src="/js/academy-practice-workflow.js?v=20260608-1"></script>
   <script src="/js/academy-practice-workflow-m2.js?v=20260606-5"></script>
-  <script type="module" src="/js/academy-app.js?v=20260606-6"></script>
+  <script type="module" src="/js/academy-app.js?v=20260608-1"></script>
 </body>
 </html>
 

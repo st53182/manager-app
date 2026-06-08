@@ -34,17 +34,14 @@
 
   const SELF_CHECK = {
     'block1-practice-prompt': [
-      'Я указал роль ИИ',
-      'Я дал конкретный контекст',
-      'Я указал формат ответа',
-      'Я задал стиль',
-      'Я добавил ограничения',
-      'Я получил результат v1',
-      'Я улучшил промпт после первого результата',
-      'В v2 есть минимум 2 конкретных улучшения'
+      'Промпт v1 содержит роль, задачу и контекст',
+      'Я указал формат и ограничения',
+      'Я получил результат v1 и оценил его',
+      'В промпте v2 — минимум 2 конкретных изменения',
+      'Я сравнил v1 и v2 и сформулировал вывод'
     ],
     'block1-practice-scenario': [
-      'Провёл минимум 12 пар реплик',
+      'Провёл минимум 5 пар реплик',
       'Собеседник возражал — я не сдался',
       'Использовал признание позиции («Понимаю, что…»)',
       'Задал уточняющий вопрос',
@@ -120,6 +117,9 @@
       }
       if (task.hard_reaction) {
         html += `<p class="text-xs mt-2 text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1"><strong>Сложная реакция (ожидайте в чате):</strong> «${escapeHtml(task.hard_reaction)}»</p>`;
+      }
+      if (task.context) {
+        html += `<p class="text-xs mt-2 text-emerald-800 bg-emerald-50 border border-emerald-200 rounded px-2 py-1"><strong>Задание выполнено, когда:</strong> ${escapeHtml(task.context)}</p>`;
       }
     } else {
       html += `<p class="text-xs text-slate-600 mb-2">${escapeHtml(task.trains || '')}</p>`;
@@ -200,11 +200,13 @@
       p2: {
         student_goal: val('practiceStudentGoal'),
         best_reply: val('p2BestReply'),
-        apply_work: val('p2ApplyWork')
+        apply_work: val('p2ApplyWork'),
+        ai_critique: val('p2AiCritique')
       },
       p3: {
         suspicious_claims: val('p3SuspiciousClaims'),
         decision: document.querySelector('input[name="riskDecision"]:checked')?.value || '',
+        verdict_reason: val('p3VerdictReason'),
         main_insight: val('p3MainInsight')
       },
       self_check: collectSelfCheck(scenarioKey)
@@ -239,9 +241,11 @@
     set('practiceStudentGoal', p2.student_goal);
     set('p2BestReply', p2.best_reply);
     set('p2ApplyWork', p2.apply_work);
+    set('p2AiCritique', p2.ai_critique);
 
     const p3 = wf.p3 || {};
     set('p3SuspiciousClaims', p3.suspicious_claims);
+    set('p3VerdictReason', p3.verdict_reason);
     set('p3MainInsight', p3.main_insight);
     if (p3.decision) {
       const radio = document.querySelector(`input[name="riskDecision"][value="${p3.decision}"]`);
@@ -337,6 +341,7 @@ ${'─'.repeat(48)}
 ПРИМЕНЕНИЕ В РЕАЛЬНОЙ РАБОТЕ
 ${'─'.repeat(48)}
 ${p2.apply_work || '—'}
+${p2.ai_critique ? `\n${'─'.repeat(48)}\nГДЕ ИИ ВЁЛ СЕБЯ НЕРЕАЛИСТИЧНО\n${'─'.repeat(48)}\n${p2.ai_critique}` : ''}
 ${eval_?.personaFeedback ? `\nАнализ ИИ-тренера:\n${eval_.personaFeedback}` : ''}
 `;
   }
@@ -393,10 +398,13 @@ ${eval_?.personaFeedback ? `\nАнализ ИИ-тренера:\n${eval_.persona
     const applyCard = card('border-emerald-200', 'bg-emerald-50', 'text-emerald-600', 'Применение в реальной работе',
       preBox(p2.apply_work));
 
+    const critiqueCard = p2.ai_critique ? card('border-slate-200', 'bg-slate-50', 'text-slate-500', 'Где ИИ вёл себя нереалистично / как усложнить',
+      preBox(p2.ai_critique)) : '';
+
     const evalFbCard = eval_?.personaFeedback ? card('border-slate-200', 'bg-slate-50', 'text-slate-500', 'Оценка ИИ-тренера',
       `<p class="text-sm text-slate-700">${esc(eval_.personaFeedback)}</p>`) : '';
 
-    return [header, rolesCard, personaCard, bestCard, weakCard, bestReplyCard, applyCard, evalFbCard]
+    return [header, rolesCard, personaCard, bestCard, weakCard, bestReplyCard, applyCard, critiqueCard, evalFbCard]
       .filter(Boolean).join('\n');
   }
 
@@ -417,9 +425,10 @@ ${foundRisks}
 Оценка тренера — пропущено:
 ${missedRisks}
 
-Вердикт: ${eval3.verdictText || '—'}
+Вердикт тренера: ${eval3.verdictText || '—'}
 
-Итоговое решение: ${dec}
+Моё решение: ${dec}
+Обоснование: ${p3.verdict_reason || '—'}
 
 Главный вывод:
 ${p3.main_insight || '—'}
@@ -495,7 +504,8 @@ ${p3.main_insight || '—'}
 
       <div style="background:${decBg};border:1px solid ${decBorder};border-radius:10px;padding:12px 14px;margin-bottom:10px">
         <p style="font-size:11px;font-weight:700;color:${decText};margin:0 0 4px">Моё решение</p>
-        <p style="font-size:13px;font-weight:600;color:${decText};margin:0">${escapeHtml(dec)}</p>
+        <p style="font-size:13px;font-weight:600;color:${decText};margin:0 0 6px">${escapeHtml(dec)}</p>
+        ${p3.verdict_reason ? `<p style="font-size:12px;color:${decText};margin:0;opacity:0.85">${escapeHtml(p3.verdict_reason)}</p>` : ''}
       </div>
 
       <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:12px 14px">

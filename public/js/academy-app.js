@@ -2261,10 +2261,10 @@ function clearPracticeFormUi() {
   const p3ph = document.getElementById('p3InlineChatMessages');
   if (p3ph) p3ph.innerHTML = '<p id="p3InlineChatPlaceholder" class="text-xs text-slate-400 text-center py-6">Напишите вопрос о любом утверждении из фрагмента</p>';
   // Reset P2/P3 eval and hint blocks
-  ['p2PersonaCard', 'p2EvalBlock', 'p2InlineSelfCheck', 'p3HintCard', 'p3EvalBlock', 'p3EvalFound', 'p3EvalMissed', 'p3EvalVerdict', 'p3InlineSelfCheck'].forEach((id) => {
+  ['p2PersonaCard', 'p2EvalBlock', 'p2InlineSelfCheck', 'p2HardReactionReminder', 'p3HintCard', 'p3EvalBlock', 'p3EvalFound', 'p3EvalMissed', 'p3EvalVerdict', 'p3InlineSelfCheck'].forEach((id) => {
     document.getElementById(id)?.classList.add('hidden');
   });
-  document.getElementById('p2PairCounter') && (document.getElementById('p2PairCounter').textContent = '0 / 12');
+  document.getElementById('p2PairCounter') && (document.getElementById('p2PairCounter').textContent = '0 / 5');
   document.getElementById('p2PairCounterHint') && (document.getElementById('p2PairCounterHint').textContent = '(продолжайте диалог)');
   document.getElementById('practiceNextP2S1Btn')?.classList.add('hidden');
   document.getElementById('p3VerifyCounter') && (document.getElementById('p3VerifyCounter').textContent = '0 / 5');
@@ -3374,8 +3374,8 @@ function updateP2PairCounter() {
   const finishBtn = document.getElementById('practiceNextP2S1Btn');
   if (!counterEl) return;
   const pairCount = (state.p2DialogueMessages || []).filter((m) => m.role === 'assistant').length;
-  counterEl.textContent = `${pairCount} / 12`;
-  if (pairCount >= 12) {
+  counterEl.textContent = `${pairCount} / 5`;
+  if (pairCount >= 5) {
     if (hintEl) hintEl.textContent = '✓ Достаточно для анализа';
     finishBtn?.classList.remove('hidden');
   } else {
@@ -5934,6 +5934,15 @@ function wireUi() {
   document.getElementById('p2StartDialogueBtn')?.addEventListener('click', () => {
     const goal = document.getElementById('practiceStudentGoal')?.value?.trim();
     if (!goal) return alert('Укажите вашу цель в этом разговоре.');
+    // P2-3: show hard reaction reminder inside the chat panel
+    const task = getSelectedTaskOption();
+    const hardReaction = P2_SCENARIO_DATA[state.selectedTaskId]?.hardReaction || task?.hard_reaction || '';
+    const reminderEl = document.getElementById('p2HardReactionReminder');
+    const reminderTextEl = document.getElementById('p2HardReactionText');
+    if (reminderEl && hardReaction) {
+      if (reminderTextEl) reminderTextEl.textContent = `«${hardReaction}»`;
+      reminderEl.classList.remove('hidden');
+    }
     tryAdvancePracticeSubstep();
     updateP2PairCounter();
     // AI persona opens the scene with a first line
@@ -5996,8 +6005,15 @@ function wireUi() {
   document.getElementById('p3StartVerifyBtn')?.addEventListener('click', () => {
     const claims = document.getElementById('p3SuspiciousClaims')?.value?.trim();
     if (!claims) return alert('Запишите минимум одно подозрительное утверждение.');
+    // P3-3: require at least 3 claims (count non-empty lines)
+    const claimLines = claims.split('\n').filter((l) => l.trim().length > 0);
+    if (claimLines.length < 3) return alert('Найдите минимум 3 подозрительных утверждения перед началом проверки.');
     const reminder = document.getElementById('p3ClaimsReminderText');
     if (reminder) reminder.textContent = claims;
+    // P3-4: populate fragment text for reference during verification
+    const task = getSelectedTaskOption();
+    const fragmentEl = document.getElementById('p3FragmentReminderText');
+    if (fragmentEl && task?.fragment_text) fragmentEl.textContent = task.fragment_text;
     tryAdvancePracticeSubstep();
     updateP3VerifyCounter();
   });
