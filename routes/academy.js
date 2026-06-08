@@ -1736,10 +1736,8 @@ function createRouter({ JWT_SECRET }) {
             fullAssistant = result.text;
             perplexityCitations = result.citations;
             finalUsage = result.usage;
-            perplexityCitations._rawKeys = result._debugKeys;
             // Send text as a single chunk so the client renders it
             send({ type: 'chunk', text: fullAssistant });
-            console.log('[P3 debug] Perplexity raw keys:', result._debugKeys, '| citations count:', perplexityCitations.length);
           } else {
             const gen = streamChatCompletion(openai, {
               model,
@@ -1820,7 +1818,6 @@ function createRouter({ JWT_SECRET }) {
           type: 'done',
           conversationId,
           citations: outCitations,
-          _debugRawKeys: perplexityCitations._rawKeys,
           confidence: outCitations.length ? 'medium' : 'low',
           usage: {
             prompt_tokens: promptTokens,

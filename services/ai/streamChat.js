@@ -96,12 +96,10 @@ async function fetchPerplexityWithCitations(openai, { model, messages, maxTokens
 
   const data = await res.json();
   const text = data.choices?.[0]?.message?.content || '';
-  // citations is a non-standard top-level field Perplexity returns
+  // OpenRouter does not forward Perplexity's citations field; citations stay empty
   const citations = Array.isArray(data.citations) ? data.citations : [];
   const usage = data.usage || null;
-  // Temporary: expose all top-level keys for debugging
-  const _debugKeys = Object.keys(data).join(',');
-  return { text, citations, usage, _debugKeys };
+  return { text, citations, usage };
 }
 
 module.exports = {
