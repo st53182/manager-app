@@ -2241,6 +2241,10 @@ function clearPracticeFormUi() {
   const clientReactionV1 = document.getElementById('clientReactionV1');
   if (clientReactionV1) clientReactionV1.innerHTML = '';
   document.getElementById('assignmentFeedback')?.classList.add('hidden');
+  // Reset HTML report block (P1)
+  const reportRenderBlock = document.getElementById('reportRenderBlock');
+  if (reportRenderBlock) { reportRenderBlock.innerHTML = ''; reportRenderBlock.classList.add('hidden'); }
+  document.getElementById('assignmentAnswerLabel')?.classList.remove('hidden');
   document.getElementById('messagesContainer').innerHTML = '';
   updateFragmentPreview();
   updateTaskSelectReminder();
@@ -2889,6 +2893,62 @@ function startPractice() {
   });
 }
 
+/* Build HTML-rendered version of P1 report and inject into reportRenderBlock */
+function buildReportP1Html(task, wf, num) {
+  const p1 = wf.p1 || {};
+
+  function esc(t) { return escapeHtml(t || ''); }
+
+  function card(borderCls, bgCls, labelCls, label, body) {
+    return `<div class="rounded-xl border ${borderCls} ${bgCls} px-4 py-3 space-y-2">
+      <p class="text-xs font-bold uppercase tracking-widest ${labelCls}">${label}</p>
+      ${body}
+    </div>`;
+  }
+
+  function preBox(text) {
+    return `<pre class="text-sm text-slate-700 whitespace-pre-wrap bg-white rounded-lg p-3 border border-slate-200 leading-relaxed font-sans">${esc(text || '—')}</pre>`;
+  }
+
+  function mdBox(text) {
+    if (!text) return `<p class="text-sm text-slate-400 italic">—</p>`;
+    const html = typeof renderMarkdown === 'function' ? renderMarkdown(text) : esc(text);
+    return `<div class="prose prose-sm max-w-none text-slate-700">${html}</div>`;
+  }
+
+  const header = `<div class="rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white px-5 py-4">
+    <p class="text-xs font-semibold uppercase tracking-widest opacity-80 mb-0.5">Практика 1 · Промпт-инжиниринг</p>
+    <p class="font-bold text-base">Кейс ${num || '?'}: ${esc(task?.title)}</p>
+  </div>`;
+
+  const badPrompt = card('border-red-200', 'bg-red-50', 'text-red-500', 'Что было не так',
+    `<code class="block text-sm bg-white rounded-lg px-3 py-2 border border-red-100 text-slate-700">${esc(task?.bad_prompt || '—')}</code>
+     <p class="text-xs text-slate-500">Слишком общий запрос — нет роли, контекста, формата, стиля и критериев.</p>`);
+
+  const pv1 = card('border-slate-200', 'bg-white', 'text-slate-400', 'Промпт v1 (RTCFSC)', preBox(p1.prompt_v1));
+  const av1 = card('border-slate-100', 'bg-slate-50', 'text-slate-400', 'Ответ ИИ v1', mdBox(p1.ai_v1));
+  const pv2 = card('border-blue-200', 'bg-blue-50', 'text-blue-600', 'Промпт v2', preBox(p1.prompt_v2));
+  const av2 = card('border-slate-100', 'bg-slate-50', 'text-slate-400', 'Ответ ИИ v2', mdBox(p1.ai_v2));
+
+  const evalCard = card('border-emerald-200', 'bg-emerald-50', 'text-emerald-700', 'Оценка ИИ: сравнение промптов',
+    mdBox(p1.ai_eval));
+
+  const insightCard = card('border-amber-200', 'bg-amber-50', 'text-amber-700', 'Главный вывод',
+    `<p class="text-sm font-medium text-slate-800">${esc(p1.main_insight || '—')}</p>`);
+
+  return [header, badPrompt, pv1, av1, pv2, av2, evalCard, insightCard].join('\n');
+}
+
+/* Inject HTML report and hide the plain textarea (keeps value for submission) */
+function showP1ReportHtml(task, wf, num) {
+  const block = document.getElementById('reportRenderBlock');
+  const label = document.getElementById('assignmentAnswerLabel');
+  if (!block) return;
+  block.innerHTML = buildReportP1Html(task, wf, num);
+  block.classList.remove('hidden');
+  if (label) label.classList.add('hidden');
+}
+
 function buildPracticeReport() {
   const wfApi = getPracticeWorkflowApi();
   const task = getSelectedTaskOption();
@@ -2916,6 +2976,8 @@ function buildPracticeReport() {
   if (ta && report) {
     ta.value = report;
     scheduleAutoSave();
+    // P1: show formatted HTML document; other practices: keep plain textarea
+    if (sk === 'block1-practice-prompt') showP1ReportHtml(task, wf, num);
     advancePracticeStep();
   }
 }
@@ -3096,6 +3158,12 @@ async function loadSubmissionForLesson(lessonId) {
       document.getElementById('startPracticeBtn')?.classList.add('hidden');
       if (savedSub && savedSub > 1) state.practiceSubstep = savedSub;
       showPracticeStep(savedStep, { restoreSubstep: Boolean(savedSub && savedSub > 1) });
+      // P1: re-render HTML report if session was at the submit step
+      if (sk === 'block1-practice-prompt' && gm.workflow.p1) {
+        const task = getSelectedTaskOption();
+        const num = getSelectedTaskNumber();
+        if (task) showP1ReportHtml(task, gm.workflow, num);
+      }
     }
   }
   let fj = data.submission?.feedback_json;
