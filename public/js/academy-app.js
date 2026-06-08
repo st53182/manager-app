@@ -1787,6 +1787,7 @@ function buildGroupMetaForSave() {
       : wfApi.collectWorkflowFromUi(scenarioKey);
     wf.currentStep = state.practiceStep || 1;
     wf.currentSubstep = state.practiceSubstep || 1;
+    if (state.p1RecipientData) wf.p1RecipientData = state.p1RecipientData;
     meta.workflow = wf;
   }
   return meta;
@@ -2141,6 +2142,8 @@ function clearPracticeFormUi() {
   state.selectedTaskId = null;
   state.lastPracticeAiResult = null;
   state.currentConversationId = null;
+  state.p1RecipientData = null;
+  state._p1RecipientPromise = null;
   const ids = [
     'assignmentAnswer',
     'practicePromptV1',
@@ -2589,29 +2592,82 @@ function renderPersonaCard(p) {
 }
 
 function getP1RecipientData() {
+  // Prefer AI-generated data in state, fallback to static lookup
+  if (state.p1RecipientData) return state.p1RecipientData;
   const taskId = state.selectedTaskId;
   return taskId ? (P1_RECIPIENT_DATA[taskId] || null) : null;
 }
 
-/* Show client reaction v1 inline inside the practice form (substep 2) */
-function showP1ClientReaction() {
-  const rd = getP1RecipientData();
-  if (!rd?.reactionV1) return;
+/* Call backend to generate persona + reactionV1 via AI; cache in state */
+async function generateP1RecipientDataAi() {
+  // If already generated this session, reuse
+  if (state.p1RecipientData) return state.p1RecipientData;
+  // If restored from saved workflow, use that
+  if (state.practiceWorkflow?.p1RecipientData) {
+    state.p1RecipientData = state.practiceWorkflow.p1RecipientData;
+    return state.p1RecipientData;
+  }
+  if (!state.currentLessonId) return null;
+  try {
+    const promptV1 = document.getElementById('practicePromptV1')?.value?.trim() || '';
+    const aiV1 = document.getElementById('aiResultV1Preview')?.textContent?.trim() || '';
+    const result = await api(`/api/academy/lessons/${state.currentLessonId}/recipient-preview`, {
+      method: 'POST',
+      body: JSON.stringify({
+        task_id: state.selectedTaskId,
+        prompt_v1: promptV1,
+        ai_v1: aiV1,
+        model: document.getElementById('modelSelect')?.value
+      })
+    });
+    if (result?.data) {
+      state.p1RecipientData = result.data;
+      scheduleAutoSave();
+      return state.p1RecipientData;
+    }
+    return null;
+  } catch (e) {
+    console.error('P1 recipient gen error:', e);
+    return null;
+  }
+}
+
+/* Show client reaction v1 — loading state first, then AI-generated data */
+async function showP1ClientReaction() {
   const block = document.getElementById('clientReactionV1Block');
   const container = document.getElementById('clientReactionV1');
   if (!block || !container) return;
+
+  // Show loading immediately
+  container.innerHTML =
+    `<span class="aa-reaction-avatar">⏳</span>` +
+    `<div class="aa-reaction-body"><p class="aa-reaction-text text-slate-400 text-xs animate-pulse">Формируем реакцию адресата…</p></div>`;
+  block.classList.remove('hidden');
+
+  // Store promise so showP1ClientContext can await it
+  state._p1RecipientPromise = generateP1RecipientDataAi();
+  const rd = await state._p1RecipientPromise;
+
+  if (!rd?.reactionV1) {
+    container.innerHTML =
+      `<span class="aa-reaction-avatar">👤</span>` +
+      `<div class="aa-reaction-body"><p class="aa-reaction-text text-slate-400 italic text-xs">Не удалось получить реакцию адресата</p></div>`;
+    return;
+  }
   const r = rd.reactionV1;
   container.innerHTML =
     `<span class="aa-reaction-avatar">${escapeHtml(r.avatar || '👤')}</span>` +
     `<div class="aa-reaction-body">` +
-    `<div class="aa-reaction-meta"><span class="aa-reaction-name">${escapeHtml(r.name || '')}</span><span class="aa-reaction-time">${escapeHtml(r.time || '')}</span></div>` +
+    `<div class="aa-reaction-meta"><span class="aa-reaction-name">${escapeHtml(r.name || '')}</span></div>` +
     `<p class="aa-reaction-text">${escapeHtml(r.text || '')}</p>` +
     `</div>`;
-  block.classList.remove('hidden');
 }
 
-/* Show persona card in step 2 substep 1 (client context for v2) */
-function showP1ClientContext() {
+/* Show persona card in step 2 substep 1 — await AI generation if still in progress */
+async function showP1ClientContext() {
+  // Await AI generation if still in flight
+  if (state._p1RecipientPromise) await state._p1RecipientPromise;
+
   const rd = getP1RecipientData();
   if (!rd?.persona) return;
   const block = document.getElementById('clientContextV2Block');

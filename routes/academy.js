@@ -294,6 +294,64 @@ function createRouter({ JWT_SECRET }) {
       res.json({ feedback: parsed, submission: row });
     } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to generate feedback' }); }
   });
+  /* Generate recipient persona + v1 reaction via AI for Practice 1 */
+  router.post('/lessons/:lessonId/recipient-preview', authenticateAcademy, async (req, res) => {
+    const openai = createOpenRouterClient();
+    if (!openai) return res.status(503).json({ error: 'AI service not configured' });
+    try {
+      const { task_id, prompt_v1, ai_v1, model: reqModel } = req.body || {};
+      const assignment = await db.getAssignmentByLessonId(req.params.lessonId);
+      const model = pickModel(reqModel, req.dbUser);
+      let task = null;
+      if (task_id && assignment?.task_options) {
+        let opts = assignment.task_options;
+        if (typeof opts === 'string') try { opts = JSON.parse(opts); } catch { opts = []; }
+        task = Array.isArray(opts) ? opts.find((t) => t.id === task_id) : null;
+      }
+      const userPrompt =
+        `Ты — симулятор учебной ситуации. На основе учебного кейса и результата промпта v1 создай карточку получателя и его реакцию.\n\n` +
+        `Кейс: ${task?.title || ''}\n` +
+        `Описание: ${task?.description || task?.context || ''}\n` +
+        `Плохой пример промпта: ${task?.bad_prompt || ''}\n\n` +
+        `Промпт v1 от студента:\n${(prompt_v1 || '').slice(0, 1000)}\n\n` +
+        `Ответ ИИ v1:\n${(ai_v1 || '').slice(0, 1500)}\n\n` +
+        `Верни JSON (без markdown, без блоков кода):\n` +
+        `{\n` +
+        `  "persona": {\n` +
+        `    "avatar": "<1 эмодзи>",\n` +
+        `    "name": "<Имя Фамилия>",\n` +
+        `    "role": "<Должность — кем является получатель>",\n` +
+        `    "traits": ["<подсказка для улучшения промпта 1>", "<подсказка 2>", "<подсказка 3>", "<подсказка 4>"]\n` +
+        `  },\n` +
+        `  "reactionV1": {\n` +
+        `    "avatar": "<то же эмодзи>",\n` +
+        `    "name": "<Имя, роль коротко>",\n` +
+        `    "text": "<1-2 предложения: реалистичная реакция получателя — что непонятно или чего не хватает в ответе ИИ v1>"\n` +
+        `  }\n` +
+        `}\n\n` +
+        `Язык: русский. Traits должны намекать что улучшить в промпте v2. Реакция должна отражать слабые места v1.`;
+      await assertQuota(req, estimateTokensFromText(userPrompt));
+      let text = '', usage = null;
+      for await (const part of streamChatCompletion(openai, {
+        model,
+        messages: [{ role: 'system', content: 'JSON only. No markdown.' }, { role: 'user', content: userPrompt }],
+        maxTokens: 600
+      })) {
+        if (part.type === 'chunk') text += part.text;
+        if (part.type === 'done') usage = part.usage;
+      }
+      let parsed;
+      try {
+        const m = text.match(/\{[\s\S]*\}/);
+        parsed = JSON.parse(m ? m[0] : text);
+      } catch {
+        return res.status(422).json({ error: 'Failed to parse AI response', raw: text.slice(0, 200) });
+      }
+      await recordFeatureUsage(req, { model, promptTokens: usage?.prompt_tokens || 0, completionTokens: usage?.completion_tokens || 0, costUsd: estimateCostUsd(usage?.prompt_tokens || 0, usage?.completion_tokens || 0, model), featureMode: 'p1_recipient' });
+      res.json({ data: parsed });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to generate recipient data' }); }
+  });
+
   router.get('/knowledge-bases', authenticateAcademy, async (req, res) => {
     try {
       const bases = await db.listKnowledgeBases(req.dbUser.id);
