@@ -3374,7 +3374,7 @@ const euTrend=[165,178,190,205,218,232];
 const ruTrend=[78,84,91,98,107,115];
 \`\`\`
 
-ЗАМЕНИ все 8 строк jobs и числа в euSec/ruSec/euTrend/ruTrend на актуальные данные рынка труда 2025 года (EU€/мес, RU₽/мес, дефицит кадров 0-100%, тренды ↑↓→). Формат строго как выше.`
+ПРАВИЛО: ответь ТОЛЬКО кодом — никаких объяснений, предупреждений, оговорок. Просто замени числа в блоке выше на реалистичные данные рынка труда 2025 (EU€/мес, RU₽/мес, дефицит 0-100%, тренды ↑↓→).`
 };
 
 function openDemoPanel() {
@@ -3457,7 +3457,10 @@ async function runDemo(type) {
     }
     setMobilePane('chat');
 
-    const model = document.getElementById('demoModelSelect')?.value || document.getElementById('modelSelect')?.value || 'openai/gpt-4o';
+    // Для dashboard используем GPT-4o — он лучше следует инструкции «только код»
+    // Для landing берём выбранную пользователем модель
+    const userModel = document.getElementById('demoModelSelect')?.value || document.getElementById('modelSelect')?.value || 'openai/gpt-4o';
+    const model = type === 'dashboard' ? 'openai/gpt-4o' : userModel;
 
     const promptText = type === 'landing' ? DEMO_PROMPTS.landing : DEMO_PROMPTS.dashboard;
     appendUserBubble(type === 'landing' ? 'Генерирую лендинг «Pulse»…' : 'Генерирую аналитический дашборд…');
