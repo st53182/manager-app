@@ -341,7 +341,17 @@ function parseAssistantContent(text) {
     }
     i = afterFence;
   }
+  // Последний шанс: если модель выдала данные дашборда без code fence
+  // (просто текст с "const jobs=["), строим iframe из того что есть
+  if (!segments.some(seg => seg.type === 'html') && looksLikeDashboardData(s)) {
+    return [{ type: 'html', html: buildDashboardHtml(s) }];
+  }
   return segments;
+}
+
+/** Проверяет содержит ли текст ответа данные дашборда вакансий */
+function looksLikeDashboardData(text) {
+  return /const\s+jobs\s*=\s*\[/.test(text) && /const\s+euSec\s*=/.test(text);
 }
 
 async function runMermaidIn(container) {
