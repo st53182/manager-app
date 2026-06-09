@@ -2140,6 +2140,8 @@ function configurePracticeWorkflow(scenarioKey) {
   Object.values(PRACTICE_SECTION_IDS).forEach((id) => {
     document.getElementById(id)?.classList.add('hidden');
   });
+  // Always reset case brief when switching practices so stale content from previous practice doesn't linger
+  document.getElementById('caseBriefBlock')?.classList.add('hidden');
   const pickLabel = document.getElementById('taskOptionsPickLabel');
 
   [
@@ -5183,6 +5185,7 @@ async function openLessonPanel(lesson) {
   document.querySelectorAll('.aa-lesson-btn').forEach((b) => b.classList.toggle('is-active', b.dataset.lessonId === String(lesson.id)));
   document.getElementById('demoCourseBtn')?.classList.remove('is-active');
   document.getElementById('lessonPanel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  document.getElementById('lessonPanelScroll')?.scrollTo(0, 0);
   document.getElementById('lessonEmpty')?.classList.add('hidden');
   document.getElementById('demoPanelSection')?.classList.add('hidden');
   const lc = document.getElementById('lessonContent');
@@ -6181,6 +6184,15 @@ function wireUi() {
 
   /* ── P5: Detective buttons ── */
   document.getElementById('p5CheckAnswersBtn')?.addEventListener('click', () => {
+    const cards = document.querySelectorAll('.p5-text-card');
+    const unanswered = Array.from(cards).filter((card) => {
+      const tid = card.dataset.textId;
+      return !document.querySelector(`input[name="p5verdict_${tid}"]:checked`);
+    });
+    if (unanswered.length > 0) {
+      alert(`Ответьте на все вопросы — осталось без ответа: ${unanswered.length}`);
+      return;
+    }
     showP5Reveals();
     advancePracticeStep();
   });
