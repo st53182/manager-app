@@ -3954,6 +3954,11 @@ async function loadSubmissionForLesson(lessonId) {
         }
         // N6: always sync counter+hint regardless of message count
         updateP3VerifyCounter();
+        // Restore claimsReminderText from saved workflow so it's visible on step 1.2 restore
+        const _claimsReminder = document.getElementById('p3ClaimsReminderText');
+        if (_claimsReminder && gm.workflow.p3?.suspicious_claims) {
+          _claimsReminder.textContent = gm.workflow.p3.suspicious_claims;
+        }
         if (savedStep >= 2) renderP3InlineSelfCheck();
       }
     }
