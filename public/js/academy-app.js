@@ -2910,15 +2910,8 @@ function updateAssignmentHint() {
   let html;
   if (!practiceStarted) {
     if (state.selectedTaskId && sk === 'block1-practice-scenario') {
-      const sd = getP2ScenarioData();
-      const task = getSelectedTaskOption();
-      const reqList = Array.isArray(task?.dialogue_requirements)
-        ? `<ul class="mt-1 space-y-0.5 text-xs text-slate-600 list-disc list-inside">${task.dialogue_requirements.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul>`
-        : '';
-      const situationBlock = task?.description
-        ? `<div class="aa-persona-card p-3 mb-3"><p class="text-xs font-medium text-slate-500 mb-1">Ситуация</p><p class="text-sm text-slate-700">${escapeHtml(task.description)}</p>${task.student_role ? `<p class="mt-2 text-xs text-slate-500">Ваша роль: <strong class="text-slate-700">${escapeHtml(task.student_role)}</strong></p>` : ''}${task.student_goal ? `<p class="mt-1 text-xs text-slate-500">Ваша цель: <strong class="text-slate-700">${escapeHtml(task.student_goal)}</strong></p>` : ''}${reqList ? `<p class="mt-2 text-xs font-medium text-slate-500">Диалог должен включать:</p>${reqList}` : ''}</div>`
-        : '';
-      html = situationBlock + (sd ? renderPersonaCard(sd.persona) + '<p class="mt-3 text-sm text-slate-700">Познакомьтесь с ситуацией и персонажем. Нажмите <strong>«Начать задание»</strong>.</p>' : hints.taskSelected);
+      // Situation details are shown in caseBriefBlock (below task options) — keep hint brief here
+      html = '<p class="text-sm text-slate-700">Ознакомьтесь с ситуацией и ролями ниже. Нажмите <strong>«Начать задание»</strong>.</p>';
     } else {
       html = state.selectedTaskId ? hints.taskSelected : hints.initial;
     }
