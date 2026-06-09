@@ -352,11 +352,18 @@ ${eval_?.personaFeedback ? `\nАнализ ИИ-тренера:\n${eval_.persona
     const persona = wf.p2Persona;
 
     function esc(t) { return escapeHtml(t || ''); }
-    function card(borderCls, bgCls, labelCls, label, body) {
-      return `<div class="rounded-xl border ${borderCls} ${bgCls} px-4 py-3 space-y-2">
-        <p class="text-xs font-bold uppercase tracking-widest ${labelCls}">${label}</p>
-        ${body}
-      </div>`;
+    function collapsible(borderCls, bgCls, labelCls, label, body, previewText = '') {
+      const snippet = previewText
+        ? `<span class="text-xs text-slate-400 font-normal normal-case tracking-normal truncate ml-2 max-w-[200px]">${esc(String(previewText).slice(0, 55))}${String(previewText).length > 55 ? '…' : ''}</span>`
+        : '';
+      return `<details class="rounded-xl border ${borderCls} ${bgCls} px-4 py-3">
+        <summary class="cursor-pointer list-none flex items-center gap-1.5">
+          <span class="text-slate-400 text-xs select-none">▸</span>
+          <p class="text-xs font-bold uppercase tracking-widest ${labelCls} m-0 shrink-0">${label}</p>
+          ${snippet}
+        </summary>
+        <div class="space-y-2 mt-2">${body}</div>
+      </details>`;
     }
     function preBox(text) {
       return `<p class="text-sm text-slate-700 leading-relaxed">${esc(text || '—').replace(/\n/g, '<br>')}</p>`;
@@ -367,14 +374,15 @@ ${eval_?.personaFeedback ? `\nАнализ ИИ-тренера:\n${eval_.persona
       <p class="font-bold text-base">Сценарий ${taskNum || '?'}: ${esc(task?.title)}</p>
     </div>`;
 
-    const rolesCard = card('border-slate-200', 'bg-white', 'text-slate-400', 'Роли',
+    const rolesCard = collapsible('border-slate-200', 'bg-white', 'text-slate-400', 'Роли',
       `<div class="grid grid-cols-2 gap-2 text-sm">
         <div><span class="text-xs text-slate-400 block">ИИ</span><span class="font-medium text-slate-800">${esc(val('practiceRoleAi') || task?.ai_role || '—')}</span></div>
         <div><span class="text-xs text-slate-400 block">Я</span><span class="font-medium text-slate-800">${esc(val('practiceRoleMe') || task?.student_role || '—')}</span></div>
       </div>
-      <p class="text-xs text-slate-500 mt-1"><strong>Цель:</strong> ${esc(p2.student_goal || task?.student_goal || '—')}</p>`);
+      <p class="text-xs text-slate-500 mt-1"><strong>Цель:</strong> ${esc(p2.student_goal || task?.student_goal || '—')}</p>`,
+      (val('practiceRoleMe') || task?.student_role));
 
-    const personaCard = persona ? card('border-indigo-200', 'bg-indigo-50', 'text-indigo-600', 'Персонаж',
+    const personaCard = persona ? collapsible('border-indigo-200', 'bg-indigo-50', 'text-indigo-600', 'Персонаж',
       `<div class="flex items-start gap-2">
         <span class="text-2xl">${esc(persona.avatar)}</span>
         <div>
@@ -382,27 +390,30 @@ ${eval_?.personaFeedback ? `\nАнализ ИИ-тренера:\n${eval_.persona
           <p class="text-xs text-slate-500">${esc(persona.role)}</p>
           <p class="text-xs text-indigo-700 italic mt-1">${esc(persona.goal)}</p>
         </div>
-      </div>`) : '';
+      </div>`, persona.name) : '';
 
-    const bestCard = eval_?.bestReply ? card('border-green-200', 'bg-green-50', 'text-green-600', 'Лучшая реплика',
+    const bestCard = eval_?.bestReply ? collapsible('border-green-200', 'bg-green-50', 'text-green-600', 'Лучшая реплика',
       `<p class="text-sm text-slate-800 italic">«${esc(eval_.bestReply.text)}»</p>
-       <p class="text-xs text-slate-600">${esc(eval_.bestReply.why)}</p>`) : '';
+       <p class="text-xs text-slate-600">${esc(eval_.bestReply.why)}</p>`,
+      eval_.bestReply.text) : '';
 
-    const weakCard = eval_?.weakReply ? card('border-amber-200', 'bg-amber-50', 'text-amber-600', 'Слабая реплика',
+    const weakCard = eval_?.weakReply ? collapsible('border-amber-200', 'bg-amber-50', 'text-amber-600', 'Слабая реплика',
       `<p class="text-sm text-slate-800 italic">«${esc(eval_.weakReply.text)}»</p>
-       <p class="text-xs text-slate-600">${esc(eval_.weakReply.how_to_improve)}</p>`) : '';
+       <p class="text-xs text-slate-600">${esc(eval_.weakReply.how_to_improve)}</p>`,
+      eval_.weakReply.text) : '';
 
-    const bestReplyCard = card('border-blue-200', 'bg-blue-50', 'text-blue-600', 'Лучший момент диалога',
-      preBox(p2.best_reply));
+    const bestReplyCard = collapsible('border-blue-200', 'bg-blue-50', 'text-blue-600', 'Лучший момент диалога',
+      preBox(p2.best_reply), p2.best_reply);
 
-    const applyCard = card('border-emerald-200', 'bg-emerald-50', 'text-emerald-600', 'Применение в реальной работе',
-      preBox(p2.apply_work));
+    const applyCard = collapsible('border-emerald-200', 'bg-emerald-50', 'text-emerald-600', 'Применение в реальной работе',
+      preBox(p2.apply_work), p2.apply_work);
 
-    const critiqueCard = p2.ai_critique ? card('border-slate-200', 'bg-slate-50', 'text-slate-500', 'Где ИИ вёл себя нереалистично / как усложнить',
-      preBox(p2.ai_critique)) : '';
+    const critiqueCard = p2.ai_critique ? collapsible('border-slate-200', 'bg-slate-50', 'text-slate-500', 'Где ИИ вёл себя нереалистично / как усложнить',
+      preBox(p2.ai_critique), p2.ai_critique) : '';
 
-    const evalFbCard = eval_?.personaFeedback ? card('border-slate-200', 'bg-slate-50', 'text-slate-500', 'Оценка ИИ-тренера',
-      `<p class="text-sm text-slate-700">${esc(eval_.personaFeedback)}</p>`) : '';
+    const evalFbCard = eval_?.personaFeedback ? collapsible('border-slate-200', 'bg-slate-50', 'text-slate-500', 'Оценка ИИ-тренера',
+      `<p class="text-sm text-slate-700">${esc(eval_.personaFeedback)}</p>`,
+      eval_.personaFeedback) : '';
 
     return [header, rolesCard, personaCard, bestCard, weakCard, bestReplyCard, applyCard, critiqueCard, evalFbCard]
       .filter(Boolean).join('\n');
@@ -480,38 +491,61 @@ ${p3.main_insight || '—'}
     const decBorder = decColor === 'green' ? '#86efac' : decColor === 'amber' ? '#fcd34d' : '#fca5a5';
     const decText = decColor === 'green' ? '#166534' : decColor === 'amber' ? '#92400e' : '#991b1b';
 
+    function p3Section(bg, border, titleColor, title, bodyHtml, collapsed = true) {
+      const openAttr = collapsed ? '' : 'open';
+      return `<details ${openAttr} style="background:${bg};border:1px solid ${border};border-radius:10px;padding:10px 14px;margin-bottom:10px">
+        <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
+          <span style="font-size:10px;color:#94a3b8">▸</span>
+          <p style="font-size:11px;font-weight:700;color:${titleColor};margin:0">${title}</p>
+        </summary>
+        <div style="margin-top:8px">${bodyHtml}</div>
+      </details>`;
+    }
+
     return `<div style="font-family:system-ui,sans-serif;max-width:680px;margin:0 auto;padding:4px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <p style="margin:0;font-size:13px;font-weight:700;color:#1e293b">Отчёт: задание 3 — вариант ${taskNum || '?'}</p>
         <span style="font-size:11px;color:#64748b">${escapeHtml(task?.title || '')}</span>
       </div>
 
-      ${fragmentSnippet ? `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px">
-        <p style="font-size:11px;font-weight:700;color:#475569;margin:0 0 4px">Фрагмент</p>
-        <p style="font-size:12px;color:#334155;margin:0;white-space:pre-wrap">${escapeHtml(fragmentSnippet)}${(task?.fragment_text || '').length > 300 ? '…' : ''}</p>
-      </div>` : ''}
+      ${fragmentSnippet ? p3Section('#f8fafc','#e2e8f0','#475569','Фрагмент',
+        `<p style="font-size:12px;color:#334155;margin:0;white-space:pre-wrap">${escapeHtml(fragmentSnippet)}${(task?.fragment_text || '').length > 300 ? '…' : ''}</p>`) : ''}
 
-      ${hintCard}
+      ${hintCard ? p3Section('#fffbeb','#fcd34d','#92400e','Подсказка тренера',
+        hint.categories?.length ? `<p style="font-size:12px;color:#78350f;margin:0 0 6px">${escapeHtml(hint.tip || '')}</p><div style="display:flex;flex-wrap:wrap;gap:4px">${(hint.categories || []).map((c) => `<span style="background:#fde68a;color:#92400e;font-size:11px;border-radius:20px;padding:2px 8px">${escapeHtml(c)}</span>`).join('')}</div>` : '') : ''}
 
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px">
-        <p style="font-size:11px;font-weight:700;color:#475569;margin:0 0 4px">Что я заподозрил</p>
-        <p style="font-size:12px;color:#334155;margin:0;white-space:pre-wrap">${escapeHtml(p3.suspicious_claims || '—')}</p>
-      </div>
+      ${p3Section('#f8fafc','#e2e8f0','#475569','Что я заподозрил',
+        `<p style="font-size:12px;color:#334155;margin:0;white-space:pre-wrap">${escapeHtml(p3.suspicious_claims || '—')}</p>`, false)}
 
-      ${foundCard}
-      ${missedCard}
-      ${verdictCard}
+      ${foundCard ? p3Section('#f0fdf4','#86efac','#166534','✅ Что нашли правильно',
+        `<ul style="margin:0;padding-left:16px;font-size:12px;color:#15803d">${eval3.foundRisks.map((r) => `<li>«${escapeHtml(r.text)}» <span style="color:#6b7280">(${escapeHtml(r.type)})</span></li>`).join('')}</ul>`) : ''}
 
-      <div style="background:${decBg};border:1px solid ${decBorder};border-radius:10px;padding:12px 14px;margin-bottom:10px">
-        <p style="font-size:11px;font-weight:700;color:${decText};margin:0 0 4px">Моё решение</p>
-        <p style="font-size:13px;font-weight:600;color:${decText};margin:0 0 6px">${escapeHtml(dec)}</p>
-        ${p3.verdict_reason ? `<p style="font-size:12px;color:${decText};margin:0;opacity:0.85">${escapeHtml(p3.verdict_reason)}</p>` : ''}
-      </div>
+      ${missedCard ? p3Section('#fef2f2','#fca5a5','#991b1b','⚠️ Что пропустили',
+        `<ul style="margin:0;padding-left:16px;font-size:12px;color:#b91c1c">${eval3.missedRisks.map((r) => `<li>«${escapeHtml(r.text)}» — ${escapeHtml(r.hint)}</li>`).join('')}</ul>`) : ''}
 
-      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:12px 14px">
-        <p style="font-size:11px;font-weight:700;color:#075985;margin:0 0 4px">Главный вывод</p>
-        <p style="font-size:12px;color:#0c4a6e;margin:0;white-space:pre-wrap">${escapeHtml(p3.main_insight || '—')}</p>
-      </div>
+      ${verdictCard ? p3Section('#f8fafc','#e2e8f0','#475569','Итог тренера',
+        `<p style="font-size:12px;color:#334155;margin:0">${escapeHtml(eval3.verdictText)}</p>`) : ''}
+
+      <details open style="background:${decBg};border:1px solid ${decBorder};border-radius:10px;padding:10px 14px;margin-bottom:10px">
+        <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
+          <span style="font-size:10px;color:#94a3b8">▸</span>
+          <p style="font-size:11px;font-weight:700;color:${decText};margin:0">Моё решение</p>
+        </summary>
+        <div style="margin-top:8px">
+          <p style="font-size:13px;font-weight:600;color:${decText};margin:0 0 6px">${escapeHtml(dec)}</p>
+          ${p3.verdict_reason ? `<p style="font-size:12px;color:${decText};margin:0;opacity:0.85">${escapeHtml(p3.verdict_reason)}</p>` : ''}
+        </div>
+      </details>
+
+      <details open style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:10px 14px">
+        <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
+          <span style="font-size:10px;color:#94a3b8">▸</span>
+          <p style="font-size:11px;font-weight:700;color:#075985;margin:0">Главный вывод</p>
+        </summary>
+        <div style="margin-top:8px">
+          <p style="font-size:12px;color:#0c4a6e;margin:0;white-space:pre-wrap">${escapeHtml(p3.main_insight || '—')}</p>
+        </div>
+      </details>
     </div>`;
   }
 

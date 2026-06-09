@@ -3048,11 +3048,18 @@ function buildReportP1Html(task, wf, num) {
 
   function esc(t) { return escapeHtml(t || ''); }
 
-  function card(borderCls, bgCls, labelCls, label, body) {
-    return `<div class="rounded-xl border ${borderCls} ${bgCls} px-4 py-3 space-y-2">
-      <p class="text-xs font-bold uppercase tracking-widest ${labelCls}">${label}</p>
-      ${body}
-    </div>`;
+  function collapsible(borderCls, bgCls, labelCls, label, body, previewText = '') {
+    const snippet = previewText
+      ? `<span class="text-xs text-slate-400 font-normal normal-case tracking-normal truncate ml-2 max-w-[200px]">${esc(String(previewText).slice(0, 55))}${String(previewText).length > 55 ? '…' : ''}</span>`
+      : '';
+    return `<details class="rounded-xl border ${borderCls} ${bgCls} px-4 py-3">
+      <summary class="cursor-pointer list-none flex items-center gap-1.5">
+        <span class="text-slate-400 text-xs select-none">▸</span>
+        <p class="text-xs font-bold uppercase tracking-widest ${labelCls} m-0 shrink-0">${label}</p>
+        ${snippet}
+      </summary>
+      <div class="space-y-2 mt-2">${body}</div>
+    </details>`;
   }
 
   function preBox(text) {
@@ -3070,14 +3077,15 @@ function buildReportP1Html(task, wf, num) {
     <p class="font-bold text-base">Кейс ${num || '?'}: ${esc(task?.title)}</p>
   </div>`;
 
-  const badPrompt = card('border-red-200', 'bg-red-50', 'text-red-500', 'Что было не так',
+  const badPrompt = collapsible('border-red-200', 'bg-red-50', 'text-red-500', 'Что было не так',
     `<code class="block text-sm bg-white rounded-lg px-3 py-2 border border-red-100 text-slate-700">${esc(task?.bad_prompt || '—')}</code>
-     <p class="text-xs text-slate-500">Слишком общий запрос — нет роли, контекста, формата, стиля и критериев.</p>`);
+     <p class="text-xs text-slate-500">Слишком общий запрос — нет роли, контекста, формата, стиля и критериев.</p>`,
+    task?.bad_prompt);
 
-  const pv1 = card('border-slate-200', 'bg-white', 'text-slate-400', 'Промпт v1 (RTCFSC)', preBox(p1.prompt_v1));
-  const av1 = card('border-slate-100', 'bg-slate-50', 'text-slate-400', 'Ответ ИИ v1', mdBox(p1.ai_v1));
-  const pv2 = card('border-blue-200', 'bg-blue-50', 'text-blue-600', 'Промпт v2', preBox(p1.prompt_v2));
-  const av2 = card('border-slate-100', 'bg-slate-50', 'text-slate-400', 'Ответ ИИ v2', mdBox(p1.ai_v2));
+  const pv1 = collapsible('border-slate-200', 'bg-white', 'text-slate-400', 'Промпт v1 (RTCFSC)', preBox(p1.prompt_v1), p1.prompt_v1);
+  const av1 = collapsible('border-slate-100', 'bg-slate-50', 'text-slate-400', 'Ответ ИИ v1', mdBox(p1.ai_v1), p1.ai_v1);
+  const pv2 = collapsible('border-blue-200', 'bg-blue-50', 'text-blue-600', 'Промпт v2', preBox(p1.prompt_v2), p1.prompt_v2);
+  const av2 = collapsible('border-slate-100', 'bg-slate-50', 'text-slate-400', 'Ответ ИИ v2', mdBox(p1.ai_v2), p1.ai_v2);
 
   return [header, badPrompt, pv1, av1, pv2, av2].join('\n');
 }
