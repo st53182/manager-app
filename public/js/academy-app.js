@@ -535,6 +535,8 @@ const PRACTICE_SCENARIO_KEYS = new Set([
   'block1-practice-prompt',
   'block1-practice-scenario',
   'block1-practice-hallucination',
+  'block1-practice-reverse',
+  'block1-practice-detective',
   'block2-practice-aim',
   'block2-practice-library',
   'block2-practice-context'
@@ -544,6 +546,8 @@ const TASK_PICK_LABELS = {
   'block1-practice-prompt': 'Выберите одну из 5 задач',
   'block1-practice-scenario': 'Выберите один из 5 сценариев',
   'block1-practice-hallucination': 'Выберите один из 5 фрагментов',
+  'block1-practice-reverse': 'Выберите один из 5 текстов',
+  'block1-practice-detective': 'Квиз: угадай автора',
   'block2-practice-aim': 'Выберите один из 5 кейсов',
   'block2-practice-library': 'Выберите роль / направление',
   'block2-practice-context': 'Выберите тип ассистента'
@@ -564,6 +568,16 @@ const PRACTICE_STEP_LABELS = {
     'Найти утверждения и проверить в диалоге',
     'Оценить находки и принять решение',
     'Проверить отчёт и отправить'
+  ],
+  'block1-practice-reverse': [
+    'Написать промпт-гипотезу и сравнить с оригиналом',
+    'Изучить авторский промпт и улучшить свой до v2',
+    'Проверить отчёт и отправить'
+  ],
+  'block1-practice-detective': [
+    'Прочитать 5 текстов и угадать автора',
+    'Проверить ответы и изучить разбор',
+    'Записать маркеры, собрать отчёт и отправить'
   ],
   'block2-practice-aim': [
     'Заполнить AIM, получить результат v1 и оценить его',
@@ -597,6 +611,16 @@ const PRACTICE_STEP_CELEBRATIONS = {
     null,
     '✓ Проверка завершена! ИИ-тренер оценит ваши находки — запишите решение и вывод.',
     '✓ Отчёт собран. Проверьте его и нажмите «Завершить задание».'
+  ],
+  'block1-practice-reverse': [
+    null,
+    '✓ Авторский промпт раскрыт! Сравните с вашим и напишите промпт v2.',
+    '✓ Отчёт собран. Проверьте его и нажмите «Отправить».'
+  ],
+  'block1-practice-detective': [
+    null,
+    '✓ Ответы проверены! Изучите разбор и перейдите к маркерам.',
+    '✓ Отчёт собран. Проверьте его и нажмите «Отправить».'
   ],
   'block2-practice-aim': [
     null,
@@ -920,6 +944,25 @@ const STEP_HINTS = {
       '3': '<p>Анализ завершён — ваши находки собраны ниже. Просмотрите и нажмите <strong>«Завершить задание»</strong>.</p>'
     }
   },
+  'block1-practice-reverse': {
+    initial: '<p class="mb-1 font-semibold text-slate-700">Реверс-инжиниринг промпта</p><p class="text-slate-600 text-sm mb-1"><strong>Почему:</strong> понять чужой хороший промпт — лучший способ научиться писать свои.</p><p class="text-slate-600 text-sm mb-1"><strong>Как:</strong> читаете результат → пишете промпт-гипотезу → видите авторский → улучшаете v2.</p><p class="text-slate-500 text-sm">Выберите один из 5 текстов ниже.</p>',
+    taskSelected: '<p>Прочитайте текст выше. Обратите внимание на структуру, стиль и детали. Нажмите <strong>«Начать задание»</strong>.</p>',
+    steps: {
+      '1.1': '<p class="mb-1">Прочитайте текст-цель внимательно. Напишите <strong>промпт-гипотезу</strong> — что могло породить этот результат?</p><p class="text-xs text-slate-500">Укажите роль, задачу, формат и стиль.</p>',
+      '1.2': '<p class="mb-1">Посмотрите на результат вашего промпта. <strong>Что совпало, что отличается?</strong> Запишите минимум 2 наблюдения.</p>',
+      '2': '<p class="mb-1">Изучите авторский промпт. Напишите промпт v2, учитывая найденные отличия. Запустите и сравните.</p>',
+      '3': '<p>Отчёт собран. Проверьте и нажмите <strong>«Отправить»</strong>.</p>'
+    }
+  },
+  'block1-practice-detective': {
+    initial: '<p class="mb-1 font-semibold text-slate-700">Угадай — человек или ИИ?</p><p class="text-slate-600 text-sm mb-1"><strong>Почему:</strong> умение отличить живой текст от машинного — это навык критического чтения.</p><p class="text-slate-600 text-sm">Нажмите <strong>«Начать задание»</strong> — появятся 5 текстов для оценки.</p>',
+    taskSelected: '<p>Нажмите <strong>«Начать задание»</strong> — появятся 5 текстов для оценки.</p>',
+    steps: {
+      '1': '<p class="mb-1">Прочитайте каждый текст. Для каждого: отметьте автора, уверенность и напишите <strong>причину</strong> вашего выбора.</p>',
+      '2': '<p class="mb-1">Изучите разбор — особенно там, где ошиблись. Нажмите <strong>«Записать маркеры»</strong>.</p>',
+      '3': '<p>Запишите 3 личных маркера ИИ-текста. Собрать отчёт и нажать <strong>«Отправить»</strong>.</p>'
+    }
+  },
   'block2-practice-aim': {
     initial: '<p>Выберите один из 5 кейсов для практики с методом AIM.</p>',
     taskSelected: '<p>Прочитайте кейс. Нажмите <strong>«Начать задание»</strong> — заполните структуру AIM.</p>',
@@ -978,6 +1021,18 @@ const PRACTICE_HINTS = {
     { label: 'ИИ настаивает на ответе', text: 'ИИ отвечает уверенно и не признаёт неточностей. Дай 2 уточняющих вопроса, чтобы выявить ограничения.' },
     { label: 'Оформить вывод', text: 'Как одним абзацем написать «Главный вывод» по результатам проверки? Дай структуру: что проверял, что выяснил, что буду делать иначе.' }
   ],
+  'block1-practice-reverse': [
+    { label: 'С чего начать промпт', text: 'Я смотрю на текст-цель из задания 4. Какие 3 элемента промпта проще всего угадать из результата? Дай подсказку без написания промпта за меня.' },
+    { label: 'Роль в промпте', text: 'Как определить роль для промпта по стилю и тону текста-цели? Дай 2 примера для разных жанров: деловой текст и профессиональный пост.' },
+    { label: 'Проверь мою гипотезу', text: 'Я написал промпт-гипотезу для задания 4. Укажи: чего может не хватать — без переписывания промпта целиком.' },
+    { label: 'Анализ авторского промпта', text: 'Объясни структуру авторского промпта: какие элементы из него дали конкретный результат в тексте? Только анализ, не новый промпт.' }
+  ],
+  'block1-practice-detective': [
+    { label: 'Маркеры ИИ-текста', text: 'Назови 5 лингвистических маркеров, которые чаще всего встречаются в текстах ИИ. Без примеров из текстов задания.' },
+    { label: 'Почему сложно отличить', text: 'В чём главная сложность при определении ИИ-текста от человеческого в профессиональном контексте? Коротко, 3–4 предложения.' },
+    { label: 'Проверь мою причину', text: 'Я написал причину для одного из текстов в задании 5. Скажи: это убедительный аргумент или я ошибся в логике? Не говори правильный ответ.' },
+    { label: 'Как писать маркеры', text: 'Покажи структуру хорошего «личного маркера ИИ-текста»: что в нём должно быть, чтобы он был конкретным? Один пример, без раскрытия текстов задания.' }
+  ],
   'block2-practice-aim': [
     { label: 'Как заполнить AIM', text: 'Объясни, что писать в Aim, Inputs и Method для моего выбранного кейса. По одному примеру на блок, без готового полного промпта.' },
     { label: 'Проверь черновик AIM', text: 'Я пришлю черновик AIM. Дай обратную связь: чего не хватает. Не переписывай промпт целиком.' },
@@ -1000,6 +1055,8 @@ const PRACTICE_SECTION_IDS = {
   'block1-practice-prompt': 'practicePromptSection',
   'block1-practice-scenario': 'practiceDialogueSection',
   'block1-practice-hallucination': 'practiceAnalysisSection',
+  'block1-practice-reverse': 'practiceReverseSection',
+  'block1-practice-detective': 'practiceDetectiveSection',
   'block2-practice-aim': 'practiceAimSection',
   'block2-practice-library': 'practiceLibrarySection',
   'block2-practice-context': 'practiceContextSection'
@@ -2100,6 +2157,12 @@ function configurePracticeWorkflow(scenarioKey) {
   state.lastPracticeAiResult = null;
   if (pickLabel) pickLabel.textContent = TASK_PICK_LABELS[scenarioKey] || 'Выберите вариант';
 
+  // P5 detective: no task selection needed — show start button right away
+  if (scenarioKey === 'block1-practice-detective') {
+    document.getElementById('startPracticeBtn')?.classList.remove('hidden');
+    document.getElementById('taskOptionsBlock')?.classList.add('hidden');
+  }
+
   const activeId = PRACTICE_SECTION_IDS[scenarioKey];
   if (activeId) document.getElementById(activeId)?.classList.remove('hidden');
 
@@ -2205,7 +2268,13 @@ function clearPracticeFormUi() {
     'checklistItem2',
     'checklistItem3',
     'checklistItem4',
-    'checklistItem5'
+    'checklistItem5',
+    'p4PromptV1',
+    'p4DiffNotes',
+    'p4AuthorAnalysis',
+    'p4PromptV2',
+    'p5PersonalMarkers',
+    'p5MistakeAnalysis'
   ];
   for (const id of ids) {
     const el = document.getElementById(id);
@@ -2221,10 +2290,15 @@ function clearPracticeFormUi() {
     r.checked = false;
   });
   ['aiResultV1Preview', 'aiResultV2Preview', 'aiResultDialoguePreview', 'aiResultAnalysisPreview',
-   'm2AiResultV1Preview', 'm2AiResultV2Preview', 'libraryAiResultPreview', 'contextAiResultPreview'].forEach((id) => {
+   'm2AiResultV1Preview', 'm2AiResultV2Preview', 'libraryAiResultPreview', 'contextAiResultPreview',
+   'p4ResultV1Preview', 'p4ResultV2Preview'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) { el.innerHTML = ''; delete el.dataset.rawText; }
   });
+  const p5Cards = document.getElementById('p5TextCards');
+  if (p5Cards) p5Cards.innerHTML = '';
+  const p5Reveals = document.getElementById('p5Reveals');
+  if (p5Reveals) p5Reveals.innerHTML = '';
   const riskBody = document.getElementById('riskTableBody');
   if (riskBody) {
     delete riskBody.dataset.inited;
@@ -3014,13 +3088,18 @@ function startPractice() {
   const wf = document.getElementById('practiceWorkflowBlock');
   wf?.classList.remove('hidden');
   document.getElementById('startPracticeBtn')?.classList.add('hidden');
-  // Hide unselected cases and lesson description after start (P1 and P2)
-  if (['block1-practice-prompt', 'block1-practice-scenario', 'block1-practice-hallucination'].includes(sk)) {
+  // Hide unselected cases and lesson description after start
+  if (['block1-practice-prompt', 'block1-practice-scenario', 'block1-practice-hallucination', 'block1-practice-reverse'].includes(sk)) {
     const list = document.getElementById('taskOptionsList');
     list?.querySelectorAll('.aa-task-card').forEach((btn) => {
       btn.classList.toggle('hidden', btn.dataset.taskId !== state.selectedTaskId);
     });
     document.getElementById('taskOptionsPickLabel')?.classList.add('hidden');
+    document.getElementById('lessonContent')?.classList.add('hidden');
+  }
+  // P5: hide task options block entirely (all 5 texts shown as quiz cards)
+  if (sk === 'block1-practice-detective') {
+    document.getElementById('taskOptionsBlock')?.classList.add('hidden');
     document.getElementById('lessonContent')?.classList.add('hidden');
   }
   // P2: generate persona card on start
@@ -3029,6 +3108,12 @@ function startPractice() {
   }
   if (sk === 'block1-practice-hallucination') {
     generateP3Hint().catch(() => {});
+  }
+  if (sk === 'block1-practice-reverse') {
+    initP4TargetOutput();
+  }
+  if (sk === 'block1-practice-detective') {
+    renderP5TextCards();
   }
   if (sk === 'block2-practice-library') {
     const task = getSelectedTaskOption();
@@ -3699,7 +3784,8 @@ function buildPracticeReport() {
   const task = getSelectedTaskOption();
   const num = getSelectedTaskNumber();
   const sk = state.currentLesson?.scenario_key;
-  if (!wfApi || !sk || !task) {
+  const isDetective = sk === 'block1-practice-detective';
+  if (!wfApi || !sk || (!task && !isDetective)) {
     alert('Выберите вариант задания.');
     return;
   }
@@ -3726,6 +3812,11 @@ function buildPracticeReport() {
     if (sk === 'block1-practice-prompt') report = wfApi.buildReportP1(task, wf, num);
     else if (sk === 'block1-practice-scenario') report = wfApi.buildReportP2(task, wf, num);
     else if (sk === 'block1-practice-hallucination') report = wfApi.buildReportP3(task, wf, num);
+    else if (sk === 'block1-practice-reverse') report = wfApi.buildReportP4Html(task, wf, num);
+    else if (sk === 'block1-practice-detective') {
+      const allTexts = state.taskOptions || [];
+      report = wfApi.buildReportP5Html(null, wf, num, allTexts);
+    }
   }
   const ta = document.getElementById('assignmentAnswer');
   if (ta && report) {
@@ -3734,8 +3825,173 @@ function buildPracticeReport() {
     if (sk === 'block1-practice-prompt') showP1ReportHtml(task, wf, num);
     else if (sk === 'block1-practice-scenario') showP2ReportHtml(task, wf, num);
     else if (sk === 'block1-practice-hallucination') showP3ReportHtml(task, wf, num);
+    else if (sk === 'block1-practice-reverse') showP4ReportHtml(task, wf, num);
+    else if (sk === 'block1-practice-detective') showP5ReportHtml(null, wf, state.taskOptions || []);
     advancePracticeStep();
   }
+}
+
+async function runP4Prompt(pass) {
+  const task = getSelectedTaskOption();
+  if (!task) { alert('Выберите вариант задания.'); return; }
+  const promptId = pass === 'v2' ? 'p4PromptV2' : 'p4PromptV1';
+  const btnId = pass === 'v2' ? 'p4RunV2Btn' : 'p4RunV1Btn';
+  const resultBlockId = pass === 'v2' ? 'p4ResultV2Block' : 'p4ResultV1Block';
+  const resultPreviewId = pass === 'v2' ? 'p4ResultV2Preview' : 'p4ResultV1Preview';
+  const text = document.getElementById(promptId)?.value?.trim();
+  if (!text) { alert('Напишите промпт перед запуском.'); return; }
+  if (state.streaming) return;
+  const runBtn = document.getElementById(btnId);
+  runBtn?.setAttribute('disabled', 'true');
+  try {
+    scheduleAutoSave();
+    await saveSubmission('draft');
+    const payload = {
+      conversationId: state.currentConversationId || undefined,
+      lessonId: state.currentLessonId || undefined,
+      courseId: state.currentLesson?.course_id || undefined,
+      message: text,
+      model: document.getElementById('modelSelect').value,
+      chatMode: 'practice_run',
+      practiceRunContext: {
+        runKind: 'prompt',
+        pass,
+        taskTitle: task.title || '',
+        taskContext: task.context || ''
+      }
+    };
+    const { assistantText } = await streamChat(payload);
+    if (assistantText) {
+      state.lastPracticeAiResult = assistantText;
+      const block = document.getElementById(resultBlockId);
+      const preview = document.getElementById(resultPreviewId);
+      if (block) block.classList.remove('hidden');
+      if (preview) {
+        preview.innerHTML = renderMarkdown(assistantText);
+        preview.dataset.rawText = assistantText;
+      }
+      if (pass === 'v1') tryAdvancePracticeSubstep();
+      saveSubmission('draft').catch(() => {});
+    }
+  } catch (e) {
+    throw e;
+  } finally {
+    runBtn?.removeAttribute('disabled');
+  }
+}
+
+function showP4ReportHtml(task, wf, num) {
+  const block = document.getElementById('reportRenderBlock');
+  const label = document.getElementById('assignmentAnswerLabel');
+  if (!block) return;
+  const wfApi = getPracticeWorkflowApi();
+  block.innerHTML = wfApi.buildReportP4Html(task, wf, num);
+  block.classList.remove('hidden');
+  if (label) label.classList.add('hidden');
+}
+
+function showP5ReportHtml(task, wf, allTexts) {
+  const block = document.getElementById('reportRenderBlock');
+  const label = document.getElementById('assignmentAnswerLabel');
+  if (!block) return;
+  const wfApi = getPracticeWorkflowApi();
+  block.innerHTML = wfApi.buildReportP5Html(task, wf, null, allTexts);
+  block.classList.remove('hidden');
+  if (label) label.classList.add('hidden');
+}
+
+/* P4: Show the target output for reverse-engineering */
+function initP4TargetOutput() {
+  const task = getSelectedTaskOption();
+  if (!task) return;
+  const block = document.getElementById('p4TargetBlock');
+  const pre = document.getElementById('p4TargetOutput');
+  if (block && pre) {
+    pre.textContent = task.target_output || '';
+    block.classList.remove('hidden');
+  }
+}
+
+/* P5: Render all quiz text cards */
+function renderP5TextCards() {
+  const container = document.getElementById('p5TextCards');
+  if (!container) return;
+  const texts = state.taskOptions || [];
+  container.innerHTML = '';
+  texts.forEach((txt) => {
+    const card = document.createElement('div');
+    card.className = 'p5-text-card rounded-xl border border-slate-200 bg-white px-4 py-4 space-y-3';
+    card.dataset.textId = txt.id;
+    card.innerHTML = `
+      <p class="text-xs font-semibold text-violet-700 uppercase tracking-wide">${escapeHtml(txt.label || '')}</p>
+      <p class="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">${escapeHtml(txt.text || '')}</p>
+      <div class="flex flex-wrap gap-4 items-start">
+        <fieldset>
+          <legend class="text-xs font-medium text-slate-600 mb-1">Автор:</legend>
+          <div class="flex gap-3">
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+              <input type="radio" name="p5verdict_${escapeHtml(txt.id)}" value="human" /> Человек
+            </label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+              <input type="radio" name="p5verdict_${escapeHtml(txt.id)}" value="ai" /> ИИ
+            </label>
+          </div>
+        </fieldset>
+        <label class="flex flex-col gap-1">
+          <span class="text-xs font-medium text-slate-600">Уверенность:</span>
+          <select data-text-id="${escapeHtml(txt.id)}" class="aa-select text-sm">
+            <option value="">—</option>
+            <option value="low">Низкая</option>
+            <option value="medium">Средняя</option>
+            <option value="high">Высокая</option>
+          </select>
+        </label>
+      </div>
+      <label class="block">
+        <span class="text-xs font-medium text-slate-600">Причина вашего выбора:</span>
+        <textarea data-text-id="${escapeHtml(txt.id)}" rows="2" class="aa-textarea mt-1 text-sm" placeholder="Что именно подсказало вам ответ?"></textarea>
+      </label>`;
+    container.appendChild(card);
+  });
+}
+
+/* P5: Show score + per-text reveals */
+function showP5Reveals() {
+  const texts = state.taskOptions || [];
+  const wfApi = getPracticeWorkflowApi();
+  const answers = wfApi?.collectP5Answers?.() || [];
+  let correct = 0;
+  const revealsEl = document.getElementById('p5Reveals');
+  if (revealsEl) revealsEl.innerHTML = '';
+  texts.forEach((txt) => {
+    const ans = answers.find((a) => a.textId === txt.id) || {};
+    const isCorrect = ans.verdict === (txt.is_ai ? 'ai' : 'human');
+    if (isCorrect) correct++;
+    const correctLabel = txt.is_ai ? 'ИИ' : 'Человек';
+    const studentLabel = ans.verdict === 'ai' ? 'ИИ' : ans.verdict === 'human' ? 'Человек' : '—';
+    const icon = isCorrect ? '✅' : '❌';
+    const bg = isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200';
+    const titleColor = isCorrect ? 'text-green-700' : 'text-red-700';
+    if (revealsEl) {
+      const div = document.createElement('div');
+      div.className = `rounded-xl border ${bg} px-4 py-3 space-y-2`;
+      div.innerHTML = `
+        <div class="flex justify-between items-center">
+          <p class="text-xs font-semibold ${titleColor}">${icon} ${escapeHtml(txt.label || '')}</p>
+          <span class="text-xs text-slate-500">Ваш ответ: <strong>${studentLabel}</strong> · Правильно: <strong>${correctLabel}</strong></span>
+        </div>
+        <p class="text-xs text-slate-500">Причина: ${escapeHtml(ans.reason || '—')}</p>
+        <p class="text-xs text-slate-700">${escapeHtml(txt.explanation || '')}</p>`;
+      revealsEl.appendChild(div);
+    }
+  });
+  const scoreEl = document.getElementById('p5ScoreNum');
+  const scoreLabelEl = document.getElementById('p5ScoreLabel');
+  if (scoreEl) scoreEl.textContent = `${correct}/${texts.length}`;
+  if (scoreLabelEl) {
+    scoreLabelEl.textContent = correct >= 4 ? 'отлично!' : correct >= 3 ? 'хороший результат' : 'есть над чем поработать';
+  }
+  return correct;
 }
 
 function validateBeforeSubmit() {
@@ -3887,6 +4143,7 @@ function closePracticeChat() {
 function warnIfNoTaskSelected() {
   if (!state.taskOptions.length) return true;
   if (state.selectedTaskId) return true;
+  if (state.currentLesson?.scenario_key === 'block1-practice-detective') return true;
   document.getElementById('taskSelectReminder')?.classList.remove('hidden');
   document.getElementById('taskOptionsBlock')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   return false;
@@ -5900,6 +6157,36 @@ function wireUi() {
   document.getElementById('buildReportP1Btn')?.addEventListener('click', () => buildPracticeReport());
   document.getElementById('buildReportP2Btn')?.addEventListener('click', () => buildPracticeReport());
   document.getElementById('buildReportP3Btn')?.addEventListener('click', () => buildPracticeReport());
+  document.getElementById('buildReportP4Btn')?.addEventListener('click', () => buildPracticeReport());
+  document.getElementById('buildReportP5Btn')?.addEventListener('click', () => buildPracticeReport());
+
+  /* ── P4: Reverse-engineering buttons ── */
+  document.getElementById('p4RunV1Btn')?.addEventListener('click', () => {
+    const prompt = document.getElementById('p4PromptV1')?.value?.trim();
+    if (!prompt) return alert('Напишите промпт-гипотезу перед запуском.');
+    runP4Prompt('v1').catch((e) => alert(e.message || 'Не удалось получить ответ'));
+  });
+  document.getElementById('p4NextToRevealBtn')?.addEventListener('click', () => {
+    const task = getSelectedTaskOption();
+    const authorEl = document.getElementById('p4AuthorPrompt');
+    if (authorEl && task?.author_prompt) authorEl.textContent = task.author_prompt;
+    document.getElementById('p4AuthorReveal')?.classList.remove('hidden');
+    advancePracticeStep();
+  });
+  document.getElementById('p4RunV2Btn')?.addEventListener('click', () => {
+    const prompt = document.getElementById('p4PromptV2')?.value?.trim();
+    if (!prompt) return alert('Напишите промпт v2 перед запуском.');
+    runP4Prompt('v2').catch((e) => alert(e.message || 'Не удалось получить ответ'));
+  });
+
+  /* ── P5: Detective buttons ── */
+  document.getElementById('p5CheckAnswersBtn')?.addEventListener('click', () => {
+    showP5Reveals();
+    advancePracticeStep();
+  });
+  document.getElementById('p5NextToMarkersBtn')?.addEventListener('click', () => {
+    advancePracticeStep();
+  });
   document.getElementById('buildReportM2P1Btn')?.addEventListener('click', () => buildPracticeReport());
   document.getElementById('buildReportM2P2Btn')?.addEventListener('click', () => buildPracticeReport());
   document.getElementById('buildReportM2P3Btn')?.addEventListener('click', () => buildPracticeReport());

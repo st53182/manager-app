@@ -53,6 +53,20 @@
       'Проверил хотя бы одну цифру или статистику',
       'Проверил хотя бы одну ссылку на авторитет или совет',
       'Принял обоснованное решение по фрагменту'
+    ],
+    'block1-practice-reverse': [
+      'Промпт v1 содержит роль, задачу и формат',
+      'Запустил промпт v1 и сравнил с оригиналом',
+      'Назвал минимум 2 конкретных отличия',
+      'Изучил авторский промпт и объяснил ключевые расхождения',
+      'Промпт v2 учитывает авторский вариант'
+    ],
+    'block1-practice-detective': [
+      'Оценил все 5 текстов',
+      'Для каждого указал уверенность и причину',
+      'Изучил разбор там, где ошибся',
+      'Написал 3 конкретных маркера ИИ-текста',
+      'Маркеры основаны на наблюдениях, а не скопированы из подсказки'
     ]
   };
 
@@ -121,6 +135,11 @@
       if (task.context) {
         html += `<p class="text-xs mt-2 text-emerald-800 bg-emerald-50 border border-emerald-200 rounded px-2 py-1"><strong>Задание выполнено, когда:</strong> ${escapeHtml(task.context)}</p>`;
       }
+    } else if (scenarioKey === 'block1-practice-reverse') {
+      html += `<p class="text-sm text-slate-700 mb-2">${escapeHtml(task.context || '')}</p>`;
+      html += `<p class="text-xs font-medium text-violet-700 mt-2">Задача: восстановить промпт, который создал этот текст</p>`;
+    } else if (scenarioKey === 'block1-practice-detective') {
+      html += `<p class="text-sm text-slate-700">Квиз из 5 текстов — определите, кто написал каждый: человек или ИИ.</p>`;
     } else {
       html += `<p class="text-xs text-slate-600 mb-2">${escapeHtml(task.trains || '')}</p>`;
       html += `<div class="aa-task-detail text-sm">${escapeHtml(task.fragment_text || task.context || '')}</div>`;
@@ -209,9 +228,35 @@
         verdict_reason: val('p3VerdictReason'),
         main_insight: val('p3MainInsight')
       },
+      p4: {
+        prompt_v1: val('p4PromptV1'),
+        ai_v1: el('p4ResultV1Preview')?.dataset?.rawText || el('p4ResultV1Preview')?.textContent?.trim() || '',
+        diff_notes: val('p4DiffNotes'),
+        author_analysis: val('p4AuthorAnalysis'),
+        prompt_v2: val('p4PromptV2'),
+        ai_v2: el('p4ResultV2Preview')?.dataset?.rawText || el('p4ResultV2Preview')?.textContent?.trim() || ''
+      },
+      p5: {
+        answers: collectP5Answers(),
+        markers: val('p5PersonalMarkers'),
+        mistake_analysis: val('p5MistakeAnalysis')
+      },
       self_check: collectSelfCheck(scenarioKey)
     };
     return wf;
+  }
+
+  function collectP5Answers() {
+    const cards = document.querySelectorAll('.p5-text-card');
+    const answers = [];
+    cards.forEach((card) => {
+      const textId = card.dataset.textId;
+      const verdict = card.querySelector('input[name="p5verdict_' + textId + '"]:checked')?.value || '';
+      const confidence = card.querySelector('select[data-text-id="' + textId + '"]')?.value || '';
+      const reason = card.querySelector('textarea[data-text-id="' + textId + '"]')?.value?.trim() || '';
+      answers.push({ textId, verdict, confidence, reason });
+    });
+    return answers;
   }
 
   function restoreWorkflowToUi(wf, scenarioKey) {
@@ -251,6 +296,20 @@
       const radio = document.querySelector(`input[name="riskDecision"][value="${p3.decision}"]`);
       if (radio) radio.checked = true;
     }
+
+    const p4 = wf.p4 || {};
+    set('p4PromptV1', p4.prompt_v1);
+    setMd('p4ResultV1Preview', p4.ai_v1);
+    if (p4.ai_v1) el('p4ResultV1Block')?.classList.remove('hidden');
+    set('p4DiffNotes', p4.diff_notes);
+    set('p4AuthorAnalysis', p4.author_analysis);
+    set('p4PromptV2', p4.prompt_v2);
+    setMd('p4ResultV2Preview', p4.ai_v2);
+    if (p4.ai_v2) el('p4ResultV2Block')?.classList.remove('hidden');
+
+    const p5 = wf.p5 || {};
+    set('p5PersonalMarkers', p5.markers);
+    set('p5MistakeAnalysis', p5.mistake_analysis);
 
     renderSelfCheck(scenarioKey, wf.self_check);
   }
@@ -549,6 +608,92 @@ ${p3.main_insight || '—'}
     </div>`;
   }
 
+  function buildReportP4Html(task, wf, taskNum) {
+    const p4 = wf.p4 || {};
+    function esc(t) { return escapeHtml(t || ''); }
+    function sec(bg, border, titleColor, label, bodyHtml, open = false) {
+      return `<details ${open ? 'open' : ''} style="background:${bg};border:1px solid ${border};border-radius:10px;padding:10px 14px;margin-bottom:10px">
+        <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
+          <span style="font-size:10px;color:#94a3b8">▸</span>
+          <p style="font-size:11px;font-weight:700;color:${titleColor};margin:0">${label}</p>
+        </summary>
+        <div style="margin-top:8px">${bodyHtml}</div>
+      </details>`;
+    }
+    function pre(t) {
+      return `<p style="font-size:12px;color:#334155;margin:0;white-space:pre-wrap;line-height:1.5">${esc(t || '—')}</p>`;
+    }
+    return `<div style="font-family:system-ui,sans-serif;max-width:680px;margin:0 auto;padding:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <p style="margin:0;font-size:13px;font-weight:700;color:#1e293b">Отчёт: задание 4 — вариант ${taskNum || '?'}</p>
+        <span style="font-size:11px;color:#64748b">${esc(task?.title || '')}</span>
+      </div>
+      ${sec('#f5f3ff','#ddd6fe','#6d28d9','Целевой текст (оригинал)', pre(task?.target_output))}
+      ${sec('#f8fafc','#e2e8f0','#475569','Мой промпт v1', pre(p4.prompt_v1), true)}
+      ${sec('#f8fafc','#e2e8f0','#475569','Результат промпта v1', pre(p4.ai_v1))}
+      ${sec('#fffbeb','#fcd34d','#92400e','Что отличалось от оригинала', pre(p4.diff_notes), true)}
+      ${sec('#f0fdf4','#86efac','#166534','Авторский промпт', pre(task?.author_prompt))}
+      ${sec('#f0f9ff','#bae6fd','#075985','Анализ авторского промпта', pre(p4.author_analysis), true)}
+      ${sec('#f8fafc','#e2e8f0','#475569','Мой промпт v2', pre(p4.prompt_v2))}
+      ${sec('#f8fafc','#e2e8f0','#475569','Результат промпта v2', pre(p4.ai_v2))}
+    </div>`;
+  }
+
+  function buildReportP5Html(task, wf, taskNum, allTexts) {
+    const p5 = wf.p5 || {};
+    const answers = p5.answers || [];
+    function esc(t) { return escapeHtml(t || ''); }
+
+    let correct = 0;
+    const rows = (allTexts || []).map((txt) => {
+      const ans = answers.find((a) => a.textId === txt.id) || {};
+      const isCorrect = ans.verdict === (txt.is_ai ? 'ai' : 'human');
+      if (isCorrect) correct++;
+      const resultBg = isCorrect ? '#f0fdf4' : '#fef2f2';
+      const resultBorder = isCorrect ? '#86efac' : '#fca5a5';
+      const icon = isCorrect ? '✅' : '❌';
+      const correctLabel = txt.is_ai ? 'ИИ' : 'Человек';
+      const studentLabel = ans.verdict === 'ai' ? 'ИИ' : ans.verdict === 'human' ? 'Человек' : '—';
+      return `<div style="background:${resultBg};border:1px solid ${resultBorder};border-radius:10px;padding:10px 14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <p style="font-size:11px;font-weight:700;color:#475569;margin:0">${icon} ${esc(txt.label)}</p>
+          <span style="font-size:11px;color:#64748b">Ваш ответ: <strong>${studentLabel}</strong> · Правильно: <strong>${correctLabel}</strong></span>
+        </div>
+        <p style="font-size:11px;color:#6b7280;margin:0 0 4px">Ваша причина: ${esc(ans.reason || '—')}</p>
+        <p style="font-size:12px;color:#334155;margin:0">${esc(txt.explanation)}</p>
+      </div>`;
+    }).join('');
+
+    const scoreBg = correct >= 4 ? '#f0fdf4' : correct >= 3 ? '#fffbeb' : '#fef2f2';
+    const scoreBorder = correct >= 4 ? '#86efac' : correct >= 3 ? '#fcd34d' : '#fca5a5';
+    const scoreText = correct >= 4 ? '#166534' : correct >= 3 ? '#92400e' : '#991b1b';
+
+    return `<div style="font-family:system-ui,sans-serif;max-width:680px;margin:0 auto;padding:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <p style="margin:0;font-size:13px;font-weight:700;color:#1e293b">Отчёт: задание 5 — Квиз</p>
+      </div>
+      <div style="background:${scoreBg};border:1px solid ${scoreBorder};border-radius:10px;padding:12px 16px;text-align:center;margin-bottom:14px">
+        <p style="font-size:28px;font-weight:700;color:${scoreText};margin:0">${correct} / ${allTexts?.length || 5}</p>
+        <p style="font-size:11px;color:${scoreText};margin:4px 0 0">правильных ответов</p>
+      </div>
+      ${rows}
+      <details open style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:10px 14px;margin-bottom:10px">
+        <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
+          <span style="font-size:10px;color:#94a3b8">▸</span>
+          <p style="font-size:11px;font-weight:700;color:#075985;margin:0">Мои 3 маркера ИИ-текста</p>
+        </summary>
+        <div style="margin-top:8px"><p style="font-size:12px;color:#0c4a6e;margin:0;white-space:pre-wrap">${esc(p5.markers || '—')}</p></div>
+      </details>
+      ${p5.mistake_analysis ? `<details style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px">
+        <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
+          <span style="font-size:10px;color:#94a3b8">▸</span>
+          <p style="font-size:11px;font-weight:700;color:#475569;margin:0">Где ошибся и почему</p>
+        </summary>
+        <div style="margin-top:8px"><p style="font-size:12px;color:#334155;margin:0;white-space:pre-wrap">${esc(p5.mistake_analysis)}</p></div>
+      </details>` : ''}
+    </div>`;
+  }
+
   global.AcademyPracticeWorkflow = {
     RISK_TYPES,
     RISK_LEVELS,
@@ -565,6 +710,9 @@ ${p3.main_insight || '—'}
     buildReportP2,
     buildReportP2Html,
     buildReportP3,
-    buildReportP3Html
+    buildReportP3Html,
+    buildReportP4Html,
+    buildReportP5Html,
+    collectP5Answers
   };
 })(typeof window !== 'undefined' ? window : global);
