@@ -897,7 +897,7 @@ const STEP_HINTS = {
       '1.2': '<p>Посмотрите на ответ нейросети и реакцию клиента. Что не получилось? Нажмите <strong>«Перейти к промпту v2»</strong> — увидите профиль клиента.</p>',
       '2.1': '<p>Напишите <strong>промпт v2</strong> с учётом того, что вы узнали о клиенте. Нажмите <strong>«Протестировать промпт v2»</strong>.</p>',
       '2.2': '<p>Посмотрите на реакцию адресата на v2. Если результат стал лучше — нажмите <strong>«Собрать отчёт»</strong>.</p>',
-      '3': '<p class="mb-2">Проверьте отчёт и нажмите <strong>«Отправить»</strong>. Убедитесь что заполнены все пункты:</p><ul class="text-xs space-y-0.5 text-slate-600"><li>Выбранный кейс</li><li>Промпт v1 и ответ ИИ v1</li><li>Промпт v2 и ответ ИИ v2</li></ul>'
+      '3': '<p>Ваш отчёт собран ниже — это итог шагов 1 и 2. Просмотрите и нажмите <strong>«Отправить»</strong>.</p>'
     }
   },
   'block1-practice-scenario': {
@@ -907,7 +907,7 @@ const STEP_HINTS = {
       '1.1': '<p class="mb-1">Проверьте <strong>карточку персонажа</strong> — это ваш собеседник. Уточните роли и укажите вашу цель.</p><p class="text-xs text-slate-500">Нажмите «Начать диалог» — чат откроется автоматически.</p>',
       '1.2': '<p class="mb-1">Ведите диалог. Следите за <strong>счётчиком пар</strong> — нужно минимум 12.</p><p class="text-xs text-slate-500">Собеседник будет жёстко возражать, особенно в начале. Не сдавайтесь — это и есть тренировка.</p>',
       '2.1': '<p class="mb-1">ИИ-тренер проанализировал ваш диалог. Ознакомьтесь с оценкой, отметьте самооценку и заполните 2 поля.</p>',
-      '3': '<p>Проверьте отчёт и нажмите <strong>«Завершить задание»</strong>.</p>'
+      '3': '<p>Ваш отчёт по диалогу собран ниже — просмотрите и нажмите <strong>«Завершить задание»</strong>.</p>'
     }
   },
   'block1-practice-hallucination': {
@@ -917,7 +917,7 @@ const STEP_HINTS = {
       '1.1': '<p class="mb-1">ИИ-тренер обозначил категории рисков в тексте. <strong>Найдите минимум 3 утверждения</strong> — цитируйте дословно.</p>',
       '1.2': '<p class="mb-1">Задавайте вопросы к каждому утверждению прямо здесь. <strong>Минимум 5 вопросов.</strong></p><p class="text-xs text-slate-500">ИИ признаёт неопределённость — наблюдайте как меняется уверенность его ответов.</p>',
       '2': '<p class="mb-1">ИИ-тренер оценил ваши находки. Отметьте самооценку, примите решение и запишите главный вывод.</p>',
-      '3': '<p>Проверьте отчёт и нажмите <strong>«Завершить задание»</strong>.</p>'
+      '3': '<p>Анализ завершён — ваши находки собраны ниже. Просмотрите и нажмите <strong>«Завершить задание»</strong>.</p>'
     }
   },
   'block2-practice-aim': {
@@ -3794,6 +3794,8 @@ function setPracticeChatOpen(open) {
     chat.classList.remove('chat-collapsed');
     app.classList.add('practice-chat-open');
     if (window.innerWidth < 1024) app.classList.add('practice-chat-mobile');
+    // Auto-collapse tools panel so chat gets full space alongside the assignment
+    if (!isToolsPanelCollapsed()) applyToolsPanelCollapsed(true);
     openBtn?.classList.add('hidden');
     closeBtn?.classList.remove('hidden');
     backBtn?.classList.remove('hidden');

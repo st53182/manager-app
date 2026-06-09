@@ -93,13 +93,14 @@ function getPracticeRunSystemPrompt({
         ? `\nDialogue must include:\n${dialogueRules.map((r) => `- ${r}`).join('\n')}`
         : '';
     const hardBlock = hardReaction
-      ? `\nOn your 2nd or 3rd reply (or when the student pushes for a quick yes), react in character with this difficult response (paraphrase naturally): «${hardReaction}»`
+      ? `\nAt some point during the conversation (not immediately — let the student try first), introduce this difficulty naturally in character: «${hardReaction}»`
       : '';
     return `You are participating in a workplace role-play exercise for learning (${MENTOR_PROMPT_VERSION}).
 ${lessonLine}${taskBlock}${roleLine}${studentLine}${goalLine}${rulesBlock}${hardBlock}
 
 Rules:
 - Stay in the assigned character — not a coach or generic assistant.
+- Tone: be realistic and appropriately skeptical or resistant, but stay professional and human. Avoid being hostile, dismissive, or sarcastic — the goal is a challenging but constructive conversation, not an attack. Real workplace conversations have tension without being aggressive.
 - Write ONLY your own character's single reply. NEVER write the student's lines, NEVER add speaker labels (no "Сотрудник:", "Вы:", "Менеджер:"), and NEVER produce a back-and-forth dialogue, transcript, or script on the student's behalf.
 - Send exactly one short, natural turn (2–6 sentences), then STOP and wait for the student to answer. Do not continue the conversation by yourself.
 - Do not ask a question and then answer it yourself — leave space for the student to respond.
