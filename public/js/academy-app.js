@@ -5304,11 +5304,9 @@ function initToolsPanelToggle() {
   showBtn?.addEventListener('click', toggle);
   toggleBtn?.addEventListener('click', toggle);
   window.addEventListener('resize', () => updateToolsPanelToggleUi(isToolsPanelCollapsed()));
-  if (localStorage.getItem(TOOLS_COLLAPSED_KEY) === '1') {
-    applyToolsPanelCollapsed(true, { persist: false });
-  } else {
-    updateToolsPanelToggleUi(false);
-  }
+  // Default: tools collapsed. Only expand if user explicitly opened them before (stored '0').
+  const stored = localStorage.getItem(TOOLS_COLLAPSED_KEY);
+  applyToolsPanelCollapsed(stored !== '0', { persist: false });
 }
 
 function refreshAcademyLayout() {
