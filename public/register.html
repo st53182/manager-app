@@ -12,6 +12,49 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
+        .field-error {
+            font-size: 0.75rem;
+            color: #dc2626;
+            margin-top: 0.25rem;
+        }
+        .input-error {
+            border-color: #dc2626 !important;
+        }
+        .pw-wrap {
+            position: relative;
+        }
+        .pw-wrap input {
+            padding-right: 2.75rem;
+        }
+        .pw-toggle {
+            position: absolute;
+            right: 0.625rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #9ca3af;
+            padding: 0.25rem;
+            line-height: 0;
+        }
+        .pw-toggle:hover { color: #6b7280; }
+        #submitBtn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        .btn-spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="modern-theme min-h-screen">
@@ -28,80 +71,113 @@
             </div>
         </div>
     </nav>
-    
+
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-md mx-auto auth-shell p-6">
             <div class="text-center mb-6">
                 <h1 class="text-3xl font-bold modern-title mb-2" data-translate="register.heading">Регистрация</h1>
-                <p class="modern-muted" data-translate="register.subtitle">Создайте аккаунт для управления командами</p>
+                <p class="modern-muted" data-translate="register.subtitle">Создайте аккаунт и начните учиться работе с ИИ</p>
             </div>
 
-            <form id="registerForm" class="space-y-4">
+            <form id="registerForm" class="space-y-4" novalidate>
+                <!-- Name -->
                 <div>
                     <label for="name" class="block text-sm font-medium modern-muted mb-2" data-translate="register.name">
                         Имя
                     </label>
-                    <input 
-                        type="text" 
-                        id="name" 
-                        name="name" 
-                        required
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        autocomplete="name"
                         placeholder="Введите ваше имя"
                         data-translate="register.name_placeholder"
                         class="modern-input px-3 py-2"
                     />
+                    <p id="nameError" class="field-error hidden"></p>
                 </div>
 
+                <!-- Email -->
                 <div>
                     <label for="email" class="block text-sm font-medium modern-muted mb-2" data-translate="register.email">
                         Email
                     </label>
-                    <input 
-                        type="email" 
-                        id="email" 
-                        name="email" 
-                        required
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        autocomplete="email"
                         placeholder="Введите ваш email"
                         data-translate="register.email_placeholder"
                         class="modern-input px-3 py-2"
                     />
+                    <p id="emailError" class="field-error hidden"></p>
                 </div>
 
+                <!-- Password -->
                 <div>
                     <label for="password" class="block text-sm font-medium modern-muted mb-2" data-translate="register.password">
                         Пароль
                     </label>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        name="password" 
-                        required
-                        minlength="6"
-                        placeholder="Введите пароль (минимум 6 символов)"
-                        data-translate="register.password_placeholder"
-                        class="modern-input px-3 py-2"
-                    />
+                    <div class="pw-wrap">
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            autocomplete="new-password"
+                            placeholder="Минимум 6 символов"
+                            data-translate="register.password_placeholder"
+                            class="modern-input px-3 py-2"
+                        />
+                        <button type="button" class="pw-toggle" id="togglePassword" tabindex="-1" aria-label="Показать пароль">
+                            <svg id="eyeIconPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <p id="passwordError" class="field-error hidden"></p>
                 </div>
 
-                <button 
-                    type="submit" 
-                    class="w-full modern-btn modern-btn-primary py-2 px-4"
-                    data-translate="register.register_button"
+                <!-- Confirm Password -->
+                <div>
+                    <label for="confirmPassword" class="block text-sm font-medium modern-muted mb-2" data-translate="register.confirm_password">
+                        Подтвердите пароль
+                    </label>
+                    <div class="pw-wrap">
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            autocomplete="new-password"
+                            placeholder="Повторите пароль"
+                            data-translate="register.confirm_password_placeholder"
+                            class="modern-input px-3 py-2"
+                        />
+                        <button type="button" class="pw-toggle" id="toggleConfirmPassword" tabindex="-1" aria-label="Показать пароль">
+                            <svg id="eyeIconConfirm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <p id="confirmPasswordError" class="field-error hidden"></p>
+                </div>
+
+                <button
+                    type="submit"
+                    id="submitBtn"
+                    class="w-full modern-btn modern-btn-primary py-2 px-4 mt-2"
                 >
-                    Зарегистрироваться
+                    <span id="submitBtnText" data-translate="register.register_button">Зарегистрироваться</span>
                 </button>
             </form>
 
             <div class="mt-4 text-center">
                 <p class="modern-muted">
-                    <span data-translate="register.have_account">Уже есть аккаунт?</span> 
+                    <span data-translate="register.have_account">Уже есть аккаунт?</span>
                     <a href="/login" class="modern-nav-link" data-translate="register.login_link">Войти</a>
                 </p>
-            </div>
-
-            <div id="loading" class="hidden text-center py-4">
-                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <p class="mt-2 modern-muted" data-translate="register.registering">Регистрация...</p>
             </div>
 
             <div id="error" class="hidden mt-4 p-4 modern-alert">
@@ -111,27 +187,120 @@
     </div>
 
     <script>
+        // Password visibility toggles
+        function makeToggle(toggleId, inputId) {
+            document.getElementById(toggleId).addEventListener('click', () => {
+                const input = document.getElementById(inputId);
+                const isHidden = input.type === 'password';
+                input.type = isHidden ? 'text' : 'password';
+                const svg = document.querySelector('#' + toggleId + ' svg');
+                if (isHidden) {
+                    svg.innerHTML = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`;
+                } else {
+                    svg.innerHTML = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+                }
+            });
+        }
+        makeToggle('togglePassword', 'password');
+        makeToggle('toggleConfirmPassword', 'confirmPassword');
+
+        // Inline validation helpers
+        function t(key) {
+            if (window.translationManager) return window.translationManager.t(key) || key;
+            const fallbacks = {
+                'register.err_name_required': 'Введите ваше имя',
+                'register.err_email_required': 'Введите email',
+                'register.err_email_invalid': 'Некорректный формат email',
+                'register.err_password_required': 'Введите пароль',
+                'register.err_password_short': 'Пароль должен быть не менее 6 символов',
+                'register.err_confirm_required': 'Подтвердите пароль',
+                'register.err_password_mismatch': 'Пароли не совпадают',
+                'register.registering': 'Создаём аккаунт...',
+                'register.register_error': 'Ошибка регистрации'
+            };
+            return fallbacks[key] || key;
+        }
+
+        function setError(id, msgKey) {
+            const el = document.getElementById(id);
+            const input = document.getElementById(id.replace('Error', ''));
+            el.textContent = t(msgKey);
+            el.classList.remove('hidden');
+            if (input) input.classList.add('input-error');
+        }
+
+        function clearError(id) {
+            const el = document.getElementById(id);
+            const input = document.getElementById(id.replace('Error', ''));
+            el.textContent = '';
+            el.classList.add('hidden');
+            if (input) input.classList.remove('input-error');
+        }
+
+        function validateForm(name, email, password, confirmPassword) {
+            let valid = true;
+
+            if (!name.trim()) {
+                setError('nameError', 'register.err_name_required'); valid = false;
+            } else { clearError('nameError'); }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!email.trim()) {
+                setError('emailError', 'register.err_email_required'); valid = false;
+            } else if (!emailRegex.test(email)) {
+                setError('emailError', 'register.err_email_invalid'); valid = false;
+            } else { clearError('emailError'); }
+
+            if (!password) {
+                setError('passwordError', 'register.err_password_required'); valid = false;
+            } else if (password.length < 6) {
+                setError('passwordError', 'register.err_password_short'); valid = false;
+            } else { clearError('passwordError'); }
+
+            if (!confirmPassword) {
+                setError('confirmPasswordError', 'register.err_confirm_required'); valid = false;
+            } else if (confirmPassword !== password) {
+                setError('confirmPasswordError', 'register.err_password_mismatch'); valid = false;
+            } else { clearError('confirmPasswordError'); }
+
+            return valid;
+        }
+
+        // Live confirm-password check
+        document.getElementById('confirmPassword').addEventListener('input', () => {
+            const pw = document.getElementById('password').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            if (confirm && confirm !== pw) {
+                setError('confirmPasswordError', 'register.err_password_mismatch');
+            } else {
+                clearError('confirmPasswordError');
+            }
+        });
+
+        // Submit
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const data = {
-                name: formData.get('name'),
-                email: formData.get('email'),
-                password: formData.get('password')
-            };
 
-            document.getElementById('registerForm').style.display = 'none';
-            document.getElementById('loading').classList.remove('hidden');
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!validateForm(name, email, password, confirmPassword)) return;
+
+            const btn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('submitBtnText');
+            const originalLabel = btnText.textContent;
+
+            btn.disabled = true;
+            btnText.innerHTML = `<span class="btn-spinner"></span>${t('register.registering')}`;
             document.getElementById('error').classList.add('hidden');
 
             try {
                 const response = await fetch('/api/register', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name.trim(), email: email.trim(), password })
                 });
 
                 const result = await response.json();
@@ -141,12 +310,12 @@
                     localStorage.setItem('user_info', JSON.stringify(result.user));
                     window.location.href = '/academy';
                 } else {
-                    const errorMessage = result.error || (window.translationManager ? window.translationManager.t('register.register_error') : 'Ошибка регистрации');
-                    throw new Error(errorMessage);
+                    const msg = result.error || t('register.register_error');
+                    throw new Error(msg);
                 }
             } catch (error) {
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('registerForm').style.display = 'block';
+                btn.disabled = false;
+                btnText.innerHTML = originalLabel;
                 document.getElementById('error').classList.remove('hidden');
                 document.getElementById('errorMessage').textContent = error.message;
             }
