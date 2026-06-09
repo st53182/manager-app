@@ -472,6 +472,8 @@
                         <span class="aa-label">Подозрительные утверждения (минимум 3)</span>
                         <textarea id="p3SuspiciousClaims" rows="4" class="aa-textarea mt-1" placeholder="1. «в 100 раз дешевле» — нет источника, не понятно что именно сравнивается&#10;2. «по всем бенчмаркам» — не указано каким именно&#10;3. «займут 70% рынка» — прогноз без методологии и оговорок"></textarea>
                       </label>
+                      <!-- N2: live claims counter -->
+                      <p id="p3ClaimsCount" class="text-xs text-slate-400 -mt-1">Найдено: 0 из минимум 3</p>
                       <button type="button" id="p3StartVerifyBtn" class="aa-btn aa-btn-primary w-full">
                         Нашёл утверждения — начать проверку →
                       </button>
@@ -483,10 +485,11 @@
                         <summary class="px-3 py-2 text-xs font-semibold text-slate-600 cursor-pointer hover:text-slate-800">Исходный фрагмент (раскрыть)</summary>
                         <p id="p3FragmentReminderText" class="px-3 pb-3 pt-1 text-xs text-slate-700 whitespace-pre-wrap leading-relaxed"></p>
                       </details>
-                      <!-- Напоминание: что студент заподозрил -->
-                      <div id="p3ClaimsReminder" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                        <p class="text-xs font-semibold text-amber-700 mb-1">Что вы заподозрили:</p>
-                        <p id="p3ClaimsReminderText" class="text-xs text-amber-900 whitespace-pre-wrap"></p>
+                      <!-- N7: claims reminder — always expanded, numbered -->
+                      <div id="p3ClaimsReminder" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+                        <p class="text-xs font-semibold text-amber-700 mb-1.5">Ваши утверждения для проверки:</p>
+                        <p id="p3ClaimsReminderText" class="text-xs text-amber-900 whitespace-pre-wrap leading-relaxed"></p>
+                        <p class="text-xs text-amber-600 mt-1.5 opacity-80">Задайте вопрос по каждому из них — по одному за раз.</p>
                       </div>
                       <p class="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded px-2 py-1.5">
                         Задавайте вопросы по каждому утверждению. ИИ ищет в интернете — увидите есть ли реальный источник.
@@ -880,9 +883,9 @@
   <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script src="/js/translations.js?v=20260606-5"></script>
-  <script src="/js/academy-practice-workflow.js?v=20260608-1"></script>
+  <script src="/js/academy-practice-workflow.js?v=20260609-1"></script>
   <script src="/js/academy-practice-workflow-m2.js?v=20260606-5"></script>
-  <script type="module" src="/js/academy-app.js?v=20260608-1"></script>
+  <script type="module" src="/js/academy-app.js?v=20260609-1"></script>
 </body>
 </html>
 

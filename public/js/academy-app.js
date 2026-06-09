@@ -2144,10 +2144,19 @@ function prefillDialogueFromTask(task) {
   const meEl = document.getElementById('practiceRoleMe');
   const goalEl = document.getElementById('practiceStudentGoal');
   const startEl = document.getElementById('practiceDialogueStart');
-  if (aiEl && !aiEl.value.trim() && task.ai_role) aiEl.value = task.ai_role;
-  if (meEl && !meEl.value.trim() && task.student_role) meEl.value = task.student_role;
-  if (goalEl && !goalEl.value.trim() && task.student_goal) goalEl.value = task.student_goal;
-  if (startEl && !startEl.value.trim()) startEl.value = assembleDialogueStart();
+  // N8: always overwrite role fields from task — task selection explicitly changes the scenario
+  const practiceStarted = !document.getElementById('practiceWorkflowBlock')?.classList.contains('hidden');
+  if (!practiceStarted) {
+    if (aiEl && task.ai_role) aiEl.value = task.ai_role;
+    if (meEl && task.student_role) meEl.value = task.student_role;
+    if (goalEl && task.student_goal) goalEl.value = task.student_goal;
+    if (startEl) startEl.value = assembleDialogueStart();
+  } else {
+    if (aiEl && !aiEl.value.trim() && task.ai_role) aiEl.value = task.ai_role;
+    if (meEl && !meEl.value.trim() && task.student_role) meEl.value = task.student_role;
+    if (goalEl && !goalEl.value.trim() && task.student_goal) goalEl.value = task.student_goal;
+    if (startEl && !startEl.value.trim()) startEl.value = assembleDialogueStart();
+  }
 }
 
 function clearPracticeFormUi() {
@@ -2238,6 +2247,11 @@ function clearPracticeFormUi() {
   document.getElementById('startPracticeBtn')?.classList.add('hidden');
   document.getElementById('practiceWorkflowBlock')?.classList.add('hidden');
   document.getElementById('practiceStepBar')?.classList.add('hidden');
+  // N4: reset step bar text so it doesn't show stale "Шаг 3 из 3" if bar is re-shown
+  const _stepNumEl = document.getElementById('practiceStepNum');
+  if (_stepNumEl) _stepNumEl.textContent = '';
+  const _stepDotsEl = document.getElementById('practiceStepDots');
+  if (_stepDotsEl) _stepDotsEl.innerHTML = '';
   document.getElementById('practiceCelebrationMsg')?.classList.add('hidden');
   document.getElementById('practiceSubmitBlock')?.classList.add('hidden');
   document.getElementById('practiceSelfCheckBlock')?.classList.add('hidden');
@@ -2265,10 +2279,10 @@ function clearPracticeFormUi() {
     document.getElementById(id)?.classList.add('hidden');
   });
   document.getElementById('p2PairCounter') && (document.getElementById('p2PairCounter').textContent = '0 / 5');
-  document.getElementById('p2PairCounterHint') && (document.getElementById('p2PairCounterHint').textContent = '(продолжайте диалог)');
+  document.getElementById('p2PairCounterHint') && (document.getElementById('p2PairCounterHint').textContent = '(начните диалог)');
   document.getElementById('practiceNextP2S1Btn')?.classList.add('hidden');
   document.getElementById('p3VerifyCounter') && (document.getElementById('p3VerifyCounter').textContent = '0 / 5');
-  document.getElementById('p3VerifyCounterHint') && (document.getElementById('p3VerifyCounterHint').textContent = '(продолжайте)');
+  document.getElementById('p3VerifyCounterHint') && (document.getElementById('p3VerifyCounterHint').textContent = '(задайте первый вопрос)');
   document.getElementById('p3FinishVerifyBtn')?.classList.add('hidden');
   const clientReactionV1 = document.getElementById('clientReactionV1');
   if (clientReactionV1) clientReactionV1.innerHTML = '';
@@ -2314,7 +2328,9 @@ async function restartPractice() {
   renderConversationList();
   renderTaskOptions(lesson);
   configurePracticeWorkflow(lesson.scenario_key);
-  showAutosaveStatus('Задание сброшено — можно пройти сначала', { hideAfterMs: 4000 });
+  showAutosaveStatus('Задание сброшено — выберите вариант выше, чтобы начать', { hideAfterMs: 5000 });
+  // N10: scroll to task options to guide the user after reset
+  document.getElementById('taskOptionsBlock')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function showPracticeAiResult(text, pass = 'v1') {
@@ -3374,10 +3390,12 @@ function updateP2PairCounter() {
   const finishBtn = document.getElementById('practiceNextP2S1Btn');
   if (!counterEl) return;
   const pairCount = (state.p2DialogueMessages || []).filter((m) => m.role === 'assistant').length;
-  counterEl.textContent = `${pairCount} / 5`;
+  counterEl.textContent = pairCount >= 5 ? `✓ ${pairCount}` : `${pairCount} / 5`;
   if (pairCount >= 5) {
-    if (hintEl) hintEl.textContent = '✓ Достаточно для анализа';
+    if (hintEl) hintEl.textContent = '(минимум выполнен)';
     finishBtn?.classList.remove('hidden');
+  } else if (pairCount === 0) {
+    if (hintEl) hintEl.textContent = '(начните диалог)';
   } else {
     if (hintEl) hintEl.textContent = '(продолжайте диалог)';
   }
@@ -3577,8 +3595,10 @@ function updateP3VerifyCounter() {
   if (count >= 5) {
     if (hintEl) hintEl.textContent = '✓ Можно переходить к анализу';
     finishBtn?.classList.remove('hidden');
+  } else if (count === 0) {
+    if (hintEl) hintEl.textContent = '(задайте первый вопрос)';
   } else {
-    if (hintEl) hintEl.textContent = '(продолжайте)';
+    if (hintEl) hintEl.textContent = `(ещё ${5 - count})`;
   }
 }
 
@@ -4927,6 +4947,11 @@ async function openLessonPanel(lesson) {
     bindPracticeHints(null);
     setPracticeFocusMode(false);
   }
+  // N1/N5: clear rendered report and submit block from previous lesson before restoring new one
+  const _rrb = document.getElementById('reportRenderBlock');
+  if (_rrb) { _rrb.innerHTML = ''; _rrb.classList.add('hidden'); }
+  document.getElementById('practiceSubmitBlock')?.classList.add('hidden');
+  document.getElementById('practiceSelfCheckBlock')?.classList.add('hidden');
   try {
     await loadSubmissionForLesson(lesson.id);
   } catch (e) {
@@ -6001,6 +6026,20 @@ function wireUi() {
     // Launch AI eval and inline self-check when dialogue is done
     renderP2InlineSelfCheck();
     runP2DialogueEval().catch(() => {});
+  });
+  // N2: live claims counter
+  document.getElementById('p3SuspiciousClaims')?.addEventListener('input', () => {
+    const val = document.getElementById('p3SuspiciousClaims').value;
+    const count = val.split('\n').filter((l) => l.trim().length > 0).length;
+    const el = document.getElementById('p3ClaimsCount');
+    if (!el) return;
+    if (count >= 3) {
+      el.textContent = `✓ Найдено: ${count}`;
+      el.className = 'text-xs text-emerald-600 -mt-1';
+    } else {
+      el.textContent = `Найдено: ${count} из минимум 3`;
+      el.className = 'text-xs text-slate-400 -mt-1';
+    }
   });
   document.getElementById('p3StartVerifyBtn')?.addEventListener('click', () => {
     const claims = document.getElementById('p3SuspiciousClaims')?.value?.trim();
