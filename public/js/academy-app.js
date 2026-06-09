@@ -4339,6 +4339,7 @@ function renderCourseTree() {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'aa-lesson-btn' + (state.currentLessonId === l.id ? ' is-active' : '');
+      btn.dataset.lessonId = l.id;
       btn.textContent = prefix + l.title;
       btn.title = prefix === '✓ ' ? 'Пройдено' : prefix === '★ ' ? 'Есть обратная связь' : prefix === '◐ ' ? 'В процессе' : 'Не начато';
       btn.addEventListener('click', () => selectLesson(l));
@@ -4919,6 +4920,8 @@ async function openLessonPanel(lesson) {
   state.currentLessonId = lesson.id;
   state.currentLesson = lesson;
   state.selectedTaskId = null;
+  document.querySelectorAll('.aa-lesson-btn').forEach((b) => b.classList.toggle('is-active', b.dataset.lessonId === String(lesson.id)));
+  document.getElementById('demoCourseBtn')?.classList.remove('is-active');
   document.getElementById('lessonPanel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   document.getElementById('lessonEmpty')?.classList.add('hidden');
   document.getElementById('demoPanelSection')?.classList.add('hidden');
