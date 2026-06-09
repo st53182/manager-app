@@ -243,15 +243,18 @@ function createRouter({ JWT_SECRET }) {
         if (typeof opts === 'string') try { opts = JSON.parse(opts); } catch { opts = []; }
         const picked = Array.isArray(opts) ? opts.find((t) => t.id === taskId) : null;
         if (picked) {
-          taskLine = `\nSelected task variant: ${picked.title}\n`;
-          if (picked.description) taskLine += `Description: ${picked.description}\n`;
-          if (picked.bad_prompt) taskLine += `Bad prompt example: ${picked.bad_prompt}\n`;
-          if (picked.raw_input) taskLine += `Raw input: ${picked.raw_input}\n`;
+          taskLine = `\nВыбранный вариант задания: ${picked.title}\n`;
+          if (picked.description) taskLine += `Описание задания: ${picked.description}\n`;
+          if (picked.ai_role) taskLine += `Роль ИИ в сценарии: ${picked.ai_role}\n`;
+          if (picked.student_role) taskLine += `Роль студента: ${picked.student_role}\n`;
+          if (picked.student_goal) taskLine += `Цель студента: ${picked.student_goal}\n`;
+          if (picked.bad_prompt) taskLine += `Пример плохого промпта: ${picked.bad_prompt}\n`;
+          if (picked.raw_input) taskLine += `Исходные данные: ${picked.raw_input}\n`;
           if (picked.fragment_text) {
             const frag = picked.fragment_text;
-            taskLine += `Fragment (reference): ${frag.length > 800 ? `${frag.slice(0, 800)}…` : frag}\n`;
+            taskLine += `Фрагмент (справочный): ${frag.length > 800 ? `${frag.slice(0, 800)}…` : frag}\n`;
           }
-          else taskLine += `Context: ${picked.context || picked.summary || ''}\n`;
+          else taskLine += `Контекст: ${picked.context || picked.summary || ''}\n`;
         }
       }
       let workflowLine = '';
@@ -259,7 +262,7 @@ function createRouter({ JWT_SECRET }) {
         try {
           const wfJson = JSON.stringify(meta.workflow);
           workflowLine =
-            '\nStructured student workflow (prompt v1/v2, dialogue analysis, risk table, self-check):\n' +
+            '\nСтруктурированная работа студента (промпты v1/v2, анализ диалога, таблица рисков, самопроверка):\n' +
             wfJson.slice(0, 8000) +
             (wfJson.length > 8000 ? '…' : '') +
             '\n';
@@ -269,16 +272,17 @@ function createRouter({ JWT_SECRET }) {
       }
       const maxScore = isP1 ? 7 : 10;
       const graderPrompt =
-        `Grade assignment. Respond with JSON only: { score, strengths, weaknesses, recommendations }.\n` +
-        `score = sum of earned points (max ${maxScore}). Criteria (each worth stated points): ` +
+        `Ты — преподаватель, проверяющий учебное задание. Оцени работу студента и верни JSON: { score, strengths, weaknesses, recommendations }.\n` +
+        `score = сумма набранных баллов (максимум ${maxScore}). Критерии (каждый со своим весом): ` +
         criteria +
         taskLine +
         workflowLine +
-        '\nStudent answer:\n' +
+        `\nВАЖНО: перед тем как давать рекомендации — проверь, не сделал ли студент это уже. Не предлагай улучшения которые студент уже применил (например, если он уже указал стиль общения, роль, формат — не советуй их добавить).\n` +
+        '\nОтвет студента:\n' +
         answerText;
       await assertQuota(req, estimateTokensFromText(graderPrompt));
       let text = '', usage = null;
-      for await (const part of streamChatCompletion(openai, { model, messages: [{ role: 'system', content: 'JSON only' }, { role: 'user', content: graderPrompt }], maxTokens: 1200 })) {
+      for await (const part of streamChatCompletion(openai, { model, messages: [{ role: 'system', content: 'Отвечай только JSON. Язык ответа — русский.' }, { role: 'user', content: graderPrompt }], maxTokens: 1200 })) {
         if (part.type === 'chunk') text += part.text;
         if (part.type === 'done') usage = part.usage;
       }
@@ -459,11 +463,20 @@ function createRouter({ JWT_SECRET }) {
         ? `Персонаж: ${persona.name || ''} — ${persona.role || ''} (${persona.mood || ''}). Цель: ${persona.goal || ''}`
         : '';
 
+      const taskContextLines = [
+        task?.title ? `Кейс: ${task.title}` : '',
+        task?.description ? `Описание: ${task.description}` : '',
+        task?.ai_role ? `Роль ИИ-персонажа: ${task.ai_role}` : '',
+        task?.student_role ? `Роль студента в сценарии: ${task.student_role}` : '',
+        task?.student_goal ? `Цель студента: ${task.student_goal}` : '',
+      ].filter(Boolean).join('\n');
+
       const userPrompt =
         `Ты — тренер по переговорам. Оцени учебный диалог студента.\n\n` +
-        `Кейс: ${task?.title || ''}\n` +
+        `${taskContextLines}\n` +
         `${personaDesc}\n\n` +
         `Диалог (последние реплики):\n${dialogueSummary || '(диалог не предоставлен)'}\n\n` +
+        `ВАЖНО: студенту были заданы конкретные роль и цель (см. выше). Не рекомендуй добавить то, что уже было задано условиями сценария (например, стиль общения, роль, цель).\n\n` +
         `Верни JSON (без markdown):\n` +
         `{\n` +
         `  "bestReply": { "text": "<лучшая реплика студента дословно>", "why": "<почему сработала — 1-2 предложения>" },\n` +
