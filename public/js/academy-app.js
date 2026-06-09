@@ -3934,8 +3934,9 @@ async function loadSubmissionForLesson(lessonId) {
         if (gm.workflow.p2DialogueMessages?.length) {
           state.p2DialogueMessages = gm.workflow.p2DialogueMessages;
           gm.workflow.p2DialogueMessages.forEach((m) => renderP2InlineBubble(m.content, m.role));
-          updateP2PairCounter();
         }
+        // N3/N9: always sync counter+hint regardless of message count
+        updateP2PairCounter();
         if (savedStep >= 2) renderP2InlineSelfCheck();
       }
       if (sk === 'block1-practice-hallucination') {
@@ -3950,8 +3951,9 @@ async function loadSubmissionForLesson(lessonId) {
         if (gm.workflow.p3VerificationMessages?.length) {
           state.p3VerificationMessages = gm.workflow.p3VerificationMessages;
           gm.workflow.p3VerificationMessages.forEach((m) => renderP3InlineBubble(m.content, m.role));
-          updateP3VerifyCounter();
         }
+        // N6: always sync counter+hint regardless of message count
+        updateP3VerifyCounter();
         if (savedStep >= 2) renderP3InlineSelfCheck();
       }
     }
@@ -4952,6 +4954,11 @@ async function openLessonPanel(lesson) {
   if (_rrb) { _rrb.innerHTML = ''; _rrb.classList.add('hidden'); }
   document.getElementById('practiceSubmitBlock')?.classList.add('hidden');
   document.getElementById('practiceSelfCheckBlock')?.classList.add('hidden');
+  // N6/N9: reset counter hints so stale text from previous lesson doesn't linger
+  const _p3hint = document.getElementById('p3VerifyCounterHint');
+  if (_p3hint) _p3hint.textContent = '(задайте первый вопрос)';
+  const _p2hint = document.getElementById('p2PairCounterHint');
+  if (_p2hint) _p2hint.textContent = '(начните диалог)';
   try {
     await loadSubmissionForLesson(lesson.id);
   } catch (e) {
