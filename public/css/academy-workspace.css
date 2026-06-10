@@ -1246,3 +1246,14 @@
   overflow-y: auto;
   font-family: inherit;
 }
+
+/* Run button while the AI is generating */
+.aa-btn-loading {
+  opacity: 0.8;
+  cursor: wait;
+  animation: aaBtnLoadingPulse 1.4s ease-in-out infinite;
+}
+@keyframes aaBtnLoadingPulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 0.5; }
+}

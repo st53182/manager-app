@@ -2514,6 +2514,23 @@ function getSelectedTaskNumber() {
   return idx >= 0 ? idx + 1 : null;
 }
 
+/* While the AI generates, the run button itself shows progress —
+   the chat typing indicator is not visible in inline practice flows */
+function setBtnLoading(btn, loading, label = '⏳ Нейросеть генерирует ответ…') {
+  if (!btn) return;
+  if (loading) {
+    if (!btn.dataset.origLabel) btn.dataset.origLabel = btn.textContent;
+    btn.textContent = label;
+    btn.classList.add('aa-btn-loading');
+    btn.setAttribute('disabled', 'true');
+  } else {
+    if (btn.dataset.origLabel) btn.textContent = btn.dataset.origLabel;
+    delete btn.dataset.origLabel;
+    btn.classList.remove('aa-btn-loading');
+    btn.removeAttribute('disabled');
+  }
+}
+
 async function runPracticeInAi({ message, runKind, pass = 'v1' }) {
   if (!warnIfNoTaskSelected()) return null;
   let text = String(message || '').trim();
@@ -2588,7 +2605,7 @@ async function runPracticeInAi({ message, runKind, pass = 'v1' }) {
                 ? 'runPromptV2Btn'
                 : 'runPromptV1Btn';
   const runBtn = document.getElementById(btnId);
-  runBtn?.setAttribute('disabled', 'true');
+  setBtnLoading(runBtn, true);
 
   let resultPass = runKind === 'prompt' ? pass : runKind === 'dialogue' ? 'dialogue' : 'analysis';
   if (runKind === 'library') resultPass = 'library';
@@ -2640,7 +2657,7 @@ async function runPracticeInAi({ message, runKind, pass = 'v1' }) {
     document.getElementById('typingRow')?.classList.add('hidden');
     throw e;
   } finally {
-    runBtn?.removeAttribute('disabled');
+    setBtnLoading(runBtn, false);
   }
 }
 
@@ -3906,7 +3923,7 @@ async function runP4Prompt(pass) {
   if (!text) { alert('Напишите промпт перед запуском.'); return; }
   if (state.streaming) return;
   const runBtn = document.getElementById(btnId);
-  runBtn?.setAttribute('disabled', 'true');
+  setBtnLoading(runBtn, true);
   try {
     scheduleAutoSave();
     await saveSubmission('draft');
@@ -3941,7 +3958,7 @@ async function runP4Prompt(pass) {
   } catch (e) {
     throw e;
   } finally {
-    runBtn?.removeAttribute('disabled');
+    setBtnLoading(runBtn, false);
   }
 }
 
