@@ -4958,6 +4958,7 @@ const ruTrend=[78,84,91,98,107,115];
 function openDemoPanel() {
   state.currentLessonId = null;
   state.currentLesson = null;
+  setLessonPanelVisible(true);
   document.getElementById('lessonEmpty')?.classList.add('hidden');
   document.getElementById('lessonContent')?.classList.add('hidden');
   document.getElementById('assignmentBlock')?.classList.add('hidden');
@@ -5365,11 +5366,20 @@ function parseMsgMeta(raw) {
   }
 }
 
+/* The «Задание» pane is shown only when a practice or the demo is open —
+   on the start screen / free chat it carries no content */
+function setLessonPanelVisible(visible) {
+  document.getElementById('lessonPanel')?.classList.toggle('hidden', !visible);
+  document.getElementById('lessonSplitter')?.classList.toggle('hidden', !visible);
+  refreshAcademyLayout();
+}
+
 function clearLessonPanel() {
   state.currentLessonId = null;
   state.currentLesson = null;
   state.selectedTaskId = null;
   state.taskOptions = [];
+  setLessonPanelVisible(false);
   setPracticeFocusMode(false);
   bindPracticeHints(null);
   document.getElementById('lessonHint').textContent = '';
@@ -5387,6 +5397,7 @@ async function openLessonPanel(lesson) {
     clearLessonPanel();
     return;
   }
+  setLessonPanelVisible(true);
   state.currentLessonId = lesson.id;
   state.currentLesson = lesson;
   state.selectedTaskId = null;
