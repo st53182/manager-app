@@ -6275,6 +6275,10 @@ function wireUi() {
   document.getElementById('p5NextToMarkersBtn')?.addEventListener('click', () => {
     advancePracticeStep();
   });
+  // P5 quiz cards are rendered dynamically — delegate autosave from the container
+  ['input', 'change'].forEach((evt) => {
+    document.getElementById('p5TextCards')?.addEventListener(evt, scheduleAutoSave);
+  });
   document.getElementById('buildReportM2P1Btn')?.addEventListener('click', () => buildPracticeReport());
   document.getElementById('buildReportM2P2Btn')?.addEventListener('click', () => buildPracticeReport());
   document.getElementById('buildReportM2P3Btn')?.addEventListener('click', () => buildPracticeReport());
