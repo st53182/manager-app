@@ -2104,21 +2104,22 @@ function showPracticeStep(n, { restoreSubstep } = {}) {
   submitBlock?.classList.toggle('hidden', !showSubmit);
 
   const wfApi = getPracticeWorkflowApi();
-  // Module 1 (P2–P5): self-check lives on the last CONTENT step, right above the
+  // P2/P3: self-check lives on the last CONTENT step, right above the
   // build-report button — so users check themselves while finishing the work,
-  // not after the report is already built. The submit step stays clean.
-  const inlineSelfCheckBtnId = REPORT_BUTTON_BY_SCENARIO[sk];
-  if (inlineSelfCheckBtnId && sk !== 'block1-practice-prompt') {
-    const lastContentStep = sk === 'block1-practice-detective' ? 3 : 2;
-    if (n === lastContentStep) {
-      // Preserve boxes the user already ticked in this session over the saved snapshot
-      const current = wfApi?.collectSelfCheck?.(sk) || [];
-      const saved = current.some(Boolean) ? current : state.practiceWorkflow?.self_check;
-      wfApi?.renderSelfCheck(sk, saved);
-      const blk = document.getElementById('practiceSelfCheckBlock');
-      const btn = document.getElementById(inlineSelfCheckBtnId);
-      if (blk && btn?.parentElement) btn.parentElement.insertBefore(blk, btn);
-    }
+  // not after the report is already built. P4/P5 have no self-check at all.
+  if (['block1-practice-scenario', 'block1-practice-hallucination'].includes(sk) && n === 2) {
+    // Preserve boxes the user already ticked in this session over the saved snapshot
+    const current = wfApi?.collectSelfCheck?.(sk) || [];
+    const saved = current.some(Boolean) ? current : state.practiceWorkflow?.self_check;
+    wfApi?.renderSelfCheck(sk, saved);
+    const blk = document.getElementById('practiceSelfCheckBlock');
+    const btn = document.getElementById(REPORT_BUTTON_BY_SCENARIO[sk]);
+    if (blk && btn?.parentElement) btn.parentElement.insertBefore(blk, btn);
+  }
+  // P5: on the markers step show the texts with разбором so the user writes
+  // markers while looking at the material
+  if (sk === 'block1-practice-detective' && n === 3) {
+    renderP5Step3Recap();
   }
   if (isLastStep) {
     // Module 2 keeps the self-check on the submit step (no inline variant there)
@@ -4021,6 +4022,35 @@ function renderP5TextCards() {
         <textarea data-text-id="${escapeHtml(txt.id)}" rows="2" class="aa-textarea mt-1 text-sm" placeholder="Что именно подсказало вам ответ?"></textarea>
       </label>`;
     container.appendChild(card);
+  });
+}
+
+/* P5: On the markers step, show all texts with their разбор so the user can
+   formulate markers while looking at the material */
+function renderP5Step3Recap() {
+  const container = document.getElementById('p5Step3Recap');
+  if (!container) return;
+  const texts = state.taskOptions || [];
+  const wfApi = getPracticeWorkflowApi();
+  const answers = wfApi?.collectP5Answers?.() || [];
+  container.innerHTML = '';
+  texts.forEach((txt) => {
+    const ans = answers.find((a) => a.textId === txt.id) || {};
+    const isCorrect = ans.verdict === (txt.is_ai ? 'ai' : 'human');
+    const authorLabel = txt.is_ai ? 'ИИ' : 'Человек';
+    const bg = isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50';
+    const det = document.createElement('details');
+    det.className = `rounded-xl border ${bg}`;
+    det.open = true;
+    det.innerHTML = `
+      <summary class="px-4 py-2.5 text-xs font-semibold text-slate-700 cursor-pointer select-none">
+        ${isCorrect ? '✅' : '❌'} ${escapeHtml(txt.label || '')} — ${authorLabel}
+      </summary>
+      <div class="px-4 pb-3 space-y-2">
+        <p class="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">${escapeHtml(txt.text || '')}</p>
+        <p class="text-xs text-slate-600 border-t border-slate-200/70 pt-2">${escapeHtml(txt.explanation || '')}</p>
+      </div>`;
+    container.appendChild(det);
   });
 }
 
