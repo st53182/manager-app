@@ -2169,18 +2169,34 @@ function updateReportButtonVisibility() {
   const sk = state.currentLesson?.scenario_key;
   const btnId = REPORT_BUTTON_BY_SCENARIO[sk];
   if (!btnId) return;
-  const v = (id) => document.getElementById(id)?.value?.trim() || '';
+  // Only P4 hides the button (until the v2 result arrives) — otherwise two
+  // primary CTAs stack. Elsewhere the button is always visible and clicking
+  // it explains which fields are still empty (see buildPracticeReport).
   let ready = true;
-  if (sk === 'block1-practice-scenario') {
-    ready = !!(v('p2BestReply') && v('p2ApplyWork'));
-  } else if (sk === 'block1-practice-hallucination') {
-    ready = !!(document.querySelector('input[name="riskDecision"]:checked') && v('p3VerdictReason') && v('p3MainInsight'));
-  } else if (sk === 'block1-practice-reverse') {
+  if (sk === 'block1-practice-reverse') {
     ready = !!document.getElementById('p4ResultV2Preview')?.dataset?.rawText;
-  } else if (sk === 'block1-practice-detective') {
-    ready = !!v('p5PersonalMarkers');
   }
   document.getElementById(btnId)?.classList.toggle('hidden', !ready);
+}
+
+/* Returns null when the step is complete, otherwise an alert message listing what's missing */
+function getReportPrerequisitesError(sk) {
+  const v = (id) => document.getElementById(id)?.value?.trim() || '';
+  const missing = [];
+  if (sk === 'block1-practice-scenario') {
+    if (!v('p2BestReply')) missing.push('«Лучший момент диалога»');
+    if (!v('p2ApplyWork')) missing.push('«Как применю это в реальной работе»');
+  } else if (sk === 'block1-practice-hallucination') {
+    if (!document.querySelector('input[name="riskDecision"]:checked')) missing.push('итоговое решение по фрагменту');
+    if (!v('p3VerdictReason')) missing.push('«Обоснование вердикта»');
+    if (!v('p3MainInsight')) missing.push('«Главный вывод»');
+  } else if (sk === 'block1-practice-detective') {
+    if (!v('p5PersonalMarkers')) missing.push('«Мои 3 маркера ИИ-текста»');
+  } else if (sk === 'block1-practice-reverse') {
+    if (!document.getElementById('p4ResultV2Preview')?.dataset?.rawText) missing.push('запустите промпт v2');
+  }
+  if (!missing.length) return null;
+  return 'Чтобы перейти дальше, заполните: ' + missing.join(', ') + '.';
 }
 
 function advancePracticeStep() {
@@ -3879,6 +3895,11 @@ function buildPracticeReport() {
   const isDetective = sk === 'block1-practice-detective';
   if (!wfApi || !sk || (!task && !isDetective)) {
     alert('Выберите вариант задания.');
+    return;
+  }
+  const prereqError = getReportPrerequisitesError(sk);
+  if (prereqError) {
+    alert(prereqError);
     return;
   }
   let wf;
