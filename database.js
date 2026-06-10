@@ -1213,7 +1213,8 @@ async function getProgressSummary(userId) {
       `SELECT l.id, l.title, l.scenario_key, c.slug AS course_slug, c.title AS course_title
        FROM academy_lessons l
        JOIN academy_courses c ON c.id = l.course_id
-       WHERE c.slug IN ('ai-work-business-talk', 'ai-prompt-context-m2')
+       -- Module 2 ('ai-prompt-context-m2') is temporarily hidden from progress
+       WHERE c.slug IN ('ai-work-business-talk')
        ORDER BY c.sort_order, l.sort_order`
     );
     const progress = await client.query(`SELECT * FROM academy_user_lesson_progress WHERE user_id = $1`, [userId]);

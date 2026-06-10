@@ -528,7 +528,8 @@ function initMermaid() {
   });
 }
 
-const ACADEMY_COURSE_SLUGS = ['ai-work-business-talk', 'ai-prompt-context-m2'];
+// Module 2 ('ai-prompt-context-m2') is temporarily hidden — re-add the slug to show it again
+const ACADEMY_COURSE_SLUGS = ['ai-work-business-talk'];
 
 /** Готовые вопросы наставнику по практикам (не делают работу за студента). */
 const PRACTICE_SCENARIO_KEYS = new Set([
