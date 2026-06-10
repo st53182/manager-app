@@ -1899,13 +1899,25 @@ function assembleRtcfsсPrompt() {
 function getPracticePromptText(pass = 'v1') {
   const sk = state.currentLesson?.scenario_key;
   const wfApi = getPracticeWorkflowApi();
+  // When the prompt textarea is empty and we auto-assemble from the blocks,
+  // write the result back into the textarea — otherwise the prompt runs fine
+  // but never lands in the saved draft, report or feedback
+  const assembleInto = (textareaId, assembled) => {
+    if (!assembled) return '';
+    const el = document.getElementById(textareaId);
+    if (el) {
+      el.value = assembled;
+      scheduleAutoSave();
+    }
+    return assembled;
+  };
   if (sk === 'block2-practice-aim') {
     if (pass === 'v2') {
       return document.getElementById('m2PracticePromptV2')?.value?.trim() || '';
     }
     const v1 = document.getElementById('m2PracticePromptV1')?.value?.trim();
     if (v1) return v1;
-    return wfApi?.assembleAimPrompt?.() || '';
+    return assembleInto('m2PracticePromptV1', wfApi?.assembleAimPrompt?.() || '');
   }
   if (pass === 'v2') {
     const v2 = document.getElementById('practicePromptV2')?.value?.trim();
@@ -1914,7 +1926,7 @@ function getPracticePromptText(pass = 'v1') {
   }
   const v1 = document.getElementById('practicePromptV1')?.value?.trim();
   if (v1) return v1;
-  return assembleRtcfsсPrompt();
+  return assembleInto('practicePromptV1', assembleRtcfsсPrompt());
 }
 
 function buildPracticeRunContext(runKind, pass) {
