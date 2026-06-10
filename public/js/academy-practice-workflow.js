@@ -608,6 +608,76 @@ ${p3.main_insight || '—'}
     </div>`;
   }
 
+  function buildReportP4(task, wf, taskNum) {
+    const p4 = wf.p4 || {};
+    const div = '─'.repeat(48);
+    return `ПРАКТИКА 4 · РЕВЕРС-ИНЖИНИРИНГ ПРОМПТА
+${div}
+Кейс ${taskNum || '?'}: ${task?.title || ''}
+${div}
+
+ОРИГИНАЛ — ТЕКСТ, КОТОРЫЙ НУЖНО ВОСПРОИЗВЕСТИ
+${task?.target_output || '—'}
+
+${div}
+МОЙ ПРОМПТ v1
+${div}
+${p4.prompt_v1 || '—'}
+
+РЕЗУЛЬТАТ ПРОМПТА v1
+${stripMd(p4.ai_v1) || '—'}
+
+ЧТО СОВПАЛО И ЧТО ОТЛИЧАЛОСЬ ОТ ОРИГИНАЛА
+${p4.diff_notes || '—'}
+
+${div}
+АВТОРСКИЙ ПРОМПТ
+${div}
+${task?.author_prompt || '—'}
+
+ЧЕМ АВТОРСКИЙ ПРОМПТ ОТЛИЧАЕТСЯ ОТ МОЕГО
+${p4.author_analysis || '—'}
+
+${div}
+МОЙ ПРОМПТ v2 (С УЧЁТОМ АВТОРСКОГО)
+${div}
+${p4.prompt_v2 || '—'}
+
+РЕЗУЛЬТАТ ПРОМПТА v2
+${stripMd(p4.ai_v2) || '—'}
+`;
+  }
+
+  function buildReportP5(wf, allTexts) {
+    const p5 = wf.p5 || {};
+    const answers = p5.answers || [];
+    const div = '─'.repeat(48);
+    let correct = 0;
+    const rows = (allTexts || []).map((txt) => {
+      const ans = answers.find((a) => a.textId === txt.id) || {};
+      const isCorrect = ans.verdict === (txt.is_ai ? 'ai' : 'human');
+      if (isCorrect) correct++;
+      const correctLabel = txt.is_ai ? 'ИИ' : 'Человек';
+      const studentLabel = ans.verdict === 'ai' ? 'ИИ' : ans.verdict === 'human' ? 'Человек' : '—';
+      return `${isCorrect ? '✅' : '❌'} ${txt.label || ''}
+Мой ответ: ${studentLabel} · Правильно: ${correctLabel}
+Моя причина: ${ans.reason || '—'}
+Разбор: ${txt.explanation || '—'}`;
+    });
+    return `ПРАКТИКА 5 · УГАДАЙ — ЧЕЛОВЕК ИЛИ ИИ?
+${div}
+Результат: ${correct} / ${allTexts?.length || 5} правильных ответов
+${div}
+
+${rows.join('\n\n')}
+
+${div}
+МОИ 3 МАРКЕРА ИИ-ТЕКСТА
+${div}
+${p5.markers || '—'}
+${p5.mistake_analysis ? `\nГДЕ ОШИБСЯ И ПОЧЕМУ\n${p5.mistake_analysis}\n` : ''}`;
+  }
+
   function buildReportP4Html(task, wf, taskNum) {
     const p4 = wf.p4 || {};
     function esc(t) { return escapeHtml(t || ''); }
@@ -711,7 +781,9 @@ ${p3.main_insight || '—'}
     buildReportP2Html,
     buildReportP3,
     buildReportP3Html,
+    buildReportP4,
     buildReportP4Html,
+    buildReportP5,
     buildReportP5Html,
     collectP5Answers
   };

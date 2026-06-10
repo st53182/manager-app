@@ -3819,10 +3819,10 @@ function buildPracticeReport() {
     if (sk === 'block1-practice-prompt') report = wfApi.buildReportP1(task, wf, num);
     else if (sk === 'block1-practice-scenario') report = wfApi.buildReportP2(task, wf, num);
     else if (sk === 'block1-practice-hallucination') report = wfApi.buildReportP3(task, wf, num);
-    else if (sk === 'block1-practice-reverse') report = wfApi.buildReportP4Html(task, wf, num);
+    else if (sk === 'block1-practice-reverse') report = wfApi.buildReportP4(task, wf, num);
     else if (sk === 'block1-practice-detective') {
       const allTexts = state.taskOptions || [];
-      report = wfApi.buildReportP5Html(null, wf, num, allTexts);
+      report = wfApi.buildReportP5(wf, allTexts);
     }
   }
   const ta = document.getElementById('assignmentAnswer');
