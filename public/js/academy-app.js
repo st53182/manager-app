@@ -5371,6 +5371,9 @@ function parseMsgMeta(raw) {
 function setLessonPanelVisible(visible) {
   document.getElementById('lessonPanel')?.classList.toggle('hidden', !visible);
   document.getElementById('lessonSplitter')?.classList.toggle('hidden', !visible);
+  // Drives the #workspaceRow grid template — without it the grid keeps
+  // reserving the lesson column and a grey dead zone remains
+  document.getElementById('app')?.classList.toggle('lesson-panel-hidden', !visible);
   refreshAcademyLayout();
 }
 

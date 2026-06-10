@@ -1257,3 +1257,13 @@
   0%, 100% { opacity: 0.8; }
   50% { opacity: 0.5; }
 }
+
+/* Стартовый экран / свободный чат: панель «Задание» скрыта — отдаём её колонку чату */
+@media (min-width: 1024px) {
+  .academy-light #app.lesson-panel-hidden:not(.practice-focus) #workspaceRow {
+    grid-template-columns: minmax(280px, 1fr) 0 0 12px var(--right-pane-width);
+  }
+  .academy-light #app.lesson-panel-hidden:not(.practice-focus).tools-panel-collapsed #workspaceRow {
+    grid-template-columns: minmax(280px, 1fr) 0 0 0 0;
+  }
+}
