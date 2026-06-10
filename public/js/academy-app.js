@@ -2252,11 +2252,14 @@ function clearPracticeFormUi() {
     'p3SuspiciousClaims',
     'p3VerifyQuestions',
     'p3AiResponseEval',
+    'p3VerdictReason',
     'p3MainInsight',
     'p2GoodReplies',
     'p2WeakReply',
     'p2AiIssues',
     'p2HarderInstruction',
+    'p2BestReply',
+    'p2AiCritique',
     'p2ApplyWork',
     'promptFieldR',
     'promptFieldT',
@@ -2615,7 +2618,9 @@ function renderTaskOptionDetail() {
   updateTaskSelectReminder();
 
   const startBtn = document.getElementById('startPracticeBtn');
-  if (task && startBtn) {
+  // Don't re-show "Начать задание" if the practice workflow is already in progress
+  const practiceStarted = !document.getElementById('practiceWorkflowBlock')?.classList.contains('hidden');
+  if (task && startBtn && !practiceStarted) {
     startBtn.classList.remove('hidden');
   } else if (startBtn) {
     startBtn.classList.add('hidden');
@@ -3912,6 +3917,11 @@ function initP4TargetOutput() {
     pre.textContent = task.target_output || '';
     block.classList.remove('hidden');
   }
+  // Recap copies of the target text on later substeps/steps so the user can compare
+  ['p4TargetOutputRecap1', 'p4TargetOutputRecap2'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = task.target_output || '';
+  });
 }
 
 /* P5: Render all quiz text cards */
@@ -3954,6 +3964,23 @@ function renderP5TextCards() {
         <textarea data-text-id="${escapeHtml(txt.id)}" rows="2" class="aa-textarea mt-1 text-sm" placeholder="Что именно подсказало вам ответ?"></textarea>
       </label>`;
     container.appendChild(card);
+  });
+}
+
+/* P5: Restore saved quiz answers into the rendered text cards */
+function restoreP5AnswersToCards(answers) {
+  (answers || []).forEach((a) => {
+    if (!a?.textId) return;
+    const card = document.querySelector(`.p5-text-card[data-text-id="${CSS.escape(a.textId)}"]`);
+    if (!card) return;
+    if (a.verdict) {
+      const radio = card.querySelector(`input[name="p5verdict_${a.textId}"][value="${a.verdict}"]`);
+      if (radio) radio.checked = true;
+    }
+    const sel = card.querySelector('select[data-text-id]');
+    if (sel && a.confidence) sel.value = a.confidence;
+    const ta = card.querySelector('textarea[data-text-id]');
+    if (ta && a.reason) ta.value = a.reason;
   });
 }
 
@@ -4172,11 +4199,33 @@ async function loadSubmissionForLesson(lessonId) {
     else wfApi.restoreWorkflowToUi(gm.workflow, sk);
     const savedStep = gm.workflow.currentStep;
     const savedSub = gm.workflow.currentSubstep;
-    if (savedStep && savedStep >= 1 && state.selectedTaskId) {
+    // P5 detective has no task selection — restore it whenever the practice was started (step/substep advanced or quiz answered)
+    const isDetective = sk === 'block1-practice-detective';
+    const detectiveStarted = isDetective && (savedStep > 1 || (savedSub && savedSub > 1) ||
+      (gm.workflow.p5?.answers || []).some((a) => a.verdict || a.reason));
+    if (savedStep && savedStep >= 1 && (state.selectedTaskId || detectiveStarted)) {
       document.getElementById('practiceWorkflowBlock')?.classList.remove('hidden');
       document.getElementById('startPracticeBtn')?.classList.add('hidden');
+      if (isDetective) {
+        // Re-render quiz cards and restore the user's answers before showing the saved step
+        renderP5TextCards();
+        restoreP5AnswersToCards(gm.workflow.p5?.answers);
+        document.getElementById('taskOptionsBlock')?.classList.add('hidden');
+        if (savedStep >= 2) showP5Reveals();
+      }
       if (savedSub && savedSub > 1) state.practiceSubstep = savedSub;
       showPracticeStep(savedStep, { restoreSubstep: Boolean(savedSub && savedSub > 1) });
+      // P4: re-fill target/author/recap blocks that are populated on click during the normal flow
+      if (sk === 'block1-practice-reverse') {
+        initP4TargetOutput();
+        if (savedStep >= 2) {
+          const p4Task = getSelectedTaskOption();
+          const authorEl = document.getElementById('p4AuthorPrompt');
+          if (authorEl && p4Task?.author_prompt) authorEl.textContent = p4Task.author_prompt;
+          const recapEl = document.getElementById('p4MyPromptV1Recap');
+          if (recapEl) recapEl.textContent = gm.workflow.p4?.prompt_v1 || document.getElementById('p4PromptV1')?.value || '';
+        }
+      }
       // P1: re-render HTML report if session was at the submit step
       if (sk === 'block1-practice-prompt' && gm.workflow.p1) {
         const task = getSelectedTaskOption();
@@ -4306,11 +4355,14 @@ function initAssignmentAutoSave() {
     'p3SuspiciousClaims',
     'p3VerifyQuestions',
     'p3AiResponseEval',
+    'p3VerdictReason',
     'p3MainInsight',
     'p2GoodReplies',
     'p2WeakReply',
     'p2AiIssues',
     'p2HarderInstruction',
+    'p2BestReply',
+    'p2AiCritique',
     'p2ApplyWork',
     'promptFieldR',
     'promptFieldT',
@@ -4325,6 +4377,12 @@ function initAssignmentAutoSave() {
     'checklistItem3',
     'checklistItem4',
     'checklistItem5',
+    'p4PromptV1',
+    'p4DiffNotes',
+    'p4AuthorAnalysis',
+    'p4PromptV2',
+    'p5PersonalMarkers',
+    'p5MistakeAnalysis',
     'aimFieldA',
     'aimFieldI',
     'aimFieldM',
@@ -5188,6 +5246,21 @@ async function openLessonPanel(lesson) {
   document.getElementById('lessonPanelScroll')?.scrollTo(0, 0);
   document.getElementById('lessonEmpty')?.classList.add('hidden');
   document.getElementById('demoPanelSection')?.classList.add('hidden');
+  // Reset practice step state from the previously opened lesson so its step bar,
+  // workflow panes and saved step don't leak into the new lesson
+  state.practiceStep = 1;
+  state.practiceSubstep = 1;
+  state.practiceWorkflow = null;
+  document.getElementById('practiceWorkflowBlock')?.classList.add('hidden');
+  document.getElementById('practiceStepBar')?.classList.add('hidden');
+  document.getElementById('practiceCelebrationMsg')?.classList.add('hidden');
+  const _stepNum = document.getElementById('practiceStepNum');
+  if (_stepNum) _stepNum.textContent = '';
+  const _stepTitle = document.getElementById('practiceStepTitle');
+  if (_stepTitle) _stepTitle.textContent = '';
+  const _stepDots = document.getElementById('practiceStepDots');
+  if (_stepDots) _stepDots.innerHTML = '';
+  document.getElementById('assignmentAnswerLabel')?.classList.remove('hidden');
   const lc = document.getElementById('lessonContent');
   // For these scenarios the content is in the assignment block — hide the separate description
   if (['block1-practice-prompt', 'block1-practice-scenario', 'block1-practice-hallucination'].includes(lesson.scenario_key)) {
@@ -6173,6 +6246,9 @@ function wireUi() {
     const task = getSelectedTaskOption();
     const authorEl = document.getElementById('p4AuthorPrompt');
     if (authorEl && task?.author_prompt) authorEl.textContent = task.author_prompt;
+    // Show the user's own v1 prompt next to the author prompt for comparison
+    const recapEl = document.getElementById('p4MyPromptV1Recap');
+    if (recapEl) recapEl.textContent = document.getElementById('p4PromptV1')?.value?.trim() || '—';
     document.getElementById('p4AuthorReveal')?.classList.remove('hidden');
     advancePracticeStep();
   });
@@ -6452,7 +6528,7 @@ function wireUi() {
 
   document.getElementById('requestFeedbackBtn')?.addEventListener('click', async () => {
     if (!state.currentLessonId) return;
-    if (!state.selectedTaskId) return alert('Сначала выберите вариант задания.');
+    if (!warnIfNoTaskSelected()) return;
     const answer_text = document.getElementById('assignmentAnswer')?.value?.trim();
     if (!answer_text) return alert('Нажмите «Собрать отчёт» — кнопка появится на предыдущем шаге.');
     const btn = document.getElementById('requestFeedbackBtn');
