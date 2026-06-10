@@ -2095,24 +2095,78 @@ function showPracticeStep(n, { restoreSubstep } = {}) {
 
   const isLastStep = n >= total;
   const submitBlock = document.getElementById('practiceSubmitBlock');
-  submitBlock?.classList.toggle('hidden', !isLastStep);
+  // P5: the markers pane and the submit step share step 3 — show the submit
+  // block only once the report is actually built (or restored)
+  let showSubmit = isLastStep;
+  if (isLastStep && sk === 'block1-practice-detective') {
+    showSubmit = !!document.getElementById('assignmentAnswer')?.value?.trim();
+  }
+  submitBlock?.classList.toggle('hidden', !showSubmit);
 
-  if (isLastStep) {
-    const wfApi = getPracticeWorkflowApi();
-    // P1 has inline self-check at step 2.1 — skip the submit-step block
-    if (sk !== 'block1-practice-prompt') {
-      if (isBlock2Scenario(sk)) wfApi?.renderSelfCheckM2(sk, state.practiceWorkflow?.self_check);
-      else wfApi?.renderSelfCheck(sk, state.practiceWorkflow?.self_check);
-      document.getElementById('practiceSelfCheckBlock')?.classList.remove('hidden');
+  const wfApi = getPracticeWorkflowApi();
+  // Module 1 (P2–P5): self-check lives on the last CONTENT step, right above the
+  // build-report button — so users check themselves while finishing the work,
+  // not after the report is already built. The submit step stays clean.
+  const inlineSelfCheckBtnId = REPORT_BUTTON_BY_SCENARIO[sk];
+  if (inlineSelfCheckBtnId && sk !== 'block1-practice-prompt') {
+    const lastContentStep = sk === 'block1-practice-detective' ? 3 : 2;
+    if (n === lastContentStep) {
+      // Preserve boxes the user already ticked in this session over the saved snapshot
+      const current = wfApi?.collectSelfCheck?.(sk) || [];
+      const saved = current.some(Boolean) ? current : state.practiceWorkflow?.self_check;
+      wfApi?.renderSelfCheck(sk, saved);
+      const blk = document.getElementById('practiceSelfCheckBlock');
+      const btn = document.getElementById(inlineSelfCheckBtnId);
+      if (blk && btn?.parentElement) btn.parentElement.insertBefore(blk, btn);
     }
-    submitBlock?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  if (isLastStep) {
+    // Module 2 keeps the self-check on the submit step (no inline variant there)
+    if (isBlock2Scenario(sk)) {
+      wfApi?.renderSelfCheckM2(sk, state.practiceWorkflow?.self_check);
+      const blk = document.getElementById('practiceSelfCheckBlock');
+      if (blk && submitBlock && blk.parentElement !== submitBlock) {
+        submitBlock.insertBefore(blk, submitBlock.firstChild);
+      }
+      blk?.classList.remove('hidden');
+    }
+    if (showSubmit) submitBlock?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    else bar?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } else {
     bar?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
+  updateReportButtonVisibility();
   scheduleAutoSave();
   updateAssignmentHint();
   updatePracticeBackBtn();
+}
+
+/* Build-report buttons appear only when the step's work is actually done,
+   so each step shows a single next action. */
+const REPORT_BUTTON_BY_SCENARIO = {
+  'block1-practice-scenario': 'buildReportP2Btn',
+  'block1-practice-hallucination': 'buildReportP3Btn',
+  'block1-practice-reverse': 'buildReportP4Btn',
+  'block1-practice-detective': 'buildReportP5Btn'
+};
+
+function updateReportButtonVisibility() {
+  const sk = state.currentLesson?.scenario_key;
+  const btnId = REPORT_BUTTON_BY_SCENARIO[sk];
+  if (!btnId) return;
+  const v = (id) => document.getElementById(id)?.value?.trim() || '';
+  let ready = true;
+  if (sk === 'block1-practice-scenario') {
+    ready = !!(v('p2BestReply') && v('p2ApplyWork'));
+  } else if (sk === 'block1-practice-hallucination') {
+    ready = !!(document.querySelector('input[name="riskDecision"]:checked') && v('p3VerdictReason') && v('p3MainInsight'));
+  } else if (sk === 'block1-practice-reverse') {
+    ready = !!document.getElementById('p4ResultV2Preview')?.dataset?.rawText;
+  } else if (sk === 'block1-practice-detective') {
+    ready = !!v('p5PersonalMarkers');
+  }
+  document.getElementById(btnId)?.classList.toggle('hidden', !ready);
 }
 
 function advancePracticeStep() {
@@ -3835,6 +3889,8 @@ function buildPracticeReport() {
     else if (sk === 'block1-practice-reverse') showP4ReportHtml(task, wf, num);
     else if (sk === 'block1-practice-detective') showP5ReportHtml(null, wf, state.taskOptions || []);
     advancePracticeStep();
+    // P5 is already on the final step — re-render it so the submit block appears now that the report exists
+    if (sk === 'block1-practice-detective') showPracticeStep(state.practiceStep || 3, { restoreSubstep: true });
   }
 }
 
@@ -3878,6 +3934,7 @@ async function runP4Prompt(pass) {
         preview.dataset.rawText = assistantText;
       }
       if (pass === 'v1') tryAdvancePracticeSubstep();
+      updateReportButtonVisibility();
       saveSubmission('draft').catch(() => {});
     }
   } catch (e) {
@@ -4248,7 +4305,6 @@ async function loadSubmissionForLesson(lessonId) {
         }
         // N3/N9: always sync counter+hint regardless of message count
         updateP2PairCounter();
-        if (savedStep >= 2) renderP2InlineSelfCheck();
       }
       if (sk === 'block1-practice-hallucination') {
         if (gm.workflow.p3Hint) {
@@ -4270,7 +4326,6 @@ async function loadSubmissionForLesson(lessonId) {
         if (_claimsReminder && gm.workflow.p3?.suspicious_claims) {
           _claimsReminder.textContent = gm.workflow.p3.suspicious_claims;
         }
-        if (savedStep >= 2) renderP3InlineSelfCheck();
       }
     }
   }
@@ -6378,6 +6433,10 @@ function wireUi() {
   document.getElementById('practiceWorkflowBlock')?.addEventListener('click', (e) => {
     if (e.target.closest('.js-practice-substep-next')) advancePracticeStepOrSubstep();
   });
+  // Re-evaluate build-report button visibility as the user fills the step's fields
+  ['input', 'change'].forEach((evt) => {
+    document.getElementById('practiceWorkflowBlock')?.addEventListener(evt, updateReportButtonVisibility);
+  });
   document.getElementById('practiceNextS1Btn')?.addEventListener('click', () => {
     const v1 = document.getElementById('practicePromptV1')?.value?.trim();
     const v2El = document.getElementById('practicePromptV2');
@@ -6418,8 +6477,7 @@ function wireUi() {
   });
   document.getElementById('practiceNextP2S1Btn')?.addEventListener('click', async () => {
     advancePracticeStepOrSubstep();
-    // Launch AI eval and inline self-check when dialogue is done
-    renderP2InlineSelfCheck();
+    // Launch AI eval when dialogue is done (self-check is rendered by showPracticeStep)
     runP2DialogueEval().catch(() => {});
   });
   // N2: live claims counter
@@ -6466,7 +6524,6 @@ function wireUi() {
   });
   document.getElementById('p3FinishVerifyBtn')?.addEventListener('click', () => {
     advancePracticeStep();
-    renderP3InlineSelfCheck();
     runP3HallucinationEval().catch(() => {});
   });
   document.getElementById('practiceNextP3S1Btn')?.addEventListener('click', () => advancePracticeStepOrSubstep());
