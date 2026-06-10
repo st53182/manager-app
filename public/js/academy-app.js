@@ -1655,11 +1655,25 @@ function renderContinuePractice() {
   }
 
   card.classList.remove('hidden');
-  const meta = getLessonProgressMeta(next.id);
-  let hint = 'Не начато';
-  if (meta.assignment_status === 'submitted' || meta.assignment_status === 'in_progress') hint = 'В процессе';
-  if (meta.has_feedback) hint = 'Есть обратная связь';
-  titleEl.textContent = `${next.title} · ${hint}`;
+  const labelEl = document.getElementById('continuePracticeLabel');
+  // A brand-new user hasn't started anything — «Продолжить» would be confusing
+  const isFresh = getMvpLessons().every((l) => {
+    const m = getLessonProgressMeta(l.id);
+    return m.status === 'not_started' && m.assignment_status === 'not_started' && !m.has_feedback;
+  });
+  if (isFresh) {
+    if (labelEl) labelEl.textContent = 'С чего начать';
+    titleEl.textContent = next.title;
+    btn.textContent = 'Начать первую практику';
+  } else {
+    if (labelEl) labelEl.textContent = 'Продолжить';
+    const meta = getLessonProgressMeta(next.id);
+    let hint = 'Не начато';
+    if (meta.assignment_status === 'submitted' || meta.assignment_status === 'in_progress') hint = 'В процессе';
+    if (meta.has_feedback) hint = 'Есть обратная связь';
+    titleEl.textContent = `${next.title} · ${hint}`;
+    btn.textContent = 'Открыть практику';
+  }
 
   btn.onclick = () => {
     selectLesson(next);
