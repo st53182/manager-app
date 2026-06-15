@@ -740,12 +740,15 @@ ${mdl.insight || '—'}
     let html = '';
     results.forEach((r) => {
       const isWin = winner && r.model === winner;
+      const bodyHtml = r.error
+        ? `<div class="text-sm text-amber-700">⚠ ${escapeHtml(r.error)}</div>`
+        : `<div class="aa-task-detail max-h-40 overflow-y-auto text-sm whitespace-pre-wrap">${escapeHtml(String(r.response || ''))}</div>`;
       html += `<div class="aa-practice-workflow-box space-y-1${isWin ? ' ring-2 ring-blue-400' : ''}">
         <div class="flex items-center justify-between gap-2">
           <span class="text-xs font-semibold text-slate-700">${escapeHtml(r.model || '')}</span>
           <span class="text-[11px] text-slate-400">${r.latency_ms ? r.latency_ms + ' мс' : ''}</span>
         </div>
-        <div class="aa-task-detail max-h-40 overflow-y-auto text-sm whitespace-pre-wrap">${escapeHtml(String(r.response || ''))}</div>
+        ${bodyHtml}
       </div>`;
     });
     box.innerHTML = html;

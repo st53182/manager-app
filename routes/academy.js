@@ -1100,44 +1100,64 @@ function createRouter({ JWT_SECRET }) {
     for (const m of models) {
       const model = pickModel(m, req.dbUser);
       const started = Date.now();
-      const gen = streamChatCompletion(openai, {
-        model,
-        messages: [{ role: 'user', content: promptText }],
-        maxTokens: 1000
-      });
-      let text = '';
-      let usage = null;
-      for await (const part of gen) {
-        if (part.type === 'chunk') text += part.text;
-        if (part.type === 'done') usage = part.usage;
+      // Падение одной модели не должно ронять весь запрос — изолируем каждую.
+      try {
+        const gen = streamChatCompletion(openai, {
+          model,
+          messages: [{ role: 'user', content: promptText }],
+          maxTokens: 1000
+        });
+        let text = '';
+        let usage = null;
+        for await (const part of gen) {
+          if (part.type === 'chunk') text += part.text;
+          if (part.type === 'done') usage = part.usage;
+        }
+        const latency = Date.now() - started;
+        const pt = usage?.prompt_tokens || estimateTokensFromText(promptText);
+        const ct = usage?.completion_tokens || estimateTokensFromText(text);
+        const cost = estimateCostUsd(pt, ct, model);
+        await recordFeatureUsage(req, {
+          model,
+          promptTokens: pt,
+          completionTokens: ct,
+          costUsd: cost,
+          featureMode: 'model_compare'
+        });
+        results.push({
+          model,
+          response: text,
+          latency_ms: latency,
+          input_tokens: pt,
+          output_tokens: ct,
+          estimated_cost: cost,
+          quality_note: text.length > 500 ? 'Detailed response with good coverage.' : 'Concise response.'
+        });
+      } catch (err) {
+        console.error('[model-compare] model failed:', model, err?.message || err);
+        results.push({
+          model,
+          response: '',
+          error: 'Модель недоступна или вернула ошибку.',
+          latency_ms: Date.now() - started,
+          input_tokens: 0,
+          output_tokens: 0,
+          estimated_cost: 0,
+          quality_note: 'Ошибка запроса к модели.'
+        });
       }
-      const latency = Date.now() - started;
-      const pt = usage?.prompt_tokens || estimateTokensFromText(promptText);
-      const ct = usage?.completion_tokens || estimateTokensFromText(text);
-      const cost = estimateCostUsd(pt, ct, model);
-      await recordFeatureUsage(req, {
-        model,
-        promptTokens: pt,
-        completionTokens: ct,
-        costUsd: cost,
-        featureMode: 'model_compare'
-      });
-      results.push({
-        model,
-        response: text,
-        latency_ms: latency,
-        input_tokens: pt,
-        output_tokens: ct,
-        estimated_cost: cost,
-        quality_note: text.length > 500 ? 'Detailed response with good coverage.' : 'Concise response.'
-      });
     }
-    const session = await practicum.createModelCompareSession({
-      userId: req.dbUser.id,
-      promptText,
-      models,
-      results
-    });
+    let session = null;
+    try {
+      session = await practicum.createModelCompareSession({
+        userId: req.dbUser.id,
+        promptText,
+        models,
+        results
+      });
+    } catch (err) {
+      console.error('[model-compare] session save failed:', err?.message || err);
+    }
     res.json({ results, session_id: session?.id || null });
   });
 
