@@ -683,62 +683,62 @@
                 <!-- ===== МОДУЛЬ 2 · ПРАКТИКА 1: AIM ===== -->
                 <div id="practiceAimSection" class="hidden space-y-3">
                   <p class="text-xs text-blue-800 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-                    Промпты теперь работают, потому что у ИИ есть цель, данные, метод и контекст.
+                    Сначала запустите <strong>базовый промпт</strong> и получите <strong>Ответ A</strong>. Затем усильте его <strong>техникой</strong> (Chain of Thought, few-shot или самокритика) и получите <strong>Ответ B</strong>. Сравните — увидите, что даёт техника.
                   </p>
                   <div class="aa-step-pane aa-practice-workflow-box space-y-3" data-practice-step="1">
                     <div class="aa-practice-substep space-y-3" data-practice-substep="1">
                       <details class="aa-rtc-details mb-2">
-                        <summary class="text-sm text-blue-700 cursor-pointer">Подсказка: структура AIM (раскрыть)</summary>
+                        <summary class="text-sm text-blue-700 cursor-pointer">Подсказка: как собрать базовый промпт (раскрыть)</summary>
                         <div class="mt-2 space-y-2 text-xs text-slate-600">
-                          <p><strong>A — Aim:</strong> какой результат нужен, для кого, зачем.</p>
-                          <p><strong>I — Inputs:</strong> факты, данные, ограничения из ситуации.</p>
-                          <p><strong>M — Method:</strong> как ИИ должен работать (шаги, вопросы, проверка).</p>
+                          <p><strong>Цель:</strong> какой результат нужен, для кого, зачем.</p>
+                          <p><strong>Входные данные:</strong> факты и ограничения из кейса (базовый промпт уже подставлен ниже — можно дополнить).</p>
+                          <p><strong>Метод:</strong> как ИИ должен рассуждать. На этом шаге — БЕЗ техники (это даст Ответ A). Технику добавите в Ответ B.</p>
                         </div>
                       </details>
-                      <label class="block"><span class="aa-label">A — Aim (цель результата)</span><textarea id="aimFieldA" rows="2" class="aa-textarea mt-1"></textarea></label>
-                      <label class="block"><span class="aa-label">I — Inputs (входные данные)</span><textarea id="aimFieldI" rows="3" class="aa-textarea mt-1"></textarea></label>
-                      <label class="block"><span class="aa-label">M — Method (как ИИ должен работать)</span><textarea id="aimFieldM" rows="3" class="aa-textarea mt-1" placeholder="Например: сначала задай до 3 уточняющих вопросов, затем покажи шаги решения…"></textarea></label>
-                      <button type="button" class="aa-btn aa-btn-primary w-full js-practice-substep-next">AIM заполнен, далее →</button>
+                      <label class="block"><span class="aa-label">Цель (какой результат нужен)</span><textarea id="aimFieldA" rows="2" class="aa-textarea mt-1"></textarea></label>
+                      <label class="block"><span class="aa-label">Входные данные / контекст</span><textarea id="aimFieldI" rows="3" class="aa-textarea mt-1"></textarea></label>
+                      <label class="block"><span class="aa-label">Метод работы ИИ (пока без техники)</span><textarea id="aimFieldM" rows="3" class="aa-textarea mt-1" placeholder="Например: сначала задай до 3 уточняющих вопросов, затем покажи решение…"></textarea></label>
+                      <button type="button" class="aa-btn aa-btn-primary w-full js-practice-substep-next">Готово, далее →</button>
                     </div>
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
                       <label class="block"><span class="aa-label">Формат ответа</span><textarea id="aimFieldFormat" rows="2" class="aa-textarea mt-1"></textarea></label>
                       <label class="block"><span class="aa-label">Ограничения</span><textarea id="aimFieldConstraints" rows="2" class="aa-textarea mt-1"></textarea></label>
                       <label class="block"><span class="aa-label">Критерии качества</span><textarea id="aimFieldCriteria" rows="2" class="aa-textarea mt-1"></textarea></label>
-                      <label class="block"><span class="aa-label">Почему плохой промпт слабый</span><textarea id="aimWhyBad" rows="2" class="aa-textarea mt-1"></textarea></label>
-                      <button type="button" id="assembleAimPromptBtn" class="aa-btn aa-btn-ghost text-sm">Собрать промпт v1 из AIM</button>
-                      <button type="button" class="aa-btn aa-btn-primary w-full js-practice-substep-next">Промпт собран, запустить →</button>
+                      <label class="block"><span class="aa-label">Какую технику планируете применить в Ответе B?</span><textarea id="aimWhyBad" rows="2" class="aa-textarea mt-1" placeholder="Chain of Thought (думать по шагам) / few-shot (пример-образец) / самокритика (проверь и улучши)"></textarea></label>
+                      <button type="button" id="assembleAimPromptBtn" class="aa-btn aa-btn-ghost text-sm">Собрать базовый промпт из блоков</button>
+                      <button type="button" class="aa-btn aa-btn-primary w-full js-practice-substep-next">Базовый промпт готов →</button>
                     </div>
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="3">
-                      <label class="block"><span class="aa-label">Промпт v1</span><textarea id="m2PracticePromptV1" rows="6" class="aa-textarea mt-1"></textarea></label>
-                      <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-prompt-library" data-prompt-source="m2PracticePromptV1" data-prompt-title="AIM промпт v1">Сохранить в библиотеку</button>
-                      <button type="button" id="runM2PromptV1Btn" class="aa-btn aa-btn-primary w-full">Получить результат от нейросети (v1)</button>
+                      <label class="block"><span class="aa-label">Базовый промпт (для Ответа A)</span><textarea id="m2PracticePromptV1" rows="6" class="aa-textarea mt-1"></textarea></label>
+                      <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-prompt-library" data-prompt-source="m2PracticePromptV1" data-prompt-title="Базовый промпт (Ответ A)">Сохранить в библиотеку</button>
+                      <button type="button" id="runM2PromptV1Btn" class="aa-btn aa-btn-primary w-full">Запустить базовый промпт → Ответ A</button>
                       <button type="button" class="aa-btn aa-btn-ghost w-full text-sm js-practice-substep-next">Уже есть ответ — оценить →</button>
                     </div>
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="4">
-                      <div id="m2AiResultBlockV1" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ нейросети v1</p><div id="m2AiResultV1Preview" class="aa-task-detail max-h-48 overflow-y-auto prose prose-sm max-w-none"></div></div>
+                      <div id="m2AiResultBlockV1" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ A (без техники)</p><div id="m2AiResultV1Preview" class="aa-task-detail max-h-48 overflow-y-auto prose prose-sm max-w-none"></div></div>
                       <div class="aa-eval-box">
-                        <p class="aa-label text-sm mb-2">Оцените ответ v1</p>
+                        <p class="aa-label text-sm mb-2">Оцените Ответ A</p>
                         <label class="flex items-start gap-2 text-sm"><input type="checkbox" id="aimEvalSolves" class="mt-0.5" /> <span>Результат решает задачу</span></label>
-                        <label class="flex items-start gap-2 text-sm mt-1"><input type="checkbox" id="aimEvalConcrete" class="mt-0.5" /> <span>Достаточно конкретики</span></label>
-                        <label class="block mt-2"><span class="aa-label text-sm">Что ИИ понял неправильно или упустил</span><textarea id="aimEvalMissed" rows="2" class="aa-textarea mt-1 text-sm"></textarea></label>
+                        <label class="flex items-start gap-2 text-sm mt-1"><input type="checkbox" id="aimEvalConcrete" class="mt-0.5" /> <span>Достаточно конкретики и глубины</span></label>
+                        <label class="block mt-2"><span class="aa-label text-sm">Что слабо или упущено (это усилит техника)</span><textarea id="aimEvalMissed" rows="2" class="aa-textarea mt-1 text-sm"></textarea></label>
                       </div>
-                      <button type="button" class="aa-btn aa-btn-primary w-full js-practice-substep-next">Записать улучшения →</button>
+                      <button type="button" class="aa-btn aa-btn-primary w-full js-practice-substep-next">Дальше — применить технику →</button>
                     </div>
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="5">
-                      <label class="block"><span class="aa-label">Что улучшить? (минимум 2 изменения для v2)</span><textarea id="m2PracticeImproveNotes" rows="3" class="aa-textarea mt-1"></textarea></label>
-                      <button type="button" id="practiceNextM2P1S1Btn" class="aa-btn aa-btn-primary w-full mt-1">Записал улучшения, перехожу к промпту v2 →</button>
+                      <label class="block"><span class="aa-label">Как усилите промпт техникой? (минимум 2 изменения)</span><textarea id="m2PracticeImproveNotes" rows="3" class="aa-textarea mt-1" placeholder="Например: добавить «думай по шагам» (CoT), дать пример-образец (few-shot), попросить проверить и улучшить ответ (самокритика)"></textarea></label>
+                      <button type="button" id="practiceNextM2P1S1Btn" class="aa-btn aa-btn-primary w-full mt-1">Перейти к промпту с техникой →</button>
                     </div>
                   </div>
                   <div class="aa-step-pane hidden aa-practice-workflow-box space-y-3" data-practice-step="2">
                     <div class="aa-practice-substep space-y-3" data-practice-substep="1">
-                      <label class="block"><span class="aa-label">Улучшенный промпт v2</span><textarea id="m2PracticePromptV2" rows="6" class="aa-textarea mt-1"></textarea></label>
-                      <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-prompt-library" data-prompt-source="m2PracticePromptV2" data-prompt-title="AIM промпт v2">Сохранить в библиотеку</button>
-                      <button type="button" id="runM2PromptV2Btn" class="aa-btn aa-btn-primary w-full">Получить улучшенный результат (v2)</button>
+                      <label class="block"><span class="aa-label">Промпт с техникой (для Ответа B)</span><textarea id="m2PracticePromptV2" rows="6" class="aa-textarea mt-1"></textarea></label>
+                      <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-prompt-library" data-prompt-source="m2PracticePromptV2" data-prompt-title="Промпт с техникой (Ответ B)">Сохранить в библиотеку</button>
+                      <button type="button" id="runM2PromptV2Btn" class="aa-btn aa-btn-primary w-full">Запустить промпт с техникой → Ответ B</button>
                       <button type="button" class="aa-btn aa-btn-ghost w-full text-sm js-practice-substep-next">Перейти к выводу →</button>
                     </div>
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
-                      <div id="m2AiResultBlockV2" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ нейросети v2</p><div id="m2AiResultV2Preview" class="aa-task-detail max-h-48 overflow-y-auto prose prose-sm max-w-none"></div></div>
-                      <label class="block"><span class="aa-label">Главный вывод: что изменилось после AIM</span><textarea id="m2PracticeMainInsight" rows="2" class="aa-textarea mt-1"></textarea></label>
+                      <div id="m2AiResultBlockV2" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ B (с техникой)</p><div id="m2AiResultV2Preview" class="aa-task-detail max-h-48 overflow-y-auto prose prose-sm max-w-none"></div></div>
+                      <label class="block"><span class="aa-label">Главный вывод: что добавила техника и где её применить</span><textarea id="m2PracticeMainInsight" rows="2" class="aa-textarea mt-1"></textarea></label>
                       <button type="button" id="buildReportM2P1Btn" class="aa-btn aa-btn-primary w-full">Далее →</button>
                     </div>
                   </div>
@@ -802,6 +802,7 @@
                       <label class="block text-sm"><span class="font-medium">Пример плохого ответа</span><textarea id="passportBadExampleV1" rows="2" class="aa-textarea mt-0.5 text-sm"></textarea></label>
                       <button type="button" id="assemblePassportV1Btn" class="aa-btn aa-btn-ghost text-sm">Собрать инструкцию (паспорт v1)</button>
                       <label class="block"><span class="aa-label">Паспорт ассистента v1</span><textarea id="passportPreviewV1" rows="8" class="aa-textarea mt-1 text-xs font-mono"></textarea></label>
+                      <p class="text-xs text-slate-500">Хотите, чтобы ассистент знал ваши документы? Откройте чат, выберите базу знаний в селекторе <strong>«База знаний»</strong> — она прикрепится к ассистенту при сохранении. Это по желанию.</p>
                       <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-to-assistant" data-assistant-source="passportPreviewV1" data-assistant-version="v1">Сохранить как ассистента</button>
                       <button type="button" class="aa-btn aa-btn-ghost text-xs w-full js-save-prompt-library" data-prompt-source="passportPreviewV1" data-prompt-title="Паспорт ассистента v1">Сохранить паспорт в промпты</button>
                       <button type="button" id="practiceNextM2P3S1Btn" class="aa-btn aa-btn-primary w-full">Паспорт готов, перехожу к тесту →</button>
@@ -1067,8 +1068,8 @@
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script src="/js/translations.js?v=20260606-5"></script>
   <script src="/js/academy-practice-workflow.js?v=20260610-2"></script>
-  <script src="/js/academy-practice-workflow-m2.js?v=20260615-2"></script>
-  <script type="module" src="/js/academy-app.js?v=20260615-2"></script>
+  <script src="/js/academy-practice-workflow-m2.js?v=20260615-3"></script>
+  <script type="module" src="/js/academy-app.js?v=20260615-3"></script>
 </body>
 </html>
 

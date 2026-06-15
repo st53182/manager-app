@@ -2812,13 +2812,11 @@ function prefillPromptFromTask(task) {
 
 function prefillAimFromTask(task) {
   if (!task) return;
-  // Практика 1 (техники): базовый промпт кейса → поле промпта v1 (Ответ A).
-  // В блок Method студент впишет технику (CoT / few-shot / самокритика) для v2.
+  // Практика 1 (техники): базовый промпт кейса → поле «Базовый промпт (Ответ A)».
+  // Блоки Цель/Метод — подсказки, технику студент впишет в Ответ B.
   const v1El = document.getElementById('m2PracticePromptV1');
   if (v1El && !v1El.value.trim() && task.base_prompt) v1El.value = task.base_prompt;
-  const iEl = document.getElementById('aimFieldI');
   const aEl = document.getElementById('aimFieldA');
-  if (iEl && !iEl.value.trim()) iEl.value = task.base_prompt || task.raw_input || '';
   if (aEl && !aEl.value.trim()) aEl.value = task.expected_result || task.summary || '';
 }
 
