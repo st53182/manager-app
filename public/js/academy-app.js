@@ -528,8 +528,7 @@ function initMermaid() {
   });
 }
 
-// Module 2 ('ai-prompt-context-m2') is temporarily hidden — re-add the slug to show it again
-const ACADEMY_COURSE_SLUGS = ['ai-work-business-talk'];
+const ACADEMY_COURSE_SLUGS = ['ai-work-business-talk', 'ai-prompt-context-m2'];
 
 /** Готовые вопросы наставнику по практикам (не делают работу за студента). */
 const PRACTICE_SCENARIO_KEYS = new Set([
@@ -538,9 +537,11 @@ const PRACTICE_SCENARIO_KEYS = new Set([
   'block1-practice-hallucination',
   'block1-practice-reverse',
   'block1-practice-detective',
-  'block2-practice-aim',
+  'block2-practice-techniques',
   'block2-practice-library',
-  'block2-practice-context'
+  'block2-practice-kb',
+  'block2-practice-assistant',
+  'block2-practice-models'
 ]);
 
 const TASK_PICK_LABELS = {
@@ -549,9 +550,11 @@ const TASK_PICK_LABELS = {
   'block1-practice-hallucination': 'Выберите один из 5 фрагментов',
   'block1-practice-reverse': 'Выберите один из 5 текстов',
   'block1-practice-detective': 'Квиз: угадай автора',
-  'block2-practice-aim': 'Выберите один из 5 кейсов',
+  'block2-practice-techniques': 'Выберите один из 5 кейсов',
   'block2-practice-library': 'Выберите роль / направление',
-  'block2-practice-context': 'Выберите тип ассистента'
+  'block2-practice-kb': 'Выберите один из 5 кейсов',
+  'block2-practice-assistant': 'Выберите тип ассистента',
+  'block2-practice-models': 'Выберите класс задачи'
 };
 
 const PRACTICE_STEP_LABELS = {
@@ -580,9 +583,9 @@ const PRACTICE_STEP_LABELS = {
     'Проверить ответы и изучить разбор',
     'Записать маркеры, собрать отчёт и отправить'
   ],
-  'block2-practice-aim': [
-    'Заполнить AIM, получить результат v1 и оценить его',
-    'Улучшить промпт до v2 и зафиксировать вывод',
+  'block2-practice-techniques': [
+    'Запустить базовый промпт (Ответ A) и оценить его',
+    'Применить технику (Ответ B) и зафиксировать вывод',
     'Проверить отчёт и отправить'
   ],
   'block2-practice-library': [
@@ -590,9 +593,19 @@ const PRACTICE_STEP_LABELS = {
     'Протестировать один промпт и улучшить до v2',
     'Проверить отчёт и отправить'
   ],
-  'block2-practice-context': [
-    'Заполнить паспорт ассистента v1',
+  'block2-practice-kb': [
+    'Создать базу знаний и загрузить документ',
+    'Сравнить ответ без базы и с базой, проверить ловушку',
+    'Проверить отчёт и отправить'
+  ],
+  'block2-practice-assistant': [
+    'Заполнить паспорт, подключить базу, создать ассистента',
     'Протестировать на задаче и улучшить паспорт v2',
+    'Проверить отчёт и отправить'
+  ],
+  'block2-practice-models': [
+    'Подготовить промпт и прогнать через модели',
+    'Сравнить ответы и выбрать победителя',
     'Проверить отчёт и отправить'
   ]
 };
@@ -623,9 +636,9 @@ const PRACTICE_STEP_CELEBRATIONS = {
     '✓ Ответы проверены! Изучите разбор и перейдите к маркерам.',
     '✓ Отчёт собран. Проверьте его и нажмите «Завершить задание».'
   ],
-  'block2-practice-aim': [
+  'block2-practice-techniques': [
     null,
-    '✓ Оценка v1 готова. Улучшите промпт (минимум 2 изменения) и запустите v2.',
+    '✓ Ответ A получен и оценён. Примените технику и получите Ответ B.',
     '✓ Отчёт собран. Проверьте его и нажмите «Завершить задание».'
   ],
   'block2-practice-library': [
@@ -633,9 +646,19 @@ const PRACTICE_STEP_CELEBRATIONS = {
     '✓ Библиотека собрана. Протестируйте один шаблон на примере.',
     '✓ Отчёт собран. Проверьте его и нажмите «Завершить задание».'
   ],
-  'block2-practice-context': [
+  'block2-practice-kb': [
     null,
-    '✓ Паспорт v1 готов. Протестируйте ассистента на рабочей задаче.',
+    '✓ База знаний готова. Сравните ответы с базой и без, проверьте ловушку.',
+    '✓ Отчёт собран. Проверьте его и нажмите «Завершить задание».'
+  ],
+  'block2-practice-assistant': [
+    null,
+    '✓ Ассистент создан. Протестируйте его на рабочей задаче.',
+    '✓ Отчёт собран. Проверьте его и нажмите «Завершить задание».'
+  ],
+  'block2-practice-models': [
+    null,
+    '✓ Модели прогнаны. Сравните ответы и выберите победителя.',
     '✓ Отчёт собран. Проверьте его и нажмите «Завершить задание».'
   ]
 };
@@ -964,17 +987,39 @@ const STEP_HINTS = {
       '3': '<p>Запишите 3 личных маркера ИИ-текста, нажмите <strong>«Далее»</strong> и затем <strong>«Завершить задание»</strong>.</p>'
     }
   },
-  'block2-practice-aim': {
-    initial: '<p>Выберите один из 5 кейсов для практики с методом AIM.</p>',
-    taskSelected: '<p>Прочитайте кейс. Нажмите <strong>«Начать задание»</strong> — заполните структуру AIM.</p>',
+  'block2-practice-techniques': {
+    initial: '<p>Выберите один из 5 кейсов, чтобы отработать профессиональные техники промптинга.</p>',
+    taskSelected: '<p>Прочитайте кейс. Нажмите <strong>«Начать задание»</strong> — соберите базовый промпт для Ответа A.</p>',
     steps: {
-      '1.1': '<p class="mb-2">Заполните блоки AIM:</p><ul class="text-xs space-y-0.5 text-slate-600"><li><strong>A — Aim:</strong> какой результат нужен, для кого, зачем</li><li><strong>I — Inputs:</strong> факты, данные, ограничения</li><li><strong>M — Method:</strong> как ИИ должен работать</li></ul>',
-      '1.2': '<p>Добавьте формат, ограничения и критерии качества. Объясните почему плохой промпт слабый.</p>',
-      '1.3': '<p>Отправьте промпт v1 в нейросеть и дождитесь ответа.</p>',
-      '1.4': '<p>Оцените ответ: решает ли задачу, достаточно ли конкретики? Что ИИ понял неправильно?</p>',
-      '1.5': '<p>Запишите <strong>минимум 2 улучшения</strong> для промпта v2.</p>',
-      '2.1': '<p>Напишите <strong>улучшенный промпт v2</strong> и запустите нейросеть.</p>',
-      '2.2': '<p>Запишите главный вывод: что изменилось после применения метода AIM?</p>',
+      '1.1': '<p class="mb-2">Сформулируйте цель и контекст. В блоке <strong>Method</strong> — пока БЕЗ техники (это даст Ответ A).</p>',
+      '1.2': '<p>Добавьте формат и ограничения, если нужно. Это базовый промпт.</p>',
+      '1.3': '<p>Запустите базовый промпт в нейросеть — получите <strong>Ответ A</strong>.</p>',
+      '1.4': '<p>Оцените Ответ A: что слабо, чего не хватает в рассуждении или структуре?</p>',
+      '1.5': '<p>Решите, какую <strong>технику</strong> применить: Chain of Thought, few-shot или самокритика.</p>',
+      '2.1': '<p>Усильте промпт техникой (впишите её в Method) и запустите — получите <strong>Ответ B</strong>.</p>',
+      '2.2': '<p>Сравните A и B. Запишите вывод: что добавила техника и где она поможет в работе.</p>',
+      '3': '<p>Проверьте отчёт и нажмите <strong>«Отправить»</strong>.</p>'
+    }
+  },
+  'block2-practice-kb': {
+    initial: '<p>Выберите кейс. Вы создадите базу знаний и проверите, как контекст меняет ответы ИИ.</p>',
+    taskSelected: '<p>Нажмите <strong>«Начать задание»</strong> — создайте базу знаний и загрузите документ.</p>',
+    steps: {
+      '1.1': '<p>Создайте базу знаний и загрузите <strong>свой документ</strong> или возьмите готовый демо-документ.</p>',
+      '1.2': '<p>Задайте вопрос <strong>без базы</strong> — запомните ответ.</p>',
+      '2.1': '<p>Задайте тот же вопрос <strong>с базой</strong>. Сравните: точность, ссылки на документ.</p>',
+      '2.2': '<p>Задайте <strong>вопрос-ловушку</strong> (ответа в документе нет) — проверьте, честно ли ассистент откажется.</p>',
+      '3': '<p>Проверьте отчёт и нажмите <strong>«Отправить»</strong>.</p>'
+    }
+  },
+  'block2-practice-models': {
+    initial: '<p>Выберите класс задачи, чтобы сравнить модели и выбрать подходящую.</p>',
+    taskSelected: '<p>Нажмите <strong>«Начать задание»</strong> — подготовьте один промпт для сравнения.</p>',
+    steps: {
+      '1.1': '<p>Подготовьте <strong>один промпт</strong> (можно взять заготовку кейса и дополнить своими данными).</p>',
+      '1.2': '<p>Прогоните его <strong>через несколько моделей</strong> и дождитесь ответов.</p>',
+      '2.1': '<p>Сравните ответы по критерию задачи (точность / стиль / формат / язык).</p>',
+      '2.2': '<p><strong>Выберите победителя</strong> и обоснуйте выбор.</p>',
       '3': '<p>Проверьте отчёт и нажмите <strong>«Отправить»</strong>.</p>'
     }
   },
@@ -988,15 +1033,15 @@ const STEP_HINTS = {
       '3': '<p>Проверьте отчёт и нажмите <strong>«Отправить»</strong>.</p>'
     }
   },
-  'block2-practice-context': {
-    initial: '<p>Выберите тип ассистента для создания персонального паспорта.</p>',
+  'block2-practice-assistant': {
+    initial: '<p>Выберите тип ассистента, чтобы создать персонального ассистента с памятью контекста.</p>',
     taskSelected: '<p>Нажмите <strong>«Начать задание»</strong> — заполните паспорт ассистента по блокам.</p>',
     steps: {
       '1.1': '<p>Заполните первые блоки паспорта: <strong>роль</strong>, задачи, рабочий контекст.</p>',
       '1.2': '<p>Добавьте информацию о клиентах, продуктах и стиле общения.</p>',
       '1.3': '<p>Укажите правила работы, форматы результата и критерии качества.</p>',
-      '1.4': '<p>Добавьте примеры <strong>хорошего и плохого</strong> ответа ассистента.</p>',
-      '2.1': '<p>Напишите тестовый запрос и отправьте паспорт в нейросеть.</p>',
+      '1.4': '<p>Подключите <strong>базу знаний</strong>, соберите паспорт и нажмите <strong>«Сохранить как ассистента»</strong>.</p>',
+      '2.1': '<p>Напишите тестовый запрос и протестируйте ассистента.</p>',
       '2.2': '<p>Оцените ответ и улучшите паспорт v2: что добавить или уточнить?</p>',
       '3': '<p>Проверьте отчёт и нажмите <strong>«Отправить»</strong>.</p>'
     }
@@ -1034,21 +1079,31 @@ const PRACTICE_HINTS = {
     { label: 'Проверь мою причину', text: 'Я написал причину для одного из текстов в задании 5. Скажи: это убедительный аргумент или я ошибся в логике? Не говори правильный ответ.' },
     { label: 'Как писать маркеры', text: 'Покажи структуру хорошего «личного маркера ИИ-текста»: что в нём должно быть, чтобы он был конкретным? Один пример, без раскрытия текстов задания.' }
   ],
-  'block2-practice-aim': [
-    { label: 'Как заполнить AIM', text: 'Объясни, что писать в Aim, Inputs и Method для моего выбранного кейса. По одному примеру на блок, без готового полного промпта.' },
-    { label: 'Проверь черновик AIM', text: 'Я пришлю черновик AIM. Дай обратную связь: чего не хватает. Не переписывай промпт целиком.' },
-    { label: 'Критерии качества', text: 'Приведи 5 измеримых критериев качества для моего кейса. Коротко, списком.' },
-    { label: 'Улучшения для v2', text: 'Как сформулировать минимум 2 улучшения для v2? Пример на 2–3 предложения, без готового ответа на задание.' }
+  'block2-practice-techniques': [
+    { label: 'Какая техника подойдёт', text: 'Для моего кейса: какая техника даст больший эффект — Chain of Thought, few-shot или самокритика? Объясни почему, без готового промпта.' },
+    { label: 'Как применить CoT', text: 'Покажи, как корректно сформулировать инструкцию «думай по шагам» для моего кейса. Одна-две фразы-примера.' },
+    { label: 'Пример few-shot', text: 'Как выглядит хороший пример-образец (few-shot) для моего кейса? Покажи структуру, без полного ответа за меня.' },
+    { label: 'Сравнить A и B', text: 'Как описать разницу между ответом без техники и с техникой? Дай структуру сравнения на 2–3 предложения.' }
   ],
   'block2-practice-library': [
     { label: 'Идеи шаблонов', text: 'Предложи 3 идеи шаблонов промптов для моей роли с разными категориями. Только названия и переменные, без полных текстов.' },
     { label: 'Проверь шаблон', text: 'Я пришлю черновик шаблона. Скажи, каких переменных или критериев не хватает.' },
     { label: 'Пример переменных', text: 'Покажи, как заполнить переменные {цель} и {аудитория} для одного шаблона моей роли.' }
   ],
-  'block2-practice-context': [
+  'block2-practice-kb': [
+    { label: 'Что грузить в базу', text: 'Для моего кейса: какой документ лучше загрузить в базу знаний и почему? Без готового документа.' },
+    { label: 'Хорошие вопросы к базе', text: 'Предложи 3 вопроса к моему документу, на которые ассистент должен отвечать строго по тексту.' },
+    { label: 'Вопрос-ловушка', text: 'Помоги придумать вопрос-ловушку, ответа на который НЕТ в документе, чтобы проверить честность ассистента.' }
+  ],
+  'block2-practice-assistant': [
     { label: 'Структура паспорта', text: 'Объясни, что писать в каждом блоке паспорта ассистента для моего типа. Без готового паспорта целиком.' },
     { label: 'Правила и риски', text: 'Приведи 5 примеров правил для ассистента с осторожными формулировками про GDPR и финансы.' },
-    { label: 'Проверь паспорт', text: 'Я пришлю черновик паспорта. Укажи, что слишком общее или чего не хватает.' }
+    { label: 'Зачем подключать базу', text: 'Объясни, что даёт подключение базы знаний к ассистенту на моём примере. Коротко.' }
+  ],
+  'block2-practice-models': [
+    { label: 'На что смотреть', text: 'Для моего класса задачи: по каким критериям честно сравнивать ответы разных моделей?' },
+    { label: 'Как выбрать победителя', text: 'Помоги сформулировать критерий выбора модели под мою задачу. Без готового вывода за меня.' },
+    { label: 'Сильные стороны моделей', text: 'Коротко: в каких типах задач модели обычно различаются сильнее всего?' }
   ]
 };
 
@@ -1058,9 +1113,11 @@ const PRACTICE_SECTION_IDS = {
   'block1-practice-hallucination': 'practiceAnalysisSection',
   'block1-practice-reverse': 'practiceReverseSection',
   'block1-practice-detective': 'practiceDetectiveSection',
-  'block2-practice-aim': 'practiceAimSection',
+  'block2-practice-techniques': 'practiceAimSection',
   'block2-practice-library': 'practiceLibrarySection',
-  'block2-practice-context': 'practiceContextSection'
+  'block2-practice-kb': 'practiceKbSection',
+  'block2-practice-assistant': 'practiceContextSection',
+  'block2-practice-models': 'practiceModelsSection'
 };
 
 const TOOLS_COLLAPSED_KEY = 'academy_tools_panel_collapsed';
@@ -1798,6 +1855,7 @@ function parseTaskOptions(assignment) {
   if (opts && typeof opts === 'object') {
     if (Array.isArray(opts.roles)) return opts.roles;
     if (Array.isArray(opts.types)) return opts.types;
+    if (Array.isArray(opts.cases)) return opts.cases;
   }
   return [];
 }
@@ -1925,7 +1983,7 @@ function getPracticePromptText(pass = 'v1') {
     }
     return assembled;
   };
-  if (sk === 'block2-practice-aim') {
+  if (sk === 'block2-practice-techniques') {
     if (pass === 'v2') {
       return document.getElementById('m2PracticePromptV2')?.value?.trim() || '';
     }
@@ -2514,8 +2572,8 @@ function showPracticeAiResult(text, pass = 'v1') {
   if (!text?.trim()) return;
   state.lastPracticeAiResult = text.trim();
   const sk = state.currentLesson?.scenario_key;
-  if (sk === 'block2-practice-aim' && pass === 'v1') pass = 'm2v1';
-  if (sk === 'block2-practice-aim' && pass === 'v2') pass = 'm2v2';
+  if (sk === 'block2-practice-techniques' && pass === 'v1') pass = 'm2v1';
+  if (sk === 'block2-practice-techniques' && pass === 'v2') pass = 'm2v2';
   const map = {
     v1: ['aiResultBlockV1', 'aiResultV1Preview'],
     v2: ['aiResultBlockV2', 'aiResultV2Preview'],
@@ -2620,7 +2678,7 @@ async function runPracticeInAi({ message, runKind, pass = 'v1' }) {
     else if (runKind === 'assistant') alert('Укажите паспорт и тестовую задачу.');
     else {
       const sk = state.currentLesson?.scenario_key;
-      if (sk === 'block2-practice-aim') {
+      if (sk === 'block2-practice-techniques') {
         alert(pass === 'v2' ? 'Сначала напишите промпт v2.' : 'Сначала напишите промпт v1 или заполните AIM.');
       } else {
         alert(pass === 'v2' ? 'Сначала напишите промпт v2.' : 'Сначала напишите промпт v1 или заполните RTCFSC.');
@@ -2640,7 +2698,7 @@ async function runPracticeInAi({ message, runKind, pass = 'v1' }) {
           ? 'runLibraryTestBtn'
           : runKind === 'assistant'
             ? 'runAssistantTestBtn'
-            : skRun === 'block2-practice-aim'
+            : skRun === 'block2-practice-techniques'
               ? pass === 'v2'
                 ? 'runM2PromptV2Btn'
                 : 'runM2PromptV1Btn'
@@ -2653,7 +2711,7 @@ async function runPracticeInAi({ message, runKind, pass = 'v1' }) {
   let resultPass = runKind === 'prompt' ? pass : runKind === 'dialogue' ? 'dialogue' : 'analysis';
   if (runKind === 'library') resultPass = 'library';
   if (runKind === 'assistant') resultPass = 'context';
-  if (skRun === 'block2-practice-aim' && runKind === 'prompt') resultPass = pass;
+  if (skRun === 'block2-practice-techniques' && runKind === 'prompt') resultPass = pass;
 
   try {
     scheduleAutoSave();
@@ -2721,9 +2779,11 @@ function renderTaskOptionDetail() {
   const wfApi = getPracticeWorkflowApi();
   if (isBlock2Scenario(sk)) {
     wfApi?.renderCaseBriefM2(task, sk);
-    if (sk === 'block2-practice-aim') prefillAimFromTask(task);
+    if (sk === 'block2-practice-techniques') prefillAimFromTask(task);
     if (sk === 'block2-practice-library') prefillLibraryRole(task);
-    if (sk === 'block2-practice-context') prefillContextType(task);
+    if (sk === 'block2-practice-assistant') prefillContextType(task);
+    if (sk === 'block2-practice-kb') prefillKbCase(task);
+    if (sk === 'block2-practice-models') prefillModelsCase(task);
   } else {
     wfApi?.renderCaseBrief(task, sk);
     updateFragmentPreview();
@@ -2752,9 +2812,13 @@ function prefillPromptFromTask(task) {
 
 function prefillAimFromTask(task) {
   if (!task) return;
+  // Практика 1 (техники): базовый промпт кейса → поле промпта v1 (Ответ A).
+  // В блок Method студент впишет технику (CoT / few-shot / самокритика) для v2.
+  const v1El = document.getElementById('m2PracticePromptV1');
+  if (v1El && !v1El.value.trim() && task.base_prompt) v1El.value = task.base_prompt;
   const iEl = document.getElementById('aimFieldI');
   const aEl = document.getElementById('aimFieldA');
-  if (iEl && !iEl.value.trim()) iEl.value = task.raw_input || '';
+  if (iEl && !iEl.value.trim()) iEl.value = task.base_prompt || task.raw_input || '';
   if (aEl && !aEl.value.trim()) aEl.value = task.expected_result || task.summary || '';
 }
 
@@ -2782,6 +2846,180 @@ function prefillContextType(task) {
   }
   const roleEl = document.getElementById('passportRoleV1');
   if (roleEl && !roleEl.value.trim()) roleEl.value = task.title || '';
+}
+
+/* ===== Практика 3 (база знаний) ===== */
+function prefillKbCase(task) {
+  if (!task) return;
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el && (!el.value || !el.value.trim())) el.value = v || '';
+  };
+  document.getElementById('kbCaseIdHidden').value = task.id || '';
+  document.getElementById('kbCaseTitleHidden').value = task.title || '';
+  const demoEl = document.getElementById('kbDemoDocHidden');
+  if (demoEl) demoEl.value = task.demo_doc || '';
+  set('kbQuestion', task.sample_questions?.[0] || '');
+  set('kbTrapQuestion', task.trap_question || '');
+}
+
+async function createKbDemoBase() {
+  const caseTitle = document.getElementById('kbCaseTitleHidden')?.value || 'Практика';
+  const demoDoc = document.getElementById('kbDemoDocHidden')?.value || '';
+  const status = document.getElementById('kbCreateStatus');
+  if (!demoDoc.trim()) {
+    showToast('Нет демо-документа для этого кейса');
+    return;
+  }
+  const btn = document.getElementById('kbCreateDemoBtn');
+  setBtnLoading(btn, true);
+  if (status) {
+    status.classList.remove('hidden');
+    status.textContent = 'Создаём базу знаний…';
+  }
+  try {
+    const kbName = `Практика · ${caseTitle}`.slice(0, 80);
+    const created = await api('/api/academy/knowledge-bases', {
+      method: 'POST',
+      body: JSON.stringify({ name: kbName })
+    });
+    const kbId = created?.id || created?.knowledgeBase?.id;
+    if (!kbId) throw new Error('Не удалось создать базу знаний');
+    if (status) status.textContent = 'Загружаем документ…';
+    const fd = new FormData();
+    const file = new File([demoDoc], 'demo-document.txt', { type: 'text/plain' });
+    fd.append('files', file);
+    const token = getToken();
+    const res = await fetch(`${apiBase}/api/academy/knowledge-bases/${kbId}/documents/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: fd
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || 'Не удалось загрузить документ');
+    document.getElementById('kbIdHidden').value = kbId;
+    document.getElementById('kbDocNameHidden').value = 'demo-document.txt';
+    state.knowledgeBases = (await api('/api/academy/knowledge-bases')).knowledgeBases || [];
+    if (typeof populateKnowledgeBases === 'function') populateKnowledgeBases();
+    if (status) status.textContent = `✓ База «${kbName}» создана, документ загружен.`;
+    scheduleAutoSave();
+  } catch (e) {
+    if (status) status.textContent = `Ошибка: ${e.message || e}`;
+    showToast(e.message || 'Не удалось создать базу');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+async function runKbQuery({ withBase, trap = false }) {
+  const question = trap
+    ? document.getElementById('kbTrapQuestion')?.value?.trim()
+    : document.getElementById('kbQuestion')?.value?.trim();
+  if (!question) {
+    showToast('Введите вопрос');
+    return;
+  }
+  const kbId = document.getElementById('kbIdHidden')?.value || null;
+  if ((withBase || trap) && !kbId) {
+    showToast('Сначала создайте базу знаний (или выберите свою)');
+    return;
+  }
+  const btnId = trap ? 'kbRunTrapBtn' : withBase ? 'kbRunWithBtn' : 'kbRunWithoutBtn';
+  const previewId = trap ? 'kbTrapPreview' : withBase ? 'kbAnswerWithPreview' : 'kbAnswerWithoutPreview';
+  const blockId = trap ? 'kbTrapBlock' : withBase ? 'kbAnswerWithBlock' : 'kbAnswerWithoutBlock';
+  const btn = document.getElementById(btnId);
+  setBtnLoading(btn, true);
+  try {
+    const payload = {
+      prompt: question,
+      model: document.getElementById('modelSelect')?.value || undefined,
+      max_tokens: 700,
+      system_prompt: 'Ты — рабочий ассистент. Отвечай кратко и по делу на русском языке.'
+    };
+    if (withBase || trap) payload.knowledgeBaseId = kbId;
+    const out = await api('/api/academy/playground', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    const preview = document.getElementById(previewId);
+    if (preview) preview.textContent = out.response || '(пустой ответ)';
+    document.getElementById(blockId)?.classList.remove('hidden');
+    scheduleAutoSave();
+  } catch (e) {
+    showToast(e.message || 'Не удалось получить ответ');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+/* ===== Практика 5 (сравнение моделей) ===== */
+function prefillModelsCase(task) {
+  if (!task) return;
+  document.getElementById('modelsCaseIdHidden').value = task.id || '';
+  document.getElementById('modelsCaseTitleHidden').value = task.title || '';
+  const promptEl = document.getElementById('modelsPrompt');
+  if (promptEl && !promptEl.value.trim()) promptEl.value = task.prompt || '';
+}
+
+function getCompareModelIds() {
+  // Берём допустимые модели из общего селектора (учитывают права пользователя).
+  const sel = document.getElementById('modelSelect');
+  const opts = sel ? Array.from(sel.options).map((o) => o.value).filter(Boolean) : [];
+  if (opts.length >= 2) return opts.slice(0, 3);
+  return ['openai/gpt-4o-mini', 'google/gemini-2.0-flash-001', 'anthropic/claude-3.5-sonnet'];
+}
+
+async function runModelsCompare() {
+  const prompt = document.getElementById('modelsPrompt')?.value?.trim();
+  if (!prompt) {
+    showToast('Введите промпт для сравнения');
+    return;
+  }
+  const models = getCompareModelIds();
+  const btn = document.getElementById('modelsRunBtn');
+  setBtnLoading(btn, true);
+  try {
+    const out = await api('/api/academy/model-compare', {
+      method: 'POST',
+      body: JSON.stringify({ prompt, models })
+    });
+    const results = out.results || [];
+    document.getElementById('modelsResultsHidden').value = JSON.stringify(results);
+    const wfApi = getPracticeWorkflowApi();
+    if (wfApi?.renderModelsResults) wfApi.renderModelsResults(results, null);
+    renderModelsWinnerOptions(results);
+    scheduleAutoSave();
+  } catch (e) {
+    showToast(e.message || 'Не удалось сравнить модели');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+function renderModelsWinnerOptions(results) {
+  const wrap = document.getElementById('modelsWinnerOptions');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  (results || []).forEach((r) => {
+    const id = `modelsWin_${r.model.replace(/[^a-z0-9]/gi, '_')}`;
+    const label = document.createElement('label');
+    label.className = 'flex items-center gap-2 text-sm cursor-pointer';
+    label.innerHTML = `<input type="radio" name="modelsWinnerRadio" value="${escapeHtml(r.model)}" id="${id}" /> <span>${escapeHtml(r.model)}</span>`;
+    label.querySelector('input').addEventListener('change', (e) => {
+      const winEl = document.getElementById('modelsWinner');
+      if (winEl) winEl.value = e.target.value;
+      const wfApi = getPracticeWorkflowApi();
+      let results2 = [];
+      try {
+        results2 = JSON.parse(document.getElementById('modelsResultsHidden')?.value || '[]');
+      } catch {
+        results2 = [];
+      }
+      if (wfApi?.renderModelsResults) wfApi.renderModelsResults(results2, e.target.value);
+      scheduleAutoSave();
+    });
+    wrap.appendChild(label);
+  });
 }
 
 function selectTaskOption(taskId, { persist = true } = {}) {
@@ -3921,9 +4159,11 @@ function buildPracticeReport() {
   if (isBlock2Scenario(sk)) {
     if (sk === 'block2-practice-library' && !wfApi.validateLibraryBeforeReport()) return;
     wf = wfApi.collectWorkflowFromUiM2(sk);
-    if (sk === 'block2-practice-aim') report = wfApi.buildReportM2P1(task, wf, num);
+    if (sk === 'block2-practice-techniques') report = wfApi.buildReportM2P1(task, wf, num);
     else if (sk === 'block2-practice-library') report = wfApi.buildReportM2P2(task, wf, num);
-    else if (sk === 'block2-practice-context') report = wfApi.buildReportM2P3(task, wf, num);
+    else if (sk === 'block2-practice-assistant') report = wfApi.buildReportM2P3(task, wf, num);
+    else if (sk === 'block2-practice-kb') report = wfApi.buildReportM2Kb(task, wf, num);
+    else if (sk === 'block2-practice-models') report = wfApi.buildReportM2Models(task, wf, num);
   } else {
     wf = wfApi.collectWorkflowFromUi(sk);
     // Attach P2 in-memory data to workflow before building report
@@ -6446,6 +6686,15 @@ function wireUi() {
   document.getElementById('buildReportM2P1Btn')?.addEventListener('click', () => buildPracticeReport());
   document.getElementById('buildReportM2P2Btn')?.addEventListener('click', () => buildPracticeReport());
   document.getElementById('buildReportM2P3Btn')?.addEventListener('click', () => buildPracticeReport());
+  document.getElementById('buildReportM2KbBtn')?.addEventListener('click', () => buildPracticeReport());
+  document.getElementById('buildReportM2ModelsBtn')?.addEventListener('click', () => buildPracticeReport());
+  // Практика 3 — база знаний
+  document.getElementById('kbCreateDemoBtn')?.addEventListener('click', () => createKbDemoBase());
+  document.getElementById('kbRunWithoutBtn')?.addEventListener('click', () => runKbQuery({ withBase: false }));
+  document.getElementById('kbRunWithBtn')?.addEventListener('click', () => runKbQuery({ withBase: true }));
+  document.getElementById('kbRunTrapBtn')?.addEventListener('click', () => runKbQuery({ withBase: true, trap: true }));
+  // Практика 5 — сравнение моделей
+  document.getElementById('modelsRunBtn')?.addEventListener('click', () => runModelsCompare());
   document.getElementById('assembleAimPromptBtn')?.addEventListener('click', () => {
     const assembled = getPracticeWorkflowApi()?.assembleAimPrompt?.();
     if (!assembled) return alert('Заполните хотя бы один блок AIM.');

@@ -5,7 +5,10 @@ const { seedModuleTwoCatalog } = require('./services/academy/seedModuleTwoCatalo
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+  ssl:
+    process.env.DATABASE_URL && process.env.PGSSL !== 'disable'
+      ? { rejectUnauthorized: false }
+      : false
 });
 
 async function bootstrapAdminEmail(client) {

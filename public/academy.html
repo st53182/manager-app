@@ -846,6 +846,77 @@
                     </div>
                   </div>
                 </div>
+
+                <!-- ===== МОДУЛЬ 2 · ПРАКТИКА 3: База знаний ===== -->
+                <div id="practiceKbSection" class="hidden space-y-3">
+                  <input type="hidden" id="kbCaseIdHidden" />
+                  <input type="hidden" id="kbCaseTitleHidden" />
+                  <input type="hidden" id="kbIdHidden" />
+                  <input type="hidden" id="kbDocNameHidden" />
+                  <input type="hidden" id="kbDemoDocHidden" />
+                  <div class="aa-step-pane aa-practice-workflow-box space-y-3" data-practice-step="1">
+                    <div class="aa-practice-substep space-y-3" data-practice-substep="1">
+                      <p class="text-xs text-slate-600">Создайте базу знаний и загрузите документ. Можно взять готовый демо-документ кейса или загрузить свой через панель «База знаний» в инструментах.</p>
+                      <button type="button" id="kbCreateDemoBtn" class="aa-btn aa-btn-primary w-full">Создать базу и загрузить демо-документ</button>
+                      <p id="kbCreateStatus" class="hidden text-xs text-slate-500" aria-live="polite"></p>
+                      <button type="button" class="aa-btn aa-btn-ghost w-full text-sm js-practice-substep-next">База готова, дальше →</button>
+                    </div>
+                    <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
+                      <label class="block"><span class="aa-label">Вопрос к документу</span><textarea id="kbQuestion" rows="2" class="aa-textarea mt-1"></textarea></label>
+                      <button type="button" id="kbRunWithoutBtn" class="aa-btn aa-btn-primary w-full">Спросить БЕЗ базы знаний</button>
+                      <div id="kbAnswerWithoutBlock" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ без базы</p><div id="kbAnswerWithoutPreview" class="aa-task-detail max-h-44 overflow-y-auto whitespace-pre-wrap text-sm"></div></div>
+                      <button type="button" class="aa-btn aa-btn-primary w-full js-practice-substep-next">Дальше — спросить с базой →</button>
+                    </div>
+                  </div>
+                  <div class="aa-step-pane hidden aa-practice-workflow-box space-y-3" data-practice-step="2">
+                    <div class="aa-practice-substep space-y-3" data-practice-substep="1">
+                      <button type="button" id="kbRunWithBtn" class="aa-btn aa-btn-primary w-full">Спросить ТОТ ЖЕ вопрос С базой знаний</button>
+                      <div id="kbAnswerWithBlock" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ с базой</p><div id="kbAnswerWithPreview" class="aa-task-detail max-h-44 overflow-y-auto whitespace-pre-wrap text-sm"></div></div>
+                      <label class="block"><span class="aa-label">Что изменилось? (точность, ссылки на документ)</span><textarea id="kbDifference" rows="2" class="aa-textarea mt-1"></textarea></label>
+                      <button type="button" class="aa-btn aa-btn-primary w-full js-practice-substep-next">Дальше — вопрос-ловушка →</button>
+                    </div>
+                    <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
+                      <label class="block"><span class="aa-label">Вопрос-ловушка (ответа в документе нет)</span><textarea id="kbTrapQuestion" rows="2" class="aa-textarea mt-1"></textarea></label>
+                      <button type="button" id="kbRunTrapBtn" class="aa-btn aa-btn-primary w-full">Проверить вопрос-ловушку</button>
+                      <div id="kbTrapBlock" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Реакция ассистента</p><div id="kbTrapPreview" class="aa-task-detail max-h-44 overflow-y-auto whitespace-pre-wrap text-sm"></div></div>
+                      <label class="block"><span class="aa-label">Решение: можно ли доверять ассистенту по документу?</span>
+                        <select id="kbDecision" class="aa-select mt-1 w-full">
+                          <option value="">—</option>
+                          <option value="honest">Честно ответил по документу и отказался выдумывать</option>
+                          <option value="partial">В основном по документу, но кое-что додумал</option>
+                          <option value="hallucinated">Выдумал ответ на ловушку — доверять нельзя</option>
+                        </select>
+                      </label>
+                      <label class="block"><span class="aa-label">Вывод: где база знаний нужна в вашей работе</span><textarea id="kbInsight" rows="2" class="aa-textarea mt-1"></textarea></label>
+                      <button type="button" id="buildReportM2KbBtn" class="aa-btn aa-btn-primary w-full">Далее →</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ===== МОДУЛЬ 2 · ПРАКТИКА 5: Сравнение моделей ===== -->
+                <div id="practiceModelsSection" class="hidden space-y-3">
+                  <input type="hidden" id="modelsCaseIdHidden" />
+                  <input type="hidden" id="modelsCaseTitleHidden" />
+                  <input type="hidden" id="modelsResultsHidden" />
+                  <input type="hidden" id="modelsWinner" />
+                  <div class="aa-step-pane aa-practice-workflow-box space-y-3" data-practice-step="1">
+                    <div class="aa-practice-substep space-y-3" data-practice-substep="1">
+                      <label class="block"><span class="aa-label">Промпт для сравнения</span><textarea id="modelsPrompt" rows="5" class="aa-textarea mt-1"></textarea></label>
+                      <button type="button" id="modelsRunBtn" class="aa-btn aa-btn-primary w-full">Прогнать через несколько моделей</button>
+                      <div id="modelsResultsBlock" class="hidden space-y-2"></div>
+                      <button type="button" class="aa-btn aa-btn-primary w-full js-practice-substep-next">Дальше — выбрать победителя →</button>
+                    </div>
+                  </div>
+                  <div class="aa-step-pane hidden aa-practice-workflow-box space-y-3" data-practice-step="2">
+                    <div class="aa-practice-substep space-y-3" data-practice-substep="1">
+                      <p class="aa-label text-sm mb-1">Какая модель победила под этот класс задачи?</p>
+                      <div id="modelsWinnerOptions" class="space-y-1.5"></div>
+                      <label class="block"><span class="aa-label">Обоснование выбора (по какому критерию)</span><textarea id="modelsJustification" rows="3" class="aa-textarea mt-1"></textarea></label>
+                      <label class="block"><span class="aa-label">Вывод: какую модель под какой класс задач я буду брать</span><textarea id="modelsInsight" rows="2" class="aa-textarea mt-1"></textarea></label>
+                      <button type="button" id="buildReportM2ModelsBtn" class="aa-btn aa-btn-primary w-full">Далее →</button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <!-- Финальный шаг: отправка (общий для всех практик) -->

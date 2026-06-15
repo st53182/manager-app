@@ -5,16 +5,14 @@
   const base = global.AcademyPracticeWorkflow || {};
 
   const SELF_CHECK_M2 = {
-    'block2-practice-aim': [
-      'Я указал цель результата (Aim)',
-      'Я добавил входные данные (Inputs)',
-      'Я описал метод работы ИИ (Method)',
-      'Я указал формат ответа',
-      'Я добавил ограничения',
-      'Я добавил критерии качества',
-      'Я получил результат v1',
-      'Я улучшил промпт в v2',
-      'В v2 есть минимум 2 конкретных улучшения'
+    'block2-practice-techniques': [
+      'Я выбрал кейс',
+      'Я получил Ответ A на базовый промпт',
+      'Я выбрал технику (Method): CoT, few-shot или самокритика',
+      'Я применил технику и получил Ответ B',
+      'Я сравнил Ответ A и Ответ B',
+      'Я назвал минимум 2 отличия',
+      'Я записал вывод: где техника поможет в работе'
     ],
     'block2-practice-library': [
       'Я выбрал роль / направление',
@@ -27,7 +25,7 @@
       'Я улучшил минимум 1 промпт после теста',
       'Я понимаю, где буду использовать эту библиотеку'
     ],
-    'block2-practice-context': [
+    'block2-practice-assistant': [
       'Я выбрал тип ассистента',
       'Я описал, для каких задач он нужен',
       'Я добавил рабочий контекст',
@@ -35,11 +33,28 @@
       'Я задал стиль общения',
       'Я добавил правила и ограничения',
       'Я указал форматы результата',
-      'Я добавил критерии качества',
-      'Я добавил минимум 1 пример',
+      'Я подключил базу знаний',
+      'Ассистент создан и сохранён в студии',
       'Я протестировал ассистента',
-      'Я улучшил контекст в v2',
+      'Я улучшил паспорт в v2',
       'В v2 есть минимум 2 конкретных улучшения'
+    ],
+    'block2-practice-kb': [
+      'Я выбрал кейс и документ',
+      'Я создал базу знаний и загрузил документ',
+      'Я получил ответ БЕЗ базы',
+      'Я получил ответ С базой',
+      'Я описал разницу между ответами',
+      'Я проверил вопрос-ловушку (честный отказ)',
+      'Я записал вывод: где база знаний нужна в работе'
+    ],
+    'block2-practice-models': [
+      'Я выбрал класс задачи и подготовил промпт',
+      'Я прогнал промпт через несколько моделей',
+      'Я сравнил ответы по критерию задачи',
+      'Я выбрал победителя',
+      'Я обосновал выбор',
+      'Я записал вывод: какую модель под какой класс задач'
     ]
   };
 
@@ -142,17 +157,14 @@ ${badEx || '—'}`;
     box.classList.remove('hidden');
     let html = `<h4 class="font-semibold text-slate-900 mb-2">${escapeHtml(task.title)}</h4>`;
 
-    if (scenarioKey === 'block2-practice-aim') {
+    if (scenarioKey === 'block2-practice-techniques') {
       html += `<p class="text-sm text-slate-700 mb-2">${escapeHtml(task.description || '')}</p>`;
-      html += `<p class="text-xs font-medium text-slate-600 mt-2">Входные данные</p><div class="aa-case-raw">${escapeHtml(task.raw_input || '')}</div>`;
-      html += `<p class="text-xs font-medium text-red-800 mt-2">Плохой промпт</p><div class="aa-case-bad-prompt">${escapeHtml(task.bad_prompt || '')}</div>`;
+      html += `<p class="text-xs font-medium text-slate-600 mt-2">Базовый промпт (для Ответа A)</p><div class="aa-case-raw">${escapeHtml(task.base_prompt || '')}</div>`;
+      if (task.technique_hint) {
+        html += `<p class="text-xs font-medium text-blue-800 mt-2">Подсказка по технике (для Ответа B)</p><div class="aa-case-bad-prompt">${escapeHtml(task.technique_hint)}</div>`;
+      }
       if (task.expected_result) {
         html += `<p class="text-xs text-slate-500 mt-2"><strong>Ожидаемый результат:</strong> ${escapeHtml(task.expected_result)}</p>`;
-      }
-      const whyEl = el('aimWhyBad');
-      if (whyEl && !whyEl.value.trim() && task.bad_prompt) {
-        whyEl.value =
-          'Запрос слишком общий: нет цели, входных данных, метода работы, формата, ограничений и критериев качества.';
       }
     } else if (scenarioKey === 'block2-practice-library') {
       html += `<p class="text-sm text-slate-700 mb-2">${escapeHtml(task.summary || '')}</p>`;
@@ -161,12 +173,36 @@ ${badEx || '—'}`;
         for (const idea of task.prompt_ideas) html += `<li>${escapeHtml(idea)}</li>`;
         html += `</ul>`;
       }
-    } else if (scenarioKey === 'block2-practice-context') {
+    } else if (scenarioKey === 'block2-practice-assistant') {
       html += `<p class="text-sm text-slate-700 mb-2">${escapeHtml(task.summary || '')}</p>`;
       if (task.sample_tasks?.length) {
         html += `<p class="text-xs font-medium mt-2">Примеры задач:</p><ul class="text-xs list-disc pl-5">`;
         for (const t of task.sample_tasks) html += `<li>${escapeHtml(t)}</li>`;
         html += `</ul>`;
+      }
+    } else if (scenarioKey === 'block2-practice-kb') {
+      html += `<p class="text-sm text-slate-700 mb-2">${escapeHtml(task.summary || '')}</p>`;
+      if (task.doc_topic) {
+        html += `<p class="text-xs text-slate-500 mt-1"><strong>Документ:</strong> ${escapeHtml(task.doc_topic)}</p>`;
+      }
+      if (task.sample_questions?.length) {
+        html += `<p class="text-xs font-medium mt-2">Вопросы к документу:</p><ul class="text-xs list-disc pl-5">`;
+        for (const q of task.sample_questions) html += `<li>${escapeHtml(q)}</li>`;
+        html += `</ul>`;
+      }
+      if (task.trap_question) {
+        html += `<p class="text-xs font-medium text-amber-800 mt-2">Вопрос-ловушка (ответа в документе нет):</p><div class="aa-case-bad-prompt">${escapeHtml(task.trap_question)}</div>`;
+      }
+    } else if (scenarioKey === 'block2-practice-models') {
+      html += `<p class="text-sm text-slate-700 mb-2">${escapeHtml(task.summary || '')}</p>`;
+      if (task.task_type) {
+        html += `<p class="text-xs text-slate-500 mt-1"><strong>Класс задачи:</strong> ${escapeHtml(task.task_type)}</p>`;
+      }
+      if (task.prompt) {
+        html += `<p class="text-xs font-medium mt-2">Заготовка промпта:</p><div class="aa-case-raw">${escapeHtml(task.prompt)}</div>`;
+      }
+      if (task.compare_focus) {
+        html += `<p class="text-xs text-slate-500 mt-2"><strong>На что смотреть:</strong> ${escapeHtml(task.compare_focus)}</p>`;
       }
     }
     box.innerHTML = html;
@@ -350,6 +386,35 @@ ${badEx || '—'}`;
         passport_v2: val('passportPreviewV2') || assemblePassport('v2'),
         usage_note: val('contextUsageNote')
       },
+      kb: {
+        case_id: val('kbCaseIdHidden') || null,
+        case_title: val('kbCaseTitleHidden') || '',
+        kb_id: val('kbIdHidden') || null,
+        doc_name: val('kbDocNameHidden') || '',
+        question: val('kbQuestion'),
+        answer_without: el('kbAnswerWithoutPreview')?.textContent?.trim() || '',
+        answer_with: el('kbAnswerWithPreview')?.textContent?.trim() || '',
+        difference: val('kbDifference'),
+        trap_question: val('kbTrapQuestion'),
+        trap_response: el('kbTrapPreview')?.textContent?.trim() || '',
+        decision: val('kbDecision'),
+        insight: val('kbInsight')
+      },
+      models: {
+        case_id: val('modelsCaseIdHidden') || null,
+        case_title: val('modelsCaseTitleHidden') || '',
+        prompt: val('modelsPrompt'),
+        results: (() => {
+          try {
+            return JSON.parse(val('modelsResultsHidden') || '[]');
+          } catch {
+            return [];
+          }
+        })(),
+        winner: val('modelsWinner'),
+        justification: val('modelsJustification'),
+        insight: val('modelsInsight')
+      },
       self_check: collectSelfCheckM2(scenarioKey)
     };
     return wf;
@@ -460,6 +525,35 @@ ${badEx || '—'}`;
     }
     set('contextUsageNote', p3.usage_note);
 
+    const kb = wf.kb || {};
+    set('kbCaseIdHidden', kb.case_id);
+    set('kbCaseTitleHidden', kb.case_title);
+    set('kbIdHidden', kb.kb_id);
+    set('kbDocNameHidden', kb.doc_name);
+    set('kbQuestion', kb.question);
+    setText('kbAnswerWithoutPreview', kb.answer_without);
+    if (kb.answer_without) el('kbAnswerWithoutBlock')?.classList.remove('hidden');
+    setText('kbAnswerWithPreview', kb.answer_with);
+    if (kb.answer_with) el('kbAnswerWithBlock')?.classList.remove('hidden');
+    set('kbDifference', kb.difference);
+    set('kbTrapQuestion', kb.trap_question);
+    setText('kbTrapPreview', kb.trap_response);
+    if (kb.trap_response) el('kbTrapBlock')?.classList.remove('hidden');
+    set('kbDecision', kb.decision);
+    set('kbInsight', kb.insight);
+
+    const mdl = wf.models || {};
+    set('modelsCaseIdHidden', mdl.case_id);
+    set('modelsCaseTitleHidden', mdl.case_title);
+    set('modelsPrompt', mdl.prompt);
+    if (mdl.results?.length) {
+      set('modelsResultsHidden', JSON.stringify(mdl.results));
+      if (typeof base.renderModelsResults === 'function') base.renderModelsResults(mdl.results, mdl.winner);
+    }
+    set('modelsWinner', mdl.winner);
+    set('modelsJustification', mdl.justification);
+    set('modelsInsight', mdl.insight);
+
     renderSelfCheckM2(scenarioKey, wf.self_check);
   }
 
@@ -477,43 +571,27 @@ ${badEx || '—'}`;
     const p1 = wf.m2p1 || {};
     return `Выбранный кейс (${taskNum || '?'}): ${task?.title || ''}
 
-Плохой промпт:
-${task?.bad_prompt || '—'}
-
-Почему плохой промпт слабый:
-${p1.why_bad || '—'}
-
-AIM:
-Aim (цель): ${p1.aim || '—'}
-Inputs (входные данные): ${p1.inputs || '—'}
-Method (метод): ${p1.method || '—'}
-
-Дополнительно:
-Формат: ${p1.format || '—'}
-Ограничения: ${p1.constraints || '—'}
-Критерии качества: ${p1.quality_criteria || '—'}
-
-Промпт v1:
+Базовый промпт (Ответ A):
 ${p1.prompt_v1 || '—'}
 
-Ответ ИИ v1:
+Ответ A (без техники):
 ${p1.ai_v1 || '—'}
 
-Оценка v1:
-- Результат решает задачу: ${yn(p1.eval?.solves_task)}
-- Достаточно конкретики: ${yn(p1.eval?.concrete)}
-- Что ИИ упустил: ${p1.eval?.ai_missed || '—'}
+Оценка Ответа A:
+- Решает задачу: ${yn(p1.eval?.solves_task)}
+- Достаточно конкретики / глубины: ${yn(p1.eval?.concrete)}
+- Что слабо или упущено: ${p1.eval?.ai_missed || '—'}
 
-Что нужно улучшить:
-${p1.improve_notes || '—'}
+Применённая техника (что добавлено в Method):
+${p1.method || p1.improve_notes || '—'}
 
-Промпт v2:
+Промпт с техникой (Ответ B):
 ${p1.prompt_v2 || '—'}
 
-Ответ ИИ v2:
+Ответ B (с техникой):
 ${p1.ai_v2 || '—'}
 
-Главный вывод (что изменилось после AIM):
+Главный вывод (что добавила техника, где применю):
 ${p1.main_insight || '—'}
 `;
   }
@@ -594,6 +672,85 @@ ${p3.usage_note || '—'}
     return true;
   }
 
+  function buildReportM2Kb(task, wf, taskNum) {
+    const kb = wf.kb || {};
+    return `Выбранный кейс (${taskNum || '?'}): ${task?.title || kb.case_title || ''}
+Документ: ${kb.doc_name || '—'}
+
+Вопрос: ${kb.question || '—'}
+
+Ответ БЕЗ базы знаний:
+${kb.answer_without || '—'}
+
+Ответ С базой знаний:
+${kb.answer_with || '—'}
+
+Что изменилось (точность, ссылки на документ):
+${kb.difference || '—'}
+
+Вопрос-ловушка (ответа в документе нет):
+${kb.trap_question || '—'}
+
+Реакция ассистента на ловушку (выдумал / честно отказался):
+${kb.trap_response || '—'}
+
+Решение: ${kb.decision || '—'}
+
+Вывод (где база знаний нужна в работе):
+${kb.insight || '—'}
+`;
+  }
+
+  function buildReportM2Models(task, wf, taskNum) {
+    const mdl = wf.models || {};
+    let resultsBlock = '';
+    (mdl.results || []).forEach((r) => {
+      const resp = String(r.response || '').slice(0, 600);
+      resultsBlock += `
+Модель: ${r.model || '—'}${r.latency_ms ? ` (${r.latency_ms} мс)` : ''}
+Ответ: ${resp || '—'}
+`;
+    });
+    return `Класс задачи (${taskNum || '?'}): ${task?.title || mdl.case_title || ''}
+
+Промпт:
+${mdl.prompt || '—'}
+
+Ответы моделей:${resultsBlock || ' —'}
+
+Победитель: ${mdl.winner || '—'}
+
+Обоснование выбора:
+${mdl.justification || '—'}
+
+Вывод (какую модель под какой класс задач):
+${mdl.insight || '—'}
+`;
+  }
+
+  function renderModelsResults(results, winner) {
+    const box = el('modelsResultsBlock');
+    if (!box) return;
+    if (!results?.length) {
+      box.classList.add('hidden');
+      box.innerHTML = '';
+      return;
+    }
+    box.classList.remove('hidden');
+    let html = '';
+    results.forEach((r) => {
+      const isWin = winner && r.model === winner;
+      html += `<div class="aa-practice-workflow-box space-y-1${isWin ? ' ring-2 ring-blue-400' : ''}">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-xs font-semibold text-slate-700">${escapeHtml(r.model || '')}</span>
+          <span class="text-[11px] text-slate-400">${r.latency_ms ? r.latency_ms + ' мс' : ''}</span>
+        </div>
+        <div class="aa-task-detail max-h-40 overflow-y-auto text-sm whitespace-pre-wrap">${escapeHtml(String(r.response || ''))}</div>
+      </div>`;
+    });
+    box.innerHTML = html;
+  }
+
   Object.assign(base, {
     SELF_CHECK_M2,
     LIBRARY_CATEGORIES,
@@ -616,6 +773,9 @@ ${p3.usage_note || '—'}
     buildReportM2P1,
     buildReportM2P2,
     buildReportM2P3,
+    buildReportM2Kb,
+    buildReportM2Models,
+    renderModelsResults,
     validateLibraryBeforeReport,
     copyPassportV1ToV2Fields
   });

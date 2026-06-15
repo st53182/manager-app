@@ -1157,7 +1157,29 @@ function createRouter({ JWT_SECRET }) {
     const temperature = Number.isFinite(Number(req.body?.temperature)) ? Number(req.body.temperature) : 0.7;
     const topP = Number.isFinite(Number(req.body?.top_p)) ? Number(req.body.top_p) : 1;
     const maxTokens = Number.isFinite(Number(req.body?.max_tokens)) ? Math.min(Number(req.body.max_tokens), 32000) : 1200;
-    const systemPrompt = String(req.body?.system_prompt || 'You are a helpful assistant.');
+    let systemPrompt = String(req.body?.system_prompt || 'You are a helpful assistant.');
+
+    // Опциональный контекст-инжиниринг: если передана база знаний — подмешиваем
+    // retrieval и просим отвечать строго по источникам (для практики «база знаний»).
+    const knowledgeBaseId = req.body?.knowledgeBaseId || null;
+    let citations = [];
+    if (knowledgeBaseId) {
+      const allChunks = await practicum.getChunksForKnowledgeBase(req.dbUser.id, knowledgeBaseId);
+      const retrieved = buildRetrieval(input, allChunks, 5);
+      citations = retrieved.map((r, idx) => ({
+        id: idx + 1,
+        document: r.document_name,
+        score: Number((r.score || 0).toFixed(3))
+      }));
+      const kbContext = retrieved.length
+        ? retrieved.map((r, idx) => `[Источник ${idx + 1}] ${r.document_name}\n${r.content}`).join('\n\n')
+        : '(в базе знаний не найдено релевантных фрагментов)';
+      systemPrompt =
+        `${systemPrompt}\n\nКонтекст из базы знаний пользователя (единственный источник правды):\n${kbContext}\n\n` +
+        'Отвечай ТОЛЬКО на основе этого контекста и цитируй номера источников. ' +
+        'Если ответа нет в контексте — честно скажи, что в базе знаний нет такой информации, и не выдумывай.';
+    }
+
     await assertQuota(req, estimateTokensFromText(input + systemPrompt));
     const gen = streamChatCompletion(openai, {
       model,
@@ -1179,7 +1201,7 @@ function createRouter({ JWT_SECRET }) {
       costUsd: estimateCostUsd(usage?.prompt_tokens || 0, usage?.completion_tokens || 0, model),
       featureMode: 'playground'
     });
-    res.json({ response: text });
+    res.json({ response: text, citations });
   });
 
   router.get('/assistants', authenticateAcademy, async (req, res) => {

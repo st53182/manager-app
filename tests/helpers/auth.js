@@ -25,7 +25,10 @@ async function deleteTestUsersByEmailPrefix(prefix = 'test-academy-') {
   const { Pool } = require('pg');
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+    ssl:
+      process.env.DATABASE_URL && process.env.PGSSL !== 'disable'
+        ? { rejectUnauthorized: false }
+        : false
   });
   const client = await pool.connect();
   try {
