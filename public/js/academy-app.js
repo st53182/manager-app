@@ -2962,11 +2962,21 @@ function prefillModelsCase(task) {
 }
 
 function getCompareModelIds() {
-  // Берём допустимые модели из общего селектора (учитывают права пользователя).
+  // Берём модели из общего селектора (учитывают права пользователя), но
+  // предпочитаем мощные текстовые модели и пропускаем image-gen.
   const sel = document.getElementById('modelSelect');
-  const opts = sel ? Array.from(sel.options).map((o) => o.value).filter(Boolean) : [];
-  if (opts.length >= 2) return opts.slice(0, 3);
-  return ['openai/gpt-4o-mini', 'google/gemini-2.0-flash-001', 'anthropic/claude-3.5-sonnet'];
+  const available = sel ? Array.from(sel.options).map((o) => o.value).filter(Boolean) : [];
+  const preferred = [
+    'openai/gpt-4o-mini',
+    'anthropic/claude-opus-4.8',
+    'openai/gpt-5-chat',
+    'anthropic/claude-3.5-sonnet',
+    'google/gemini-2.0-flash-001'
+  ];
+  const picked = preferred.filter((m) => available.includes(m)).slice(0, 3);
+  if (picked.length >= 2) return picked;
+  const textOnly = available.filter((m) => !/image/i.test(m));
+  return (textOnly.length ? textOnly : available).slice(0, 3);
 }
 
 async function runModelsCompare() {
