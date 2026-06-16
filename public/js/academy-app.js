@@ -2066,6 +2066,12 @@ function applyPracticeSubsteps(stepNum = state.practiceStep) {
     const n = parseInt(el.dataset.practiceSubstep, 10);
     el.classList.toggle('hidden', n !== sub);
   });
+  // Практика 1: на шаге применения техники (шаг 1, подшаг 4) общий банер про A/B
+  // прячем — там своя инструкция про технику.
+  const techBanner = document.getElementById('techIntroBanner');
+  if (techBanner && state.currentLesson?.scenario_key === 'block2-practice-techniques') {
+    techBanner.classList.toggle('hidden', stepNum === 1 && sub === 4);
+  }
   return total;
 }
 
@@ -2441,6 +2447,7 @@ function clearPracticeFormUi() {
     'aimFieldA', 'aimFieldI', 'aimFieldM', 'aimFieldFormat', 'aimFieldConstraints',
     'aimFieldCriteria', 'aimWhyBad', 'aimEvalMissed', 'm2PracticePromptV1',
     'm2PracticePromptV2', 'm2PracticeImproveNotes', 'm2PracticeMainInsight',
+    'aimFieldA2', 'aimFieldI2', 'aimFieldM2', 'aimFieldFormat2', 'aimFieldConstraints2', 'aimFieldCriteria2',
     // Практика 2 (библиотека)
     'libraryRoleIdHidden', 'libraryRoleTitleHidden', 'libraryTestInput',
     'libraryImproveNotes', 'libraryPromptV2', 'libraryUseNote', 'libraryTestPromptSelect',
@@ -6751,6 +6758,48 @@ function wireUi() {
     if (g('aimFieldConstraints')) extras.push('Ограничения: ' + g('aimFieldConstraints'));
     if (g('aimFieldCriteria')) extras.push('Критерии качества: ' + g('aimFieldCriteria'));
     if (v1) v1.value = extras.length ? `${base}\n\n${extras.join('\n')}` : base;
+    scheduleAutoSave();
+    advancePracticeStepOrSubstep();
+  });
+  // Практика 1: переход к шагу применения техники — предзаполняем блоки v2 из v1.
+  document.getElementById('techGoApplyBtn')?.addEventListener('click', () => {
+    const cp = (from, to) => {
+      const f = document.getElementById(from);
+      const t = document.getElementById(to);
+      if (t && !t.value.trim() && f) t.value = f.value;
+    };
+    cp('aimFieldA', 'aimFieldA2');
+    cp('aimFieldI', 'aimFieldI2');
+    // aimFieldM2 оставляем пустым — сюда пользователь впишет технику.
+    cp('aimFieldFormat', 'aimFieldFormat2');
+    cp('aimFieldConstraints', 'aimFieldConstraints2');
+    cp('aimFieldCriteria', 'aimFieldCriteria2');
+    scheduleAutoSave();
+    advancePracticeStepOrSubstep();
+  });
+  // Практика 1: собрать промпт с техникой из блоков v2 и перейти к запуску Ответа B.
+  document.getElementById('techApplyReadyBtn')?.addEventListener('click', () => {
+    const g = (id) => (document.getElementById(id)?.value || '').trim();
+    const task = getSelectedTaskOption();
+    const base = task?.base_prompt || (document.getElementById('m2PracticePromptV1')?.value || '').trim();
+    const method = g('aimFieldM2');
+    if (!method) {
+      if (!confirm('Вы не добавили технику в блок «Метод». Смысл шага — усилить промпт техникой. Всё равно продолжить?')) {
+        return;
+      }
+    }
+    const extras = [];
+    if (g('aimFieldA2')) extras.push('Цель: ' + g('aimFieldA2'));
+    if (g('aimFieldI2')) extras.push('Контекст: ' + g('aimFieldI2'));
+    if (method) extras.push('Как работать (техника): ' + method);
+    if (g('aimFieldFormat2')) extras.push('Формат ответа: ' + g('aimFieldFormat2'));
+    if (g('aimFieldConstraints2')) extras.push('Ограничения: ' + g('aimFieldConstraints2'));
+    if (g('aimFieldCriteria2')) extras.push('Критерии качества: ' + g('aimFieldCriteria2'));
+    const v2 = document.getElementById('m2PracticePromptV2');
+    if (v2) v2.value = extras.length ? `${base}\n\n${extras.join('\n')}` : base;
+    // Технику фиксируем в скрытом поле — для отчёта.
+    const notes = document.getElementById('m2PracticeImproveNotes');
+    if (notes) notes.value = method || 'Техника добавлена в промпт.';
     scheduleAutoSave();
     advancePracticeStepOrSubstep();
   });
