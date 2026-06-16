@@ -710,7 +710,9 @@
                       </div>
                       <button type="button" id="techGoApplyBtn" class="aa-btn aa-btn-primary w-full">Дальше — применить технику →</button>
                     </div>
-                    <div class="aa-practice-substep hidden space-y-3" data-practice-substep="4">
+                  </div>
+                  <div class="aa-step-pane hidden aa-practice-workflow-box space-y-3" data-practice-step="2">
+                    <div class="aa-practice-substep space-y-3" data-practice-substep="1">
                       <p class="text-xs text-blue-800 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
                         Теперь усильте промпт <strong>техникой</strong>. Прочитайте описание техник ниже и внесите <strong>минимум 2 изменения</strong> в блоки — особенно добавьте технику в блок <strong>«Метод»</strong>. Это даст <strong>Ответ B</strong>.
                       </p>
@@ -731,13 +733,11 @@
                       <textarea id="m2PracticeImproveNotes" class="hidden" aria-hidden="true"></textarea>
                       <button type="button" id="techApplyReadyBtn" class="aa-btn aa-btn-primary w-full mt-1">Собрать промпт с техникой и продолжить →</button>
                     </div>
-                  </div>
-                  <div class="aa-step-pane hidden aa-practice-workflow-box space-y-3" data-practice-step="2">
-                    <div class="aa-practice-substep space-y-3" data-practice-substep="1">
-                      <label class="block"><span class="aa-label">Промпт с техникой (для Ответа B)</span><textarea id="m2PracticePromptV2" rows="6" class="aa-textarea mt-1"></textarea></label>
+                    <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
+                      <label class="block"><span class="aa-label">Промпт с техникой (для Ответа B) — проверьте и при желании отредактируйте</span><textarea id="m2PracticePromptV2" rows="8" class="aa-textarea mt-1"></textarea></label>
                       <button type="button" id="runM2PromptV2Btn" class="aa-btn aa-btn-primary w-full">Запустить промпт с техникой → Ответ B</button>
                     </div>
-                    <div class="aa-practice-substep hidden space-y-3" data-practice-substep="2">
+                    <div class="aa-practice-substep hidden space-y-3" data-practice-substep="3">
                       <div id="m2AiResultBlockV2" class="hidden"><p class="text-xs font-medium text-slate-600 mb-1">Ответ B (с техникой)</p><div id="m2AiResultV2Preview" class="aa-task-detail max-h-48 overflow-y-auto prose prose-sm max-w-none"></div></div>
                       <label class="block"><span class="aa-label">Главный вывод: что добавила техника и где её применить</span><textarea id="m2PracticeMainInsight" rows="2" class="aa-textarea mt-1"></textarea></label>
                       <button type="button" id="buildReportM2P1Btn" class="aa-btn aa-btn-primary w-full">Далее →</button>
@@ -1068,7 +1068,7 @@
   <script src="/js/translations.js?v=20260606-5"></script>
   <script src="/js/academy-practice-workflow.js?v=20260610-2"></script>
   <script src="/js/academy-practice-workflow-m2.js?v=20260615-4"></script>
-  <script type="module" src="/js/academy-app.js?v=20260615-10"></script>
+  <script type="module" src="/js/academy-app.js?v=20260615-11"></script>
 </body>
 </html>
 

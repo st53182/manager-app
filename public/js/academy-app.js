@@ -991,13 +991,12 @@ const STEP_HINTS = {
     initial: '<p>Выберите один из 5 кейсов, чтобы отработать профессиональные техники промптинга.</p>',
     taskSelected: '<p>Прочитайте кейс. Нажмите <strong>«Начать задание»</strong> — соберите базовый промпт для Ответа A.</p>',
     steps: {
-      '1.1': '<p class="mb-2">Сформулируйте цель и контекст. В блоке <strong>Method</strong> — пока БЕЗ техники (это даст Ответ A).</p>',
-      '1.2': '<p>Добавьте формат и ограничения, если нужно. Это базовый промпт.</p>',
-      '1.3': '<p>Запустите базовый промпт в нейросеть — получите <strong>Ответ A</strong>.</p>',
-      '1.4': '<p>Оцените Ответ A: что слабо, чего не хватает в рассуждении или структуре?</p>',
-      '1.5': '<p>Решите, какую <strong>технику</strong> применить: Chain of Thought, few-shot или самокритика.</p>',
-      '2.1': '<p>Усильте промпт техникой (впишите её в Method) и запустите — получите <strong>Ответ B</strong>.</p>',
-      '2.2': '<p>Сравните A и B. Запишите вывод: что добавила техника и где она поможет в работе.</p>',
+      '1.1': '<p class="mb-2">Соберите <strong>базовый промпт</strong> — пока без техники. Заполните блоки и нажмите «Собрать базовый промпт».</p>',
+      '1.2': '<p>Запустите базовый промпт в нейросеть — получите <strong>Ответ A</strong>.</p>',
+      '1.3': '<p>Оцените Ответ A: что слабо, чего не хватает? Нажмите «Дальше — применить технику».</p>',
+      '2.1': '<p>Прочитайте техники и усильте промпт: добавьте технику в блок <strong>«Метод»</strong> (минимум 2 изменения).</p>',
+      '2.2': '<p>Проверьте собранный промпт с техникой и запустите — получите <strong>Ответ B</strong>.</p>',
+      '2.3': '<p>Сравните A и B. Запишите вывод: что добавила техника и где она поможет в работе.</p>',
       '3': '<p>Проверьте отчёт и нажмите <strong>«Отправить»</strong>.</p>'
     }
   },
@@ -2066,11 +2065,11 @@ function applyPracticeSubsteps(stepNum = state.practiceStep) {
     const n = parseInt(el.dataset.practiceSubstep, 10);
     el.classList.toggle('hidden', n !== sub);
   });
-  // Практика 1: на шаге применения техники (шаг 1, подшаг 4) общий банер про A/B
+  // Практика 1: на шаге применения техники (шаг 2, подшаг 1) общий банер про A/B
   // прячем — там своя инструкция про технику.
   const techBanner = document.getElementById('techIntroBanner');
   if (techBanner && state.currentLesson?.scenario_key === 'block2-practice-techniques') {
-    techBanner.classList.toggle('hidden', stepNum === 1 && sub === 4);
+    techBanner.classList.toggle('hidden', stepNum === 2 && sub === 1);
   }
   return total;
 }
@@ -6781,7 +6780,8 @@ function wireUi() {
   document.getElementById('techApplyReadyBtn')?.addEventListener('click', () => {
     const g = (id) => (document.getElementById(id)?.value || '').trim();
     const task = getSelectedTaskOption();
-    const base = task?.base_prompt || (document.getElementById('m2PracticePromptV1')?.value || '').trim();
+    // База — исходный промпт кейса (всегда впереди). Запасной вариант — поле v1.
+    const base = (task?.base_prompt || '').trim() || (document.getElementById('m2PracticePromptV1')?.value || '').trim();
     const method = g('aimFieldM2');
     if (!method) {
       if (!confirm('Вы не добавили технику в блок «Метод». Смысл шага — усилить промпт техникой. Всё равно продолжить?')) {
@@ -6789,14 +6789,18 @@ function wireUi() {
       }
     }
     const extras = [];
-    if (g('aimFieldA2')) extras.push('Цель: ' + g('aimFieldA2'));
-    if (g('aimFieldI2')) extras.push('Контекст: ' + g('aimFieldI2'));
+    // Добавляем блок, только если он не пустой и не дублирует базовый промпт.
+    const add = (label, val) => { if (val && val !== base) extras.push(`${label}: ${val}`); };
+    add('Цель', g('aimFieldA2'));
+    add('Контекст', g('aimFieldI2'));
     if (method) extras.push('Как работать (техника): ' + method);
-    if (g('aimFieldFormat2')) extras.push('Формат ответа: ' + g('aimFieldFormat2'));
-    if (g('aimFieldConstraints2')) extras.push('Ограничения: ' + g('aimFieldConstraints2'));
-    if (g('aimFieldCriteria2')) extras.push('Критерии качества: ' + g('aimFieldCriteria2'));
+    add('Формат ответа', g('aimFieldFormat2'));
+    add('Ограничения', g('aimFieldConstraints2'));
+    add('Критерии качества', g('aimFieldCriteria2'));
     const v2 = document.getElementById('m2PracticePromptV2');
-    if (v2) v2.value = extras.length ? `${base}\n\n${extras.join('\n')}` : base;
+    if (v2) {
+      v2.value = base ? (extras.length ? `${base}\n\n${extras.join('\n')}` : base) : extras.join('\n');
+    }
     // Технику фиксируем в скрытом поле — для отчёта.
     const notes = document.getElementById('m2PracticeImproveNotes');
     if (notes) notes.value = method || 'Техника добавлена в промпт.';
