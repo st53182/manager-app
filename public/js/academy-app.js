@@ -6711,7 +6711,7 @@ function wireUi() {
     const task = getSelectedTaskOption();
     const base = (v1?.value || '').trim() || task?.base_prompt || '';
     const extras = [];
-    if (g('aimFieldI')) extras.push('Контекст: ' + g('aimFieldI'));
+    if (g('aimFieldI') && g('aimFieldI') !== base) extras.push('Контекст: ' + g('aimFieldI'));
     if (g('aimFieldM')) extras.push('Как работать: ' + g('aimFieldM'));
     if (g('aimFieldFormat')) extras.push('Формат ответа: ' + g('aimFieldFormat'));
     if (g('aimFieldConstraints')) extras.push('Ограничения: ' + g('aimFieldConstraints'));
