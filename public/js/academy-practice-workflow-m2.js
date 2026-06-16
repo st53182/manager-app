@@ -160,9 +160,6 @@ ${badEx || '—'}`;
     if (scenarioKey === 'block2-practice-techniques') {
       html += `<p class="text-sm text-slate-700 mb-2">${escapeHtml(task.description || '')}</p>`;
       html += `<p class="text-xs font-medium text-slate-600 mt-2">Базовый промпт (для Ответа A)</p><div class="aa-case-raw">${escapeHtml(task.base_prompt || '')}</div>`;
-      if (task.technique_hint) {
-        html += `<p class="text-xs font-medium text-blue-800 mt-2">Подсказка по технике (для Ответа B)</p><div class="aa-case-bad-prompt">${escapeHtml(task.technique_hint)}</div>`;
-      }
       if (task.expected_result) {
         html += `<p class="text-xs text-slate-500 mt-2"><strong>Ожидаемый результат:</strong> ${escapeHtml(task.expected_result)}</p>`;
       }
