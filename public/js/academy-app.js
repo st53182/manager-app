@@ -2435,7 +2435,30 @@ function clearPracticeFormUi() {
     'p4AuthorAnalysis',
     'p4PromptV2',
     'p5PersonalMarkers',
-    'p5MistakeAnalysis'
+    'p5MistakeAnalysis',
+    // ── Модуль 2 ──
+    // Практика 1 (техники)
+    'aimFieldA', 'aimFieldI', 'aimFieldM', 'aimFieldFormat', 'aimFieldConstraints',
+    'aimFieldCriteria', 'aimWhyBad', 'aimEvalMissed', 'm2PracticePromptV1',
+    'm2PracticePromptV2', 'm2PracticeImproveNotes', 'm2PracticeMainInsight',
+    // Практика 2 (библиотека)
+    'libraryRoleIdHidden', 'libraryRoleTitleHidden', 'libraryTestInput',
+    'libraryImproveNotes', 'libraryPromptV2', 'libraryUseNote', 'libraryTestPromptSelect',
+    // Практика 4 (ассистент / паспорт)
+    'contextTypeIdHidden', 'contextTypeTitleHidden', 'passportRoleV1', 'passportTasksV1',
+    'passportWorkV1', 'passportAudienceV1', 'passportProductsV1', 'passportStyleV1',
+    'passportRulesV1', 'passportFormatsV1', 'passportCriteriaV1', 'passportGoodExampleV1',
+    'passportBadExampleV1', 'passportPreviewV1', 'passportTestTask', 'contextEvalWorked',
+    'contextEvalMissed', 'passportPreviewV2', 'contextUsageNote', 'passportRoleV2',
+    'passportTasksV2', 'passportWorkV2', 'passportAudienceV2', 'passportProductsV2',
+    'passportStyleV2', 'passportRulesV2', 'passportFormatsV2', 'passportCriteriaV2',
+    'passportGoodExampleV2', 'passportBadExampleV2',
+    // Практика 3 (база знаний)
+    'kbCaseIdHidden', 'kbCaseTitleHidden', 'kbIdHidden', 'kbDocNameHidden', 'kbDemoDocHidden',
+    'kbQuestion', 'kbDifference', 'kbTrapQuestion', 'kbDecision', 'kbInsight',
+    // Практика 5 (модели)
+    'modelsCaseIdHidden', 'modelsCaseTitleHidden', 'modelsResultsHidden', 'modelsWinner',
+    'modelsPrompt', 'modelsJustification', 'modelsInsight'
   ];
   for (const id of ids) {
     const el = document.getElementById(id);
@@ -2452,10 +2475,18 @@ function clearPracticeFormUi() {
   });
   ['aiResultV1Preview', 'aiResultV2Preview', 'aiResultDialoguePreview', 'aiResultAnalysisPreview',
    'm2AiResultV1Preview', 'm2AiResultV2Preview', 'libraryAiResultPreview', 'contextAiResultPreview',
+   'kbAnswerWithoutPreview', 'kbAnswerWithPreview', 'kbTrapPreview', 'modelsResultsBlock', 'modelsWinnerOptions',
    'p4ResultV1Preview', 'p4ResultV2Preview'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) { el.innerHTML = ''; delete el.dataset.rawText; }
   });
+  // Модуль 2: скрыть блоки ответов и статусы
+  ['m2AiResultBlockV1', 'm2AiResultBlockV2', 'libraryAiResultBlock', 'contextAiResultBlock',
+   'kbAnswerWithoutBlock', 'kbAnswerWithBlock', 'kbTrapBlock', 'modelsResultsBlock', 'kbCreateStatus'].forEach((id) => {
+    document.getElementById(id)?.classList.add('hidden');
+  });
+  const kbStatusEl = document.getElementById('kbCreateStatus');
+  if (kbStatusEl) kbStatusEl.textContent = '';
   const p5Cards = document.getElementById('p5TextCards');
   if (p5Cards) p5Cards.innerHTML = '';
   const p5Reveals = document.getElementById('p5Reveals');
