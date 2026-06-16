@@ -683,8 +683,15 @@
                 <!-- ===== МОДУЛЬ 2 · ПРАКТИКА 1: AIM ===== -->
                 <div id="practiceAimSection" class="hidden space-y-3">
                   <p class="text-xs text-blue-800 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-                    Сначала запустите <strong>базовый промпт</strong> и получите <strong>Ответ A</strong>. Затем усильте его <strong>техникой</strong> (Chain of Thought, few-shot или самокритика) и получите <strong>Ответ B</strong>. Сравните — увидите, что даёт техника.
+                    Сначала запустите <strong>базовый промпт</strong> и получите <strong>Ответ A</strong>. Затем усильте его <strong>техникой</strong> и получите <strong>Ответ B</strong>. Сравните — увидите, что даёт техника.
                   </p>
+                  <div class="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 space-y-2">
+                    <p class="font-semibold text-slate-800">Три техники — простыми словами</p>
+                    <p>🔗 <strong>Chain of Thought (CoT, «цепочка рассуждений»)</strong> — попросите ИИ думать по шагам: <em>«рассуждай пошагово, прежде чем дать ответ»</em>. Нужна там, где есть логика, расчёты или разбор причин: ИИ не «прыгает» к ответу, а проверяет себя по дороге.</p>
+                    <p>📑 <strong>Few-shot («несколько примеров»)</strong> — дайте 1–2 примера хорошего ответа прямо в запросе. ИИ скопирует формат и стиль образца. Нужна, когда важен конкретный <em>вид</em> результата.</p>
+                    <p>🔍 <strong>Самокритика</strong> — попросите ИИ проверить собственный ответ и улучшить: <em>«найди слабые места и перепиши»</em>. Помогает поймать ошибки и недосказанность.</p>
+                    <p class="text-slate-500 pt-1 border-t border-slate-100">Разница коротко: <strong>CoT</strong> — про то, КАК думать · <strong>few-shot</strong> — на какой ОБРАЗЕЦ опереться · <strong>самокритика</strong> — как ПРОВЕРИТЬ результат.</p>
+                  </div>
                   <div class="aa-step-pane aa-practice-workflow-box space-y-3" data-practice-step="1">
                     <div class="aa-practice-substep space-y-3" data-practice-substep="1">
                       <details class="aa-rtc-details mb-2">
@@ -705,8 +712,7 @@
                       <label class="block"><span class="aa-label">Ограничения</span><textarea id="aimFieldConstraints" rows="2" class="aa-textarea mt-1"></textarea></label>
                       <label class="block"><span class="aa-label">Критерии качества</span><textarea id="aimFieldCriteria" rows="2" class="aa-textarea mt-1"></textarea></label>
                       <label class="block"><span class="aa-label">Какую технику планируете применить в Ответе B?</span><textarea id="aimWhyBad" rows="2" class="aa-textarea mt-1" placeholder="Chain of Thought (думать по шагам) / few-shot (пример-образец) / самокритика (проверь и улучши)"></textarea></label>
-                      <button type="button" id="assembleAimPromptBtn" class="aa-btn aa-btn-ghost text-sm">Собрать базовый промпт из блоков</button>
-                      <button type="button" class="aa-btn aa-btn-primary w-full js-practice-substep-next">Базовый промпт готов →</button>
+                      <button type="button" id="techBaseReadyBtn" class="aa-btn aa-btn-primary w-full">Собрать базовый промпт и продолжить →</button>
                     </div>
                     <div class="aa-practice-substep hidden space-y-3" data-practice-substep="3">
                       <label class="block"><span class="aa-label">Базовый промпт (для Ответа A)</span><textarea id="m2PracticePromptV1" rows="6" class="aa-textarea mt-1"></textarea></label>
@@ -1065,7 +1071,7 @@
   <script src="/js/translations.js?v=20260606-5"></script>
   <script src="/js/academy-practice-workflow.js?v=20260610-2"></script>
   <script src="/js/academy-practice-workflow-m2.js?v=20260615-3"></script>
-  <script type="module" src="/js/academy-app.js?v=20260615-3"></script>
+  <script type="module" src="/js/academy-app.js?v=20260615-4"></script>
 </body>
 </html>
 

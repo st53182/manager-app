@@ -6703,12 +6703,22 @@ function wireUi() {
   document.getElementById('kbRunTrapBtn')?.addEventListener('click', () => runKbQuery({ withBase: true, trap: true }));
   // Практика 5 — сравнение моделей
   document.getElementById('modelsRunBtn')?.addEventListener('click', () => runModelsCompare());
-  document.getElementById('assembleAimPromptBtn')?.addEventListener('click', () => {
-    const assembled = getPracticeWorkflowApi()?.assembleAimPrompt?.();
-    if (!assembled) return alert('Заполните хотя бы один блок AIM.');
+  // Практика 1 (техники): собрать базовый промпт из блоков и сразу перейти
+  // к нему (одна кнопка вместо двух — пользователь видит результат на след. шаге).
+  document.getElementById('techBaseReadyBtn')?.addEventListener('click', () => {
     const v1 = document.getElementById('m2PracticePromptV1');
-    if (v1) v1.value = assembled;
+    const g = (id) => (document.getElementById(id)?.value || '').trim();
+    const task = getSelectedTaskOption();
+    const base = (v1?.value || '').trim() || task?.base_prompt || '';
+    const extras = [];
+    if (g('aimFieldI')) extras.push('Контекст: ' + g('aimFieldI'));
+    if (g('aimFieldM')) extras.push('Как работать: ' + g('aimFieldM'));
+    if (g('aimFieldFormat')) extras.push('Формат ответа: ' + g('aimFieldFormat'));
+    if (g('aimFieldConstraints')) extras.push('Ограничения: ' + g('aimFieldConstraints'));
+    if (g('aimFieldCriteria')) extras.push('Критерии качества: ' + g('aimFieldCriteria'));
+    if (v1) v1.value = extras.length ? `${base}\n\n${extras.join('\n')}` : base;
     scheduleAutoSave();
+    advancePracticeStepOrSubstep();
   });
   document.getElementById('runM2PromptV1Btn')?.addEventListener('click', () => {
     runPracticeInAi({ runKind: 'prompt', pass: 'v1' }).catch((e) =>
