@@ -6723,15 +6723,28 @@ function wireUi() {
     scheduleAutoSave();
     advancePracticeStepOrSubstep();
   });
-  document.getElementById('runM2PromptV1Btn')?.addEventListener('click', () => {
-    runPracticeInAi({ runKind: 'prompt', pass: 'v1' }).catch((e) =>
-      alert(e.message || 'Не удалось получить ответ')
-    );
+  document.getElementById('runM2PromptV1Btn')?.addEventListener('click', async () => {
+    try {
+      await runPracticeInAi({ runKind: 'prompt', pass: 'v1' });
+    } catch (e) {
+      alert(e.message || 'Не удалось получить ответ');
+      return;
+    }
+    // После ответа сразу показываем его и оценку (без отдельной кнопки).
+    if (document.getElementById('m2AiResultV1Preview')?.textContent?.trim()) {
+      advancePracticeStepOrSubstep();
+    }
   });
-  document.getElementById('runM2PromptV2Btn')?.addEventListener('click', () => {
-    runPracticeInAi({ runKind: 'prompt', pass: 'v2' }).catch((e) =>
-      alert(e.message || 'Не удалось получить ответ')
-    );
+  document.getElementById('runM2PromptV2Btn')?.addEventListener('click', async () => {
+    try {
+      await runPracticeInAi({ runKind: 'prompt', pass: 'v2' });
+    } catch (e) {
+      alert(e.message || 'Не удалось получить ответ');
+      return;
+    }
+    if (document.getElementById('m2AiResultV2Preview')?.textContent?.trim()) {
+      advancePracticeStepOrSubstep();
+    }
   });
   document.getElementById('libraryAddCardBtn')?.addEventListener('click', () => {
     const role = document.getElementById('libraryRoleTitleHidden')?.value || '';
