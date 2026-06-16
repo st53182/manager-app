@@ -2070,6 +2070,12 @@ function applyPracticeSubsteps(stepNum = state.practiceStep) {
   const techBanner = document.getElementById('techIntroBanner');
   if (techBanner && state.currentLesson?.scenario_key === 'block2-practice-techniques') {
     techBanner.classList.toggle('hidden', stepNum === 2 && sub === 1);
+    // На шаге сравнения (шаг 2, подшаг 3) копируем Ответ A в левую колонку.
+    if (stepNum === 2 && sub === 3) {
+      const src = document.getElementById('m2AiResultV1Preview');
+      const dst = document.getElementById('m2AiResultV1Compare');
+      if (src && dst) dst.innerHTML = src.innerHTML || '<span class="text-slate-400">(Ответ A не найден)</span>';
+    }
   }
   return total;
 }
@@ -2480,7 +2486,7 @@ function clearPracticeFormUi() {
     r.checked = false;
   });
   ['aiResultV1Preview', 'aiResultV2Preview', 'aiResultDialoguePreview', 'aiResultAnalysisPreview',
-   'm2AiResultV1Preview', 'm2AiResultV2Preview', 'libraryAiResultPreview', 'contextAiResultPreview',
+   'm2AiResultV1Preview', 'm2AiResultV2Preview', 'm2AiResultV1Compare', 'libraryAiResultPreview', 'contextAiResultPreview',
    'kbAnswerWithoutPreview', 'kbAnswerWithPreview', 'kbTrapPreview', 'modelsResultsBlock', 'modelsWinnerOptions',
    'p4ResultV1Preview', 'p4ResultV2Preview'].forEach((id) => {
     const el = document.getElementById(id);
