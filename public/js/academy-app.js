@@ -2717,7 +2717,10 @@ async function runPracticeInAi({ message, runKind, pass = 'v1' }) {
     scheduleAutoSave();
     await saveSubmission('draft');
     const skRun2 = state.currentLesson?.scenario_key;
-    if (skRun2 !== 'block1-practice-prompt') {
+    // Для практик с собственной карточкой ответа (Ответ A/B) не открываем чат
+    // автоматически — иначе он дублирует ответ и сбивает с толку.
+    const noAutoChat = ['block1-practice-prompt', 'block2-practice-techniques'];
+    if (!noAutoChat.includes(skRun2)) {
       openPracticeChat();
     }
     appendOptimisticUserMessage(text);
